@@ -29,7 +29,6 @@ export type TranscriptEvent = {
   message?: string;
   detectedTerms?: string[];
   relatedPage?: number;
-  latencyMs?: number;
 };
 
 export type TranscriptLine = {
@@ -37,7 +36,6 @@ export type TranscriptLine = {
   text: string;
   termIds: string[];
   relatedPage?: number;
-  latencyMs: number;
 };
 
 export type ServiceStatus = {

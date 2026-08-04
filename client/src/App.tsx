@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { analyzePdf, getDemo, getHealth } from "./lib/api";
 import { useLectureStream } from "./hooks/useLectureStream";
+import { shouldTransitionToResults } from "./hooks/lecture-stream-state";
 import type { AnalysisResult, GlossaryTerm, ServiceStatus, TranscriptLine } from "./types";
 
 type Stage = "upload" | "analyzing" | "ready" | "live" | "results";
@@ -429,8 +430,7 @@ function LiveScreen({
 function ResultsScreen({ analysis, lines, onRestart, onHome }: { analysis: AnalysisResult; lines: TranscriptLine[]; onRestart: () => void; onHome: () => void }) {
   const detectedIds = new Set(lines.flatMap((line) => line.termIds));
   const detectedTerms = analysis.terms.filter((term) => detectedIds.has(term.id));
-  const averageLatency = lines.length ? Math.round(lines.reduce((sum, line) => sum + line.latencyMs, 0) / lines.length) : 0;
-  const contextRate = analysis.terms.length ? Math.round((detectedTerms.length / Math.min(analysis.terms.length, 5)) * 100) : 0;
+  const contextRate = analysis.terms.length ? Math.round((detectedTerms.length / analysis.terms.length) * 100) : 0;
 
   return (
     <main className="mx-auto max-w-[1180px] px-5 py-12 sm:px-8 sm:py-16">
@@ -450,7 +450,7 @@ function ResultsScreen({ analysis, lines, onRestart, onHome }: { analysis: Analy
         {[
           [lines.length, "확정 자막", "문장"],
           [detectedTerms.length, "연결된 전문용어", `전체 ${analysis.terms.length}개`],
-          [averageLatency ? `${(averageLatency / 1000).toFixed(1)}초` : "-", "평균 표시 지연", "목표 3초 이내"]
+          [analysis.phraseSet.length, "준비된 PhraseSet 힌트", "분석 단계 생성"]
         ].map(([value, label, unit]) => (
           <div key={String(label)} className="rounded-[1.6rem] border border-white/[0.08] bg-white/[0.035] p-6">
             <div className="text-4xl font-black tracking-[-0.04em] text-white">{value}</div>
@@ -465,7 +465,7 @@ function ResultsScreen({ analysis, lines, onRestart, onHome }: { analysis: Analy
           <div className="text-xs font-extrabold tracking-[0.15em] text-cyan-300">CONTEXT COVERAGE</div>
           <div className="mt-6 flex items-end gap-2"><span className="text-6xl font-black tracking-[-0.07em] text-white">{Math.min(contextRate, 100)}</span><span className="pb-2 text-xl font-black text-slate-500">%</span></div>
           <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.07]"><div className="h-full rounded-full bg-cyan-300" style={{ width: `${Math.min(contextRate, 100)}%` }} /></div>
-          <p className="mt-5 text-xs leading-5 text-slate-500">데모에 포함된 핵심 용어 가운데 자막과 설명 카드가 연결된 비율입니다.</p>
+          <p className="mt-5 text-xs leading-5 text-slate-500">분석된 전체 전문용어 가운데 이번 자막에 등장해 설명 카드와 연결된 비율입니다.</p>
           <div className="mt-6 flex flex-wrap gap-2">
             {detectedTerms.map((term) => <span key={term.id} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-bold text-slate-300">{term.term}</span>)}
           </div>
@@ -499,11 +499,15 @@ export function App() {
   const [fileName, setFileName] = useState("");
   const [fontScale, setFontScale] = useState<FontScale>("normal");
   const [highContrast, setHighContrast] = useState(false);
-  const stream = useLectureStream(analysis?.terms || []);
+  const stream = useLectureStream(analysis?.terms || [], analysis?.phraseSet || []);
 
   useEffect(() => {
     void getHealth().then(setServiceStatus).catch(() => setServiceStatus(null));
   }, []);
+
+  useEffect(() => {
+    if (shouldTransitionToResults(stage, stream.status)) setStage("results");
+  }, [stage, stream.status]);
 
   const reset = () => {
     if (analysis?.pdfUrl) URL.revokeObjectURL(analysis.pdfUrl);

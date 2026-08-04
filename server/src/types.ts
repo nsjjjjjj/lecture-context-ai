@@ -37,11 +37,11 @@ export type TranscriptEvent = {
   message?: string;
   detectedTerms?: string[];
   relatedPage?: number;
-  latencyMs?: number;
 };
 
 export type StartMessage = {
   type: "start";
   mode: "live" | "demo";
   terms: GlossaryTerm[];
+  phraseSet: string[];
 };

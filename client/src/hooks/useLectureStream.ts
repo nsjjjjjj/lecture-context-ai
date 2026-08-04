@@ -1,34 +1,58 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import { PcmRecorder } from "../lib/pcm-recorder";
 import type { GlossaryTerm, TranscriptEvent, TranscriptLine } from "../types";
+import {
+  createInitialLectureStreamState,
+  createLectureStartMessage,
+  isCurrentLectureSession,
+  lectureStreamReducer,
+  type LectureMode
+} from "./lecture-stream-state";
 
-type LectureMode = "live" | "demo";
+function detachSocket(socket: WebSocket): void {
+  socket.onopen = null;
+  socket.onmessage = null;
+  socket.onerror = null;
+  socket.onclose = null;
+}
 
-export function useLectureStream(terms: GlossaryTerm[]) {
-  const [status, setStatus] = useState<"idle" | "connecting" | "ready" | "ended" | "error">("idle");
-  const [statusMessage, setStatusMessage] = useState("강연을 시작할 준비가 되었습니다.");
-  const [interim, setInterim] = useState("");
-  const [lines, setLines] = useState<TranscriptLine[]>([]);
-  const [activeTermId, setActiveTermId] = useState<string | null>(terms[0]?.id ?? null);
+export function useLectureStream(terms: GlossaryTerm[], phraseSet: string[]) {
+  const [state, dispatch] = useReducer(lectureStreamReducer, terms[0]?.id ?? null, createInitialLectureStreamState);
   const socketRef = useRef<WebSocket | null>(null);
   const recorderRef = useRef<PcmRecorder | null>(null);
+  const sessionGenerationRef = useRef(0);
+
+  const shutDownConnection = useCallback(async (notifyServer: boolean, expectedSocket?: WebSocket) => {
+    const socket = expectedSocket || socketRef.current;
+    if (socket && socketRef.current === socket) {
+      if (notifyServer && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "stop" }));
+      socketRef.current = null;
+      detachSocket(socket);
+      socket.close();
+    }
+
+    const recorder = recorderRef.current;
+    recorderRef.current = null;
+    try {
+      await recorder?.stop();
+    } catch {
+      // Connection shutdown must still complete if the browser audio context is already gone.
+    }
+  }, []);
 
   const stop = useCallback(async () => {
-    if (socketRef.current?.readyState === WebSocket.OPEN) socketRef.current.send(JSON.stringify({ type: "stop" }));
-    socketRef.current?.close();
-    socketRef.current = null;
-    await recorderRef.current?.stop();
-    recorderRef.current = null;
-    setInterim("");
-    setStatus("ended");
-  }, []);
+    const stopGeneration = ++sessionGenerationRef.current;
+    await shutDownConnection(true);
+    if (!isCurrentLectureSession(sessionGenerationRef.current, stopGeneration)) return;
+    dispatch({ type: "ended", message: "강연을 종료했습니다." });
+  }, [shutDownConnection]);
 
   const start = useCallback(
     async (mode: LectureMode) => {
-      setStatus("connecting");
-      setStatusMessage(mode === "demo" ? "데모 자막을 준비하고 있습니다." : "마이크와 Google STT를 연결하고 있습니다.");
-      setLines([]);
-      setInterim("");
+      const sessionGeneration = ++sessionGenerationRef.current;
+      await shutDownConnection(true);
+      if (!isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration)) return;
+      dispatch({ type: "starting", mode, activeTermId: terms[0]?.id ?? null });
 
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
@@ -36,61 +60,83 @@ export function useLectureStream(terms: GlossaryTerm[]) {
       socketRef.current = socket;
 
       socket.onopen = async () => {
-        socket.send(JSON.stringify({ type: "start", mode, terms }));
+        if (socketRef.current !== socket || !isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration)) return;
+        socket.send(JSON.stringify(createLectureStartMessage(mode, terms, phraseSet)));
         if (mode === "live") {
           try {
             const recorder = new PcmRecorder();
             recorderRef.current = recorder;
             await recorder.start((audio) => {
-              if (socket.readyState === WebSocket.OPEN) socket.send(audio);
+              if (
+                socketRef.current === socket &&
+                isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration) &&
+                socket.readyState === WebSocket.OPEN
+              ) {
+                socket.send(audio);
+              }
             });
+            if (socketRef.current !== socket || !isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration)) {
+              if (recorderRef.current === recorder) recorderRef.current = null;
+              await recorder.stop();
+            }
           } catch (error) {
-            setStatus("error");
-            setStatusMessage(error instanceof Error ? error.message : "마이크를 시작하지 못했습니다.");
-            socket.close();
+            if (socketRef.current !== socket || !isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration)) return;
+            dispatch({ type: "error", message: error instanceof Error ? error.message : "마이크를 시작하지 못했습니다." });
+            await shutDownConnection(false, socket);
           }
         }
       };
 
       socket.onmessage = (message) => {
+        if (socketRef.current !== socket || !isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration)) return;
         const event = JSON.parse(message.data as string) as TranscriptEvent;
         if (event.type === "ready") {
-          setStatus("ready");
-          setStatusMessage(event.message || "강연 중");
+          dispatch({ type: "ready", message: event.message });
         } else if (event.type === "interim") {
-          setInterim(event.text || "");
-          if (event.detectedTerms?.[0]) setActiveTermId(event.detectedTerms[0]);
+          dispatch({ type: "interim", text: event.text || "", activeTermId: event.detectedTerms?.[0] });
         } else if (event.type === "final" && event.text) {
-          setInterim("");
-          if (event.detectedTerms?.[0]) setActiveTermId(event.detectedTerms[0]);
-          setLines((current) => [
-            ...current,
-            {
-              id: `${Date.now()}-${current.length}`,
-              text: event.text!,
-              termIds: event.detectedTerms || [],
-              relatedPage: event.relatedPage,
-              latencyMs: event.latencyMs || 0
-            }
-          ]);
+          const line: TranscriptLine = {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            text: event.text,
+            termIds: event.detectedTerms || [],
+            relatedPage: event.relatedPage
+          };
+          dispatch({ type: "final", line, activeTermId: event.detectedTerms?.[0] });
         } else if (event.type === "error") {
-          setStatus("error");
-          setStatusMessage(event.message || "자막 처리 중 오류가 발생했습니다.");
+          dispatch({ type: "error", message: event.message });
         } else if (event.type === "ended") {
-          setStatus("ended");
-          setStatusMessage(event.message || "강연이 끝났습니다.");
+          void shutDownConnection(false, socket).then(() => {
+            if (!isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration)) return;
+            dispatch({ type: "ended", message: event.message });
+          });
         }
       };
       socket.onerror = () => {
-        setStatus("error");
-        setStatusMessage("서버에 연결하지 못했습니다.");
+        if (socketRef.current !== socket || !isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration)) return;
+        dispatch({ type: "error", message: "서버에 연결하지 못했습니다." });
       };
-      socket.onclose = () => void recorderRef.current?.stop();
+      socket.onclose = () => {
+        if (socketRef.current !== socket || !isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration)) return;
+        void shutDownConnection(false, socket).then(() => {
+          if (!isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration)) return;
+          dispatch({ type: "error", message: "자막 연결이 예기치 않게 종료되었습니다." });
+        });
+      };
     },
-    [terms]
+    [phraseSet, shutDownConnection, terms]
   );
 
-  useEffect(() => () => void stop(), [stop]);
+  useEffect(
+    () => () => {
+      sessionGenerationRef.current += 1;
+      void shutDownConnection(true);
+    },
+    [shutDownConnection]
+  );
 
-  return { status, statusMessage, interim, lines, activeTermId, setActiveTermId, start, stop };
+  const setActiveTermId = useCallback((termId: string | null) => {
+    dispatch({ type: "select-term", termId });
+  }, []);
+
+  return { ...state, setActiveTermId, start, stop };
 }
