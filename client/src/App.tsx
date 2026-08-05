@@ -49,9 +49,11 @@ function Logo() {
 }
 
 function Header({ stage, onHome }: { stage: Stage; onHome: () => void }) {
+  const compact = stage === "live";
+
   return (
     <header className="relative z-20 border-b border-white/[0.06] bg-[#07111f]/85 backdrop-blur-xl">
-      <div className="mx-auto flex h-20 max-w-[1440px] items-center justify-between px-5 sm:px-8">
+      <div className={`mx-auto flex max-w-[1440px] items-center justify-between px-5 sm:px-8 ${compact ? "h-16" : "h-20"}`}>
         <button onClick={onHome} aria-label="처음 화면으로 이동" className="rounded-2xl text-left outline-none ring-cyan-300 focus-visible:ring-2">
           <Logo />
         </button>
@@ -339,11 +341,12 @@ function LiveScreen({
   const previousLines = stream.lines.slice(-4, -1);
   const currentPage = activeTerm ? analysis.pages.find((page) => page.pageNumber === activeTerm.pageNumber) : analysis.pages[0];
   const sizeClass = fontScale === "xlarge" ? "caption-xlarge" : fontScale === "large" ? "caption-large" : "caption-normal";
+  const fontScaleLabel = fontScale === "xlarge" ? "매우 크게" : fontScale === "large" ? "크게" : "보통";
 
   return (
-    <main className={`min-h-[calc(100vh-80px)] ${highContrast ? "bg-black" : ""}`}>
-      <div className="mx-auto max-w-[1540px] px-4 py-4 sm:px-6 sm:py-6">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <main className={`min-h-[calc(100dvh-65px)] lg:h-[calc(100dvh-65px)] lg:overflow-hidden ${highContrast ? "bg-black" : ""}`}>
+      <div className="mx-auto h-full max-w-[1440px] px-3 py-3 sm:px-5 lg:flex lg:flex-col">
+        <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <div className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold ${stream.status === "ready" ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200" : stream.status === "error" ? "border-rose-300/20 bg-rose-300/10 text-rose-100" : "border-white/10 bg-white/[0.04] text-slate-400"}`}>
               {stream.status === "ready" ? <Wifi className="size-4" /> : stream.status === "error" ? <WifiOff className="size-4" /> : <LoaderCircle className="size-4 animate-spin" />}
@@ -352,65 +355,81 @@ function LiveScreen({
             <div className="hidden text-xs text-slate-600 sm:block">{analysis.title}</div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={onFontScale} className="control-button" aria-label="자막 글자 크기 변경"><span className="font-black">가</span><span className="text-base font-black">가</span></button>
-            <button onClick={onHighContrast} className={`control-button ${highContrast ? "!border-cyan-300 !text-cyan-300" : ""}`} aria-label="고대비 화면 전환"><Highlighter className="size-4" /></button>
+            <button
+              onClick={onFontScale}
+              className="control-button"
+              aria-label={`자막 글자 크기 변경, 현재 ${fontScaleLabel}`}
+              title={`자막 크기: ${fontScaleLabel}`}
+            >
+              <span className="text-xs font-black">가</span><span className="text-base font-black">가</span>
+            </button>
+            <button
+              onClick={onHighContrast}
+              className={`control-button ${highContrast ? "!border-cyan-300 !text-cyan-300" : ""}`}
+              aria-label="고대비 화면 전환"
+              aria-pressed={highContrast}
+            >
+              <Highlighter className="size-4" />
+            </button>
             <button onClick={() => document.documentElement.requestFullscreen?.()} className="control-button" aria-label="전체 화면"><Maximize2 className="size-4" /></button>
             <button onClick={onFinish} className="danger-button"><Pause className="size-4 fill-current" /> 종료</button>
           </div>
         </div>
 
-        <div className="grid min-h-[calc(100vh-168px)] gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(340px,.5fr)]">
-          <section className={`flex min-h-[560px] flex-col rounded-[1.8rem] border p-6 sm:p-9 ${highContrast ? "border-white bg-black" : "border-white/[0.08] bg-[#0a1625]"}`}>
+        <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(360px,.48fr)]">
+          <section className={`flex min-h-[340px] min-w-0 flex-col rounded-[1.6rem] border p-5 sm:min-h-[460px] sm:p-6 lg:min-h-0 lg:p-7 ${highContrast ? "border-white bg-black" : "border-white/[0.08] bg-[#0a1625]"}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-slate-500"><Volume2 className="size-4 text-cyan-300" /> LIVE CAPTION</div>
               <div className="rounded-full bg-white/[0.05] px-3 py-1.5 text-[11px] font-bold text-slate-500">{stream.lines.length}개 문장</div>
             </div>
 
-            <div className="flex flex-1 flex-col justify-end py-8" aria-live="polite" aria-atomic="true">
-              <div className="space-y-5 opacity-35">
-                {previousLines.map((line) => <p key={line.id} className="text-xl font-bold leading-relaxed text-slate-300 sm:text-2xl">{line.text}</p>)}
+            <div className="flex min-h-0 flex-1 flex-col justify-end overflow-y-auto py-5 sm:py-6">
+              <div className="space-y-3 opacity-35">
+                {previousLines.map((line) => <p key={line.id} className="text-sm font-bold leading-relaxed text-slate-300 sm:text-base xl:text-lg">{line.text}</p>)}
               </div>
-              <div className="mt-7 min-h-[170px] border-t border-white/[0.07] pt-7">
-                {currentLine ? (
-                  <HighlightedText text={currentLine.text} terms={analysis.terms.filter((term) => currentLine.termIds.includes(term.id))} sizeClass={sizeClass} />
-                ) : (
-                  <p className={`${sizeClass} text-slate-600`}>마이크에 대고 강연을 시작해 주세요.</p>
-                )}
-                {stream.interim && <p className="mt-5 text-2xl font-semibold leading-relaxed text-slate-500 sm:text-3xl">{stream.interim}</p>}
+              <div className="mt-5 min-h-[120px] border-t border-white/[0.07] pt-5 sm:min-h-[140px]">
+                <div aria-live="polite" aria-atomic="true">
+                  {currentLine ? (
+                    <HighlightedText text={currentLine.text} terms={analysis.terms.filter((term) => currentLine.termIds.includes(term.id))} sizeClass={sizeClass} />
+                  ) : (
+                    <p className={`${sizeClass} text-slate-600`}>마이크에 대고 강연을 시작해 주세요.</p>
+                  )}
+                </div>
+                {stream.interim && <p aria-hidden="true" className="mt-3 text-base font-semibold leading-relaxed text-slate-500 sm:text-lg xl:text-xl">{stream.interim}</p>}
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-white/[0.07] pt-5 text-xs text-slate-600">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.07] pt-4 text-[11px] text-slate-600 sm:text-xs">
               <div className="flex items-center gap-2"><Mic className="size-4 text-rose-300" /> 음성을 서버에 저장하지 않습니다</div>
               <div className="flex items-center gap-2"><Keyboard className="size-4" /> 고대비·큰 글씨 지원</div>
             </div>
           </section>
 
-          <aside className="grid min-h-[560px] gap-4 sm:grid-cols-2 lg:grid-cols-1 lg:grid-rows-[auto_1fr]">
-            <section className="rounded-[1.8rem] border border-cyan-300/15 bg-gradient-to-br from-cyan-300/[0.09] to-blue-400/[0.03] p-6">
+          <aside className="grid min-w-0 gap-3 md:grid-cols-2 lg:min-h-0 lg:grid-cols-1 lg:grid-rows-[auto_minmax(220px,1fr)] lg:overflow-y-auto">
+            <section className="min-h-[260px] min-w-0 rounded-[1.6rem] border border-cyan-300/15 bg-gradient-to-br from-cyan-300/[0.09] to-blue-400/[0.03] p-5 sm:p-6 md:min-h-[320px] lg:min-h-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-cyan-300"><BookOpen className="size-4" /> CONTEXT</div>
                 {activeTerm && <span className="rounded-full bg-cyan-300 px-2.5 py-1 text-[10px] font-black text-slate-950">PDF {activeTerm.pageNumber}</span>}
               </div>
               {activeTerm ? (
-                <div className="mt-7">
-                  <h2 className="text-3xl font-black tracking-[-0.045em] text-white">{activeTerm.term}</h2>
-                  <p className="mt-2 text-xs font-bold text-cyan-300/70">{activeTerm.english}</p>
-                  <p className="mt-5 text-[15px] font-medium leading-7 text-slate-300">{activeTerm.easyExplanation}</p>
-                  <div className="mt-6 flex items-center gap-2 text-[11px] font-bold text-slate-500"><Sparkles className="size-3.5" /> PDF 기반 AI 쉬운 풀이</div>
+                <div className="mt-5 min-w-0">
+                  <h2 className="break-words text-[clamp(1.5rem,2.2vw,2rem)] font-black leading-tight tracking-[-0.04em] text-white [overflow-wrap:anywhere]">{activeTerm.term}</h2>
+                  <p className="mt-2 break-words text-xs font-bold leading-5 text-cyan-300/80 [overflow-wrap:anywhere]">{activeTerm.english}</p>
+                  <p className="mt-4 break-words text-sm font-medium leading-6 text-slate-200 [overflow-wrap:anywhere] sm:text-[15px]">{activeTerm.easyExplanation}</p>
+                  <div className="mt-5 flex items-center gap-2 text-[11px] font-bold text-slate-400"><Sparkles className="size-3.5 shrink-0" /> PDF 기반 AI 쉬운 풀이</div>
                 </div>
               ) : <p className="mt-7 text-sm text-slate-500">전문용어가 등장하면 쉬운 설명을 보여드립니다.</p>}
             </section>
 
-            <section className="overflow-hidden rounded-[1.8rem] border border-white/[0.08] bg-white/[0.035]">
+            <section className="flex min-h-[320px] min-w-0 flex-col overflow-hidden rounded-[1.6rem] border border-white/[0.08] bg-white/[0.035] lg:min-h-[220px]">
               <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
                 <div className="flex items-center gap-2 text-xs font-extrabold text-slate-300"><FileText className="size-4 text-cyan-300" /> 관련 자료</div>
                 <span className="text-[11px] font-bold text-slate-600">PAGE {currentPage?.pageNumber || 1}</span>
               </div>
               {analysis.pdfUrl ? (
-                <iframe title={`PDF ${currentPage?.pageNumber || 1}페이지`} src={`${analysis.pdfUrl}#page=${currentPage?.pageNumber || 1}&view=FitH&toolbar=0`} className="h-[310px] w-full bg-white lg:h-full" />
+                <iframe title={`PDF ${currentPage?.pageNumber || 1}페이지`} src={`${analysis.pdfUrl}#page=${currentPage?.pageNumber || 1}&view=FitH&toolbar=0`} className="min-h-[260px] w-full flex-1 bg-white" />
               ) : (
-                <div className="relative flex min-h-[300px] flex-col justify-center overflow-hidden bg-[#f3f5f7] p-7 text-slate-900 lg:h-full">
+                <div className="lecture-slide relative flex min-h-[260px] flex-1 flex-col justify-center overflow-hidden bg-[#f3f5f7] p-6 text-slate-900">
                   <div className="absolute right-[-60px] top-[-60px] size-44 rounded-full bg-cyan-300/40 blur-2xl" />
                   <div className="relative text-[10px] font-black tracking-[0.2em] text-cyan-700">LECTURE SLIDE</div>
                   <div className="relative mt-3 text-2xl font-black tracking-[-0.04em]">{activeTerm?.term || "생성형 AI"}</div>
