@@ -104,6 +104,7 @@ export function useLectureStream(terms: GlossaryTerm[], phraseSet: string[]) {
           dispatch({ type: "final", line, activeTermId: event.detectedTerms?.[0] });
         } else if (event.type === "error") {
           dispatch({ type: "error", message: event.message });
+          void shutDownConnection(false, socket);
         } else if (event.type === "ended") {
           void shutDownConnection(false, socket).then(() => {
             if (!isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration)) return;

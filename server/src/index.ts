@@ -136,14 +136,27 @@ wss.on("connection", (websocket) => {
         return;
       }
 
-      speechSession = createGoogleSpeechSession(context.phraseSet, {
+      let createdSession: SpeechSession | null = null;
+      let sessionTerminated = false;
+      createdSession = createGoogleSpeechSession(context.phraseSet, {
         onTranscript: (text, isFinal) => emitTranscript(websocket, text, isFinal, terms),
-        onError: (error) => send(websocket, { type: "error", message: `음성인식 오류: ${error.message}` }),
+        onError: (error) => {
+          sessionTerminated = true;
+          if (speechSession === createdSession) speechSession = null;
+          createdSession?.close();
+          send(websocket, { type: "error", message: `음성인식 오류: ${error.message}` });
+        },
         onEnd: () => {
-          speechSession = null;
+          sessionTerminated = true;
+          if (speechSession === createdSession) speechSession = null;
           endOnce("Google STT 연결이 종료되었습니다.");
         }
       });
+      if (sessionTerminated) {
+        createdSession.close();
+        return;
+      }
+      speechSession = createdSession;
       send(websocket, { type: "ready", message: "Google STT에 연결되었습니다." });
     } catch (error) {
       send(websocket, { type: "error", message: error instanceof Error ? error.message : "요청을 처리하지 못했습니다." });

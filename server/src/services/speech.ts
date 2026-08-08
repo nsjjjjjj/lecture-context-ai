@@ -11,6 +11,46 @@ export type SpeechSession = {
   close: () => void;
 };
 
+type SpeechWritableStream = {
+  destroyed?: boolean;
+  writable?: boolean;
+  writableEnded?: boolean;
+  write: (value: unknown, callback?: (error?: Error | null) => void) => unknown;
+};
+
+export function isSpeechStreamWritable(stream: SpeechWritableStream): boolean {
+  return stream.destroyed !== true && stream.writableEnded !== true && stream.writable !== false;
+}
+
+export function createGuardedSpeechWriter(stream: SpeechWritableStream, onError: (error: Error) => void) {
+  let stopped = false;
+
+  const fail = (error: unknown): void => {
+    if (stopped) return;
+    stopped = true;
+    onError(error instanceof Error ? error : new Error(String(error)));
+  };
+
+  return {
+    write(value: unknown): boolean {
+      if (stopped || !isSpeechStreamWritable(stream)) return false;
+      try {
+        stream.write(value, (error?: Error | null) => {
+          if (error) fail(error);
+        });
+        return true;
+      } catch (error) {
+        fail(error);
+        return false;
+      }
+    },
+    fail,
+    stop(): void {
+      stopped = true;
+    }
+  };
+}
+
 export function isGoogleSpeechConfigured(): boolean {
   return Boolean(process.env.GOOGLE_CLOUD_PROJECT);
 }
@@ -67,6 +107,13 @@ export function createGoogleSpeechSession(phraseSet: string[], callbacks: Speech
   const apiEndpoint = location === "global" ? undefined : `${location}-speech.googleapis.com`;
   const client = new v2.SpeechClient(apiEndpoint ? { apiEndpoint } : undefined);
   const stream = (client as unknown as { streamingRecognize: () => any }).streamingRecognize();
+  let clientClosed = false;
+  const closeClient = (): void => {
+    if (clientClosed) return;
+    clientClosed = true;
+    void client.close();
+  };
+  const writer = createGuardedSpeechWriter(stream, callbacks.onError);
 
   stream.on("data", (response: any) => {
     for (const result of response.results ?? []) {
@@ -75,10 +122,18 @@ export function createGoogleSpeechSession(phraseSet: string[], callbacks: Speech
       callbacks.onTranscript(text, Boolean(result.isFinal));
     }
   });
-  stream.on("error", (error: Error) => callbacks.onError(error));
-  stream.on("end", () => callbacks.onEnd());
+  stream.on("error", (error: Error) => {
+    writer.fail(error);
+    closeClient();
+  });
+  stream.on("end", () => {
+    writer.stop();
+    callbacks.onEnd();
+    closeClient();
+  });
+  stream.on("close", closeClient);
 
-  stream.write(buildStreamingRecognizeRequest(projectId, location, model, phraseSet));
+  writer.write(buildStreamingRecognizeRequest(projectId, location, model, phraseSet));
 
   return {
     writeAudio(audio: Buffer) {
@@ -86,11 +141,12 @@ export function createGoogleSpeechSession(phraseSet: string[], callbacks: Speech
         callbacks.onError(new Error("오디오 청크가 Google STT의 15KB 제한을 초과했습니다."));
         return;
       }
-      stream.write({ audio });
+      writer.write({ audio });
     },
     close() {
-      stream.end();
-      void client.close();
+      writer.stop();
+      if (!stream.destroyed && !stream.writableEnded) stream.end();
+      if (stream.destroyed || stream.writableEnded) closeClient();
     }
   };
 }
