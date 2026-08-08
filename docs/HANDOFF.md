@@ -13,6 +13,12 @@
 - Google STT V2 Chirp 3 인라인 PhraseSet 구성
 - Google STT V2 typed bidi 스트림과 실제 `us` 리전 연결 검증
 - 브라우저 마이크 PCM 변환과 WebSocket 전송
+- localhost 개발 화면에서 최대 120초 음성을 canonical 16kHz mono 16-bit PCM WAV로 저장하는 fixture recorder
+- Vite·개발 백엔드의 `127.0.0.1` bind, 개발 녹음 API의 production JSON 404와 localhost 요청 재검증
+- 3,840,000 PCM 바이트 capture hard cap과 manual/timer/limit 종료 단일화
+- 녹음 시작 시 가명 화자·환경·실험문장 snapshot과 prepared 상태 선택 잠금
+- temp WAV 검증·rename·atomic manifest, 실패 rollback/queue 회복과 cross-process writer lock
+- 저장 WAV의 offline PCM 재로드와 15KB 이하 짝수 청크 분할 계약
 - 임시·확정 자막, 용어 강조, 반복 언급마다 생성되는 최신순 쉬운 설명 피드
 - API 없는 데모 모드
 - 분석 완료 시 전체 `GlossaryTerm[]`과 `phraseSet`의 브라우저 `localStorage` v1 자동 저장
@@ -50,11 +56,11 @@
 
 1. 별도의 테스트용 Google Cloud 프로젝트와 결제 예산 한도를 설정합니다.
 2. Gemini 키를 연결하고 Google Application Default Credentials를 팀 실행 환경에 준비합니다.
-3. 실제 텍스트 PDF와 1~2분 한국어 강연 대본을 발표용 브라우저·마이크로 전체 검증합니다.
+3. 개발용 고정 실험 문장을 발표용 브라우저·마이크로 한 번 녹음하고 저장 WAV의 음질을 확인합니다.
 4. glossary 결과에 `contextExplanation`을 추가해 용어가 현재 문맥에서 등장한 이유를 표시합니다.
 5. Google STT 스트리밍 제한에 대비한 자동 재연결과 자막 연속성 처리를 구현합니다.
 6. Cloud Run에 배포하고 모바일·노트북 마이크 권한과 WebSocket을 재검증합니다.
-7. 기준 대본을 사용해 일반 STT와 PhraseSet 적용 STT의 전문용어 정확도를 비교합니다.
+7. 같은 저장 WAV를 사용해 일반 STT와 PhraseSet 적용 STT의 전문용어 정확도를 비교합니다.
 
 ## 인수인계 시 전달해야 하는 외부 리소스
 
@@ -89,13 +95,16 @@ pnpm dev
 10. `실시간 강연 시작` 시 저장된 전체 용어와 PhraseSet이 WebSocket `start` 메시지에 포함되고, 자막 강조와 쉬운 설명이 동작하는지 확인합니다.
 11. 저장 용어집 세션에서도 관련 자료 영역 없이 오른쪽 전체를 용어 설명 피드로 사용하고, 같은 용어의 반복 카드가 각각 유지되는지 확인합니다.
 12. 첫 화면에서 용어집 이름 변경과 삭제를 확인합니다.
+13. localhost 개발 화면의 `개발용 고정음원 녹음`에서 가명 화자와 환경을 선택하고 고정 문장을 녹음합니다.
+14. 녹음 종료와 최대 120초 timer/PCM hard cap 종료가 한 번만 처리되는지, 미리 듣기와 재녹음이 동작하는지 확인합니다.
+15. 저장 뒤 `test-fixtures/stt/audio/*.wav`와 `manifest.local.json`이 생성되고 Git 상태에 나타나지 않는지 확인합니다.
 
 ## 알려진 제한과 결정 사항
 
 - OCR을 넣지 않았으므로 스캔 이미지 PDF는 처리하지 못합니다.
 - PDF는 브라우저에서 추출하며 Python 런타임을 사용하지 않습니다.
 - 강연자 검수 단계 없이 PDF 원문 대조 결과를 자동 채택합니다.
-- PDF와 음성 원본을 서버에 저장하지 않으며 데이터베이스가 없습니다.
+- PDF와 실시간 강연 음성은 서버에 저장하지 않으며 데이터베이스가 없습니다. localhost 개발 녹음 카드에서 사용자가 명시적으로 만든 fixture만 프로젝트 로컬에 보존합니다.
 - 용어집은 `lecture-context-ai.glossaries` 키의 버전 1 브라우저 저장소에만 저장합니다. 서버 저장소는 추가하지 않았습니다.
 - 저장 필드는 용어집 메타데이터(`id`, `name`, `createdAt`, `updatedAt`), 완전한 `GlossaryTerm[]`, `phraseSet`으로 제한합니다. PDF, 추출 페이지 텍스트, `pdfUrl`, 음성, 경고, API 키는 제외합니다.
 - 저장 데이터는 정확한 필드 집합과 타입·길이·개수·타임스탬프·PhraseSet/용어 대응 관계를 검증합니다. 정규화 중복은 제거하되 채택한 용어의 기존 ID는 유지합니다.
@@ -114,16 +123,25 @@ pnpm dev
 - 실제 발화 시작 시점을 신뢰성 있게 측정하지 않으므로 결과 리포트에서 표시 지연을 추정하지 않고, 검증된 PhraseSet 힌트 수를 표시합니다.
 - 서버의 `final.detectedTerms`는 왼쪽부터 실제 출현한 순서와 반복을 보존합니다. 서버 matcher와 클라이언트 자막 강조는 grapheme별 NFKC·문맥 독립 소문자화·공백·ASCII 경계 규칙을 함께 사용합니다. 같은 글자 구간에 용어가 겹치면 가장 긴 표기 하나를 선택하고, 한 원문 grapheme이 여러 용어로 확장되면 클라이언트는 겹친 원문 범위를 병합해 glyph를 한 번만 표시합니다. 자막·결과용 `termIds`는 고유하게 유지하고 설명 피드용 출현 목록만 중복을 보존합니다.
 - 공개 사용자 인증은 없으므로 외부 공개 시 Cloud Run·API 할당량으로 비용을 제한해야 합니다.
+- `pnpm dev`의 Vite와 백엔드는 `127.0.0.1`에만 listen합니다. 개발용 녹음 API도 `NODE_ENV=development`와 loopback socket·Host·Origin을 확인하며, production의 모든 미등록 `/api` 경로는 SPA fallback 전에 JSON 404로 종료합니다.
+- 개발 fixture WAV와 `manifest.local.json`은 Git·Docker에서 제외되며 자동 삭제되지 않습니다. 가명 화자 label만 사용하고 개발자가 직접 정리해야 합니다.
+- capture는 wall-clock timer와 별개로 PCM 3,840,000바이트를 hard cap하고 limit 신호를 한 번만 냅니다. 화자·환경·실험문장은 녹음 시작 시 snapshot됩니다.
+- fixture 저장은 canonical WAV 검증, temp 파일, 최종 rename, atomic manifest 순서이며 manifest 실패 시 WAV를 rollback합니다. process-local queue와 `.writer.lock`이 같은 root를 쓰는 복수 프로세스를 직렬화하고 실패 뒤에도 다음 요청을 처리합니다.
+- same-user 로컬 개발 도구를 전제로 합니다. 직접 사용하는 fixture root·audio·파일 symlink와 경로 이탈은 거부하지만 모든 ancestor symlink/TOCTOU를 막는 sandbox라고 주장하지 않습니다.
+- offline replay는 PCM을 15,000바이트 이하 짝수 길이 청크로 바이트 손실 없이 제공하는 단계까지만 구현합니다. Google STT 정확도와 비용 검증은 후속입니다.
 - 현재의 `easyExplanation`은 쉬운 정의에 가깝습니다. 제품명을 유지하려면 실제 발화 문맥을 설명하는 `contextExplanation` 확장을 권장합니다.
 
 ## 주요 코드 위치
 
 - 전체 UI: `client/src/App.tsx`
+- 개발 고정음원 UI: `client/src/components/AudioFixtureRecorder.tsx`
 - PDF 추출: `client/src/lib/pdf.ts`
 - 마이크 처리: `client/src/lib/pcm-recorder.ts`
 - 실시간 상태: `client/src/hooks/useLectureStream.ts`
 - 브라우저 용어집: `client/src/lib/glossary-storage.ts`
-- API·WebSocket 서버: `server/src/index.ts`
+- HTTP 앱·개발 API: `server/src/app.ts`
+- WebSocket·listen: `server/src/index.ts`
+- WAV fixture 저장·offline load: `server/src/services/audio-fixtures.ts`
 - Gemini·자동 용어집: `server/src/services/glossary.ts`
 - Google STT: `server/src/services/speech.ts`
 - 데모 데이터: `server/src/services/demo.ts`

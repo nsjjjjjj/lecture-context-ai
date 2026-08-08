@@ -19,7 +19,8 @@ Google API 자격증명이 없어도 내장된 샘플 강연으로 전체 발표
 - 큰 글씨, 고대비, 전체 화면 등 발표 접근성 기능
 - 분석된 전체 용어 객체와 PhraseSet을 브라우저에 자동 저장하고 다시 불러오기
 - 이 브라우저의 저장 용어집 목록, 이름 변경, 삭제
-- 음성 원본과 PDF를 서버에 저장하지 않는 휘발성 처리
+- 실시간 강연 음성과 PDF를 서버에 저장하지 않는 휘발성 처리
+- 같은 음원으로 STT를 반복 비교하기 위한 localhost 전용 개발 녹음 fixture
 - API 없이 실행되는 발표용 데모와 자동 종료 리포트
 
 ## 시스템 작동 구조
@@ -49,7 +50,7 @@ flowchart LR
 2. 브라우저가 PDF를 페이지별 텍스트로 변환합니다.
 3. Gemini가 강연에 중요한 전문용어 후보와 쉬운 설명을 생성합니다.
 4. 서버가 후보 용어를 PDF 원문과 다시 대조해 환각·중복·누락 표기를 제거합니다.
-5. 검증된 전체 용어 객체와 PhraseSet만 버전 1 브라우저 저장소에 자동 저장합니다. PDF, 추출 페이지 텍스트, PDF URL, 경고, 음성은 저장하지 않습니다.
+5. 검증된 전체 용어 객체와 PhraseSet만 버전 1 브라우저 저장소에 자동 저장합니다. PDF, 추출 페이지 텍스트, PDF URL, 경고, 실시간 강연 음성은 저장하지 않습니다.
 6. 같은 브라우저에서 저장 용어집을 불러오면 Gemini 분석 API를 다시 호출하지 않고 용어와 PhraseSet으로 준비 화면을 구성합니다.
 7. 검증된 용어와 PDF에 존재하는 영문 확장 표기를 Google STT `PhraseSet`에 전달합니다.
 8. 브라우저 마이크 음성을 16kHz mono PCM으로 변환해 WebSocket으로 보냅니다.
@@ -117,25 +118,33 @@ API 키와 Google 인증정보는 브라우저에 전달하지 않고 서버 환
 | `GET` | `/api/health` | Gemini·Google STT 설정 여부 확인 |
 | `GET` | `/api/demo` | 자격증명 없이 사용할 샘플 PDF·용어집 반환 |
 | `POST` | `/api/analyze` | PDF 페이지 텍스트를 받아 자동 용어집 생성 |
+| `GET` | `/api/dev/audio-fixtures` | 개발용 고정 실험 문장과 로컬 녹음 목록 반환 |
+| `POST` | `/api/dev/audio-fixtures` | 검증된 16kHz mono PCM WAV를 로컬 fixture로 저장 |
 | WebSocket | `/ws` | 마이크 오디오 업로드와 자막 이벤트 스트리밍 |
 
 WebSocket은 `start` 메시지로 `live` 또는 `demo` 모드를 시작합니다. 이 메시지에는 자동 용어집과 검증된 전체 `phraseSet`이 함께 포함되며, 실시간 모드에서는 이후 오디오 바이너리를 전송합니다. 서버는 `ready`, `interim`, `final`, `error`, `ended` 이벤트를 반환합니다. `final.detectedTerms`는 실제 출현 순서와 반복을 보존하며, 화면은 이를 최신순 설명 피드에 쌓고 `ended`를 받으면 자막을 보존한 채 결과 리포트로 이동합니다.
+
+`pnpm dev`는 Vite와 백엔드를 모두 `127.0.0.1`에 bind해 LAN 연결 자체를 받지 않습니다. `/api/dev/audio-fixtures`는 여기에 더해 `NODE_ENV=development`와 요청의 socket·Host·Origin을 검사합니다. 프로덕션의 개발 API 요청은 SPA HTML로 fallback하지 않고 JSON 404를 반환합니다.
 
 ## 폴더 구조
 
 ```text
 client/
   src/App.tsx                 전체 화면과 사용자 흐름
+  src/components/AudioFixtureRecorder.tsx  개발용 고정음원 녹음 UI
   src/hooks/useLectureStream.ts  WebSocket·자막 상태 관리
   src/lib/glossary-storage.ts 브라우저 용어집 v1 검증·저장·로드
   src/lib/pdf.ts              PDF.js 텍스트 추출
   src/lib/pcm-recorder.ts     마이크 PCM 변환
 server/
-  src/index.ts                HTTP API·WebSocket 서버
+  src/app.ts                  주입 가능한 HTTP 앱·개발용 API 경계
+  src/index.ts                HTTP listen·WebSocket 서버
+  src/services/audio-fixtures.ts  WAV 검증·원자적 저장·오프라인 PCM 로드
   src/services/glossary.ts    Gemini·원문 검증·PhraseSet 생성
   src/services/speech.ts      Google STT V2 스트리밍
   src/services/demo.ts        발표용 샘플 데이터
 docs/HANDOFF.md               인수인계 상태와 다음 작업
+test-fixtures/stt/            고정 실험 문장과 Git 제외 로컬 WAV
 Dockerfile                    Cloud Run용 다단계 이미지
 ```
 
@@ -153,6 +162,20 @@ pnpm dev
 - 백엔드 API: `http://localhost:8787`
 
 환경변수 없이도 첫 화면에서 `샘플 강연 바로 체험하기`를 선택해 데모를 실행할 수 있습니다.
+
+### 개발용 고정음원 녹음
+
+`pnpm dev`로 `http://localhost:5173`을 열면 첫 화면 아래에 `개발용 고정음원 녹음` 카드가 나타납니다. 고정 문장을 한 번 읽어 저장하면 다음 파일이 만들어집니다.
+
+- 오디오: `test-fixtures/stt/audio/*.wav`
+- 로컬 메타데이터: `test-fixtures/stt/manifest.local.json`
+- 형식: canonical RIFF/WAVE, PCM1, mono, 16kHz, 16-bit, 최대 120초·3,840,000 PCM 바이트
+
+두 파일은 Git과 Docker build context에서 제외되며 자동 만료되지 않습니다. 화자 label은 실제 이름이 아닌 `speaker-a`, `speaker-b` 가명만 사용하고, 필요 없어진 파일은 직접 삭제합니다. 녹음 시작 시 화자·환경·실험문장을 snapshot하므로 준비된 WAV의 메타데이터가 이후 화면 선택과 섞이지 않습니다. 브라우저 timer가 지연돼도 capture 계층이 PCM을 3,840,000바이트에서 hard cap합니다.
+
+저장 시 `.writer.lock`을 짧게 획득해 같은 fixture root를 연 복수 개발 서버의 manifest 갱신을 직렬화합니다. 비정상 종료로 60초 이상 남은 lock은 다음 저장이 회수합니다. 저장 모듈은 PCM을 15,000바이트 이하의 짝수 길이 청크로 바이트 손실 없이 다시 읽을 수 있지만 실제 Google STT 호출과 정확도 평가는 이번 기능에 포함하지 않습니다.
+
+이 경계는 동일 사용자가 제어하는 로컬 개발 환경을 대상으로 합니다. 서버가 직접 사용하는 fixture root·audio·파일의 symlink와 생성 경로 이탈은 거부하지만, 악의적인 동일 사용자 프로세스와 모든 ancestor symlink/TOCTOU를 격리하는 보안 sandbox는 아닙니다.
 
 ## 환경변수
 
@@ -209,7 +232,8 @@ gcloud run deploy lecture-context-ai \
 
 ## 개인정보와 비용 원칙
 
-- 음성 원본과 PDF 파일을 서버나 브라우저 저장소에 영구 저장하지 않습니다.
+- 실시간 강연 음성과 PDF 파일은 서버나 브라우저 저장소에 영구 저장하지 않습니다.
+- 예외적으로 개발자가 녹음 카드에서 명시적으로 만든 처리 음성만 프로젝트 로컬 fixture에 저장하며, Git·Docker에는 포함하지 않습니다.
 - 브라우저 저장소에는 검증된 용어집과 PhraseSet만 저장합니다. API 키, PDF URL, 추출 페이지 텍스트, 분석 경고도 저장하지 않습니다.
 - Gemini는 새 PDF 업로드 시 한 번만 호출합니다. 저장 용어집을 다시 사용할 때는 호출하지 않아 실시간 지연과 토큰 비용을 줄입니다.
 - STT는 전송한 오디오 길이를 기준으로 과금될 수 있습니다.
@@ -226,6 +250,7 @@ gcloud run deploy lecture-context-ai \
 - Google STT API 연결과 한국어 음성 응답은 검증했지만, 실제 발표에 사용할 브라우저·마이크 조합의 권한과 음질은 별도 현장 확인이 필요합니다.
 - 긴 강연을 위한 STT 스트림 자동 재연결은 아직 구현하지 않았습니다.
 - 실제 발화 시작 시점을 신뢰성 있게 추적하지 않으므로 결과 화면에서 실시간 표시 지연을 추정해 보여주지 않습니다.
+- 개발용 고정음원은 capture와 offline replay 입력까지만 제공합니다. PhraseSet 적용 전후 Google STT 정확도 측정은 후속 실험입니다.
 - 쉬운 용어 정의는 제공하지만 `이 용어가 지금 등장한 이유`를 설명하는 맥락 문장은 다음 버전 작업입니다.
 
 현재 상태와 후속 작업은 [인수인계 문서](docs/HANDOFF.md)를 참고하세요. 논문 연구문제, 평가 설계, 발표 흐름은 [논문·발표 구성안](docs/PAPER_PRESENTATION_PLAN.md)에 정리되어 있습니다.

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n api,web -c magenta,cyan \"tsx watch server/src/index.ts\" \"vite --host 0.0.0.0\"",
+    "dev": "NODE_ENV=development concurrently -k -n api,web -c magenta,cyan \"tsx watch server/src/index.ts\" \"vite\"",
     "build": "vite build && tsc -p server/tsconfig.json",
     "start": "node dist/server/index.js",
     "test": "vitest run --config vitest.config.ts",

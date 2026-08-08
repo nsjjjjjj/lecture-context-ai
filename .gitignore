@@ -6,3 +6,9 @@ dist
 .DS_Store
 coverage
 .vite
+test-fixtures/stt/audio/*.wav
+!test-fixtures/stt/audio/.gitkeep
+test-fixtures/stt/audio/.*.tmp-*
+test-fixtures/stt/manifest.local.json
+test-fixtures/stt/manifest.local.json.tmp-*
+test-fixtures/stt/.writer.lock

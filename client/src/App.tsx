@@ -29,6 +29,7 @@ import {
   X
 } from "lucide-react";
 import { analyzePdf, getDemo, getHealth } from "./lib/api";
+import { AudioFixtureRecorder } from "./components/AudioFixtureRecorder";
 import {
   loadStoredGlossaryReadyState,
   requireNonEmptyGlossary,
@@ -95,7 +96,7 @@ function Header({ stage, onHome }: { stage: Stage; onHome: () => void }) {
         </div>
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
           <ShieldCheck className="size-4 text-emerald-300" />
-          음성 저장 안 함
+          실시간 강연 음성 미저장
         </div>
       </div>
     </header>
@@ -133,7 +134,7 @@ function StoredGlossaryLibrary({
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-sm font-extrabold text-white"><Database className="size-4 text-cyan-300" /> 이 브라우저의 용어집</div>
-          <p className="mt-1 text-xs leading-5 text-slate-500">분석 결과만 이 브라우저에 저장됩니다. PDF와 음성은 저장하지 않습니다.</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">분석 결과만 이 브라우저에 저장됩니다. PDF와 실시간 강연 음성은 저장하지 않습니다.</p>
         </div>
         <span className="shrink-0 rounded-full bg-white/[0.06] px-2.5 py-1 text-[10px] font-black text-slate-400">{glossaries.length}개</span>
       </div>
@@ -320,6 +321,7 @@ function UploadScreen({
             onDelete={onDeleteGlossary}
             onReset={onResetGlossaries}
           />
+          {import.meta.env.DEV && <AudioFixtureRecorder />}
         </div>
       </section>
     </main>
@@ -462,7 +464,7 @@ function ReadyScreen({
           ) : (
             <div className="mt-5 flex items-start gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.055] p-4 text-xs leading-5 text-slate-300">
               <Database className="mt-0.5 size-4 shrink-0 text-cyan-300" />
-              <span>{glossaryOnly ? "이 브라우저에 저장된 용어집입니다." : "용어집을 이 브라우저에 자동 저장했습니다."} PDF, 추출한 페이지 텍스트, 음성은 저장하지 않습니다.</span>
+              <span>{glossaryOnly ? "이 브라우저에 저장된 용어집입니다." : "용어집을 이 브라우저에 자동 저장했습니다."} PDF, 추출한 페이지 텍스트, 실시간 강연 음성은 저장하지 않습니다.</span>
             </div>
           )}
 
@@ -597,7 +599,7 @@ function LiveScreen({
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.07] pt-4 text-[11px] text-slate-600 sm:text-xs">
-              <div className="flex items-center gap-2"><Mic className="size-4 text-rose-300" /> 음성을 서버에 저장하지 않습니다</div>
+              <div className="flex items-center gap-2"><Mic className="size-4 text-rose-300" /> 실시간 강연 음성을 서버에 저장하지 않습니다</div>
               <div className="flex items-center gap-2"><Keyboard className="size-4" /> 고대비·큰 글씨 지원</div>
             </div>
           </section>
@@ -691,7 +693,7 @@ function ResultsScreen({ analysis, lines, onRestart, onHome }: { analysis: Analy
         </section>
 
         <section className="rounded-[1.6rem] border border-white/[0.08] bg-white/[0.035] p-6">
-          <div className="flex items-center justify-between"><div className="text-sm font-extrabold text-white">확정 자막 기록</div><div className="text-xs text-slate-600">음성 원본은 저장하지 않음</div></div>
+          <div className="flex items-center justify-between"><div className="text-sm font-extrabold text-white">확정 자막 기록</div><div className="text-xs text-slate-600">실시간 강연 음성은 저장하지 않음</div></div>
           <div className="mt-5 max-h-[330px] space-y-3 overflow-y-auto pr-2">
             {lines.length ? lines.map((line, index) => (
               <div key={line.id} className="flex gap-4 rounded-2xl border border-white/[0.055] bg-[#07111f]/55 p-4">

@@ -1,16 +1,13 @@
 import "dotenv/config";
 import http from "node:http";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import express from "express";
 import { WebSocket, WebSocketServer } from "ws";
-import { analyzeRequestSchema, type GlossaryTerm, type StartMessage, type TranscriptEvent } from "./types.js";
-import { analyzeGlossary, matchTerms } from "./services/glossary.js";
-import { demoPages, demoTerms, demoTranscript } from "./services/demo.js";
+import { createApp, resolveListenHost } from "./app.js";
+import { type GlossaryTerm, type StartMessage, type TranscriptEvent } from "./types.js";
+import { matchTerms } from "./services/glossary.js";
+import { demoTranscript } from "./services/demo.js";
 import {
   createGoogleSpeechSession,
   getGoogleSpeechConfigurationError,
-  isGoogleSpeechConfigured,
   type SpeechSession
 } from "./services/speech.js";
 import { resolveStartContext } from "./services/ws-start.js";
@@ -22,49 +19,11 @@ import {
   type SpeechSessionSlot
 } from "./services/ws-lifecycle.js";
 
-const app = express();
+const app = createApp();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 const port = Number(process.env.PORT || 8787);
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const clientDist = path.resolve(__dirname, "../client");
-
-app.disable("x-powered-by");
-app.use(express.json({ limit: "2mb" }));
-
-app.get("/api/health", (_request, response) => {
-  response.json({
-    ok: true,
-    services: {
-      speech: isGoogleSpeechConfigured(),
-      gemini: Boolean(process.env.GEMINI_API_KEY)
-    }
-  });
-});
-
-app.get("/api/demo", (_request, response) => {
-  response.json({
-    title: "생성형 AI 입문 강연",
-    pages: demoPages,
-    terms: demoTerms,
-    phraseSet: demoTerms.map((term) => term.term),
-    mode: "demo"
-  });
-});
-
-app.post("/api/analyze", async (request, response) => {
-  const parsed = analyzeRequestSchema.safeParse(request.body);
-  if (!parsed.success) {
-    response.status(400).json({ error: "PDF 분석 요청 형식이 올바르지 않습니다.", issues: parsed.error.issues });
-    return;
-  }
-  try {
-    const result = await analyzeGlossary(parsed.data.title, parsed.data.pages);
-    response.json(result);
-  } catch (error) {
-    response.status(500).json({ error: error instanceof Error ? error.message : "PDF 분석에 실패했습니다." });
-  }
-});
+const host = resolveListenHost(process.env.NODE_ENV, process.env.HOST);
 
 server.on("upgrade", (request, socket, head) => {
   const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
@@ -182,11 +141,6 @@ wss.on("connection", (websocket) => {
   });
 });
 
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(clientDist, { index: false, maxAge: "1h" }));
-  app.get("*splat", (_request, response) => response.sendFile(path.join(clientDist, "index.html")));
-}
-
-server.listen(port, () => {
-  console.log(`강연맥락 AI 서버가 http://localhost:${port} 에서 실행 중입니다.`);
+server.listen(port, host, () => {
+  console.log(`강연맥락 AI 서버가 http://${host}:${port} 에서 실행 중입니다.`);
 });
