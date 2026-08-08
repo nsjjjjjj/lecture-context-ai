@@ -81,8 +81,12 @@ export function createLectureStartMessage(mode: LectureMode, terms: GlossaryTerm
   return { type: "start", mode, terms, phraseSet };
 }
 
-export function shouldTransitionToResults(stage: string, status: LectureStreamStatus): boolean {
-  return stage === "live" && status === "ended";
+export function shouldTransitionToResults(
+  stage: string,
+  previousStatus: LectureStreamStatus,
+  status: LectureStreamStatus
+): boolean {
+  return stage === "live" && previousStatus !== "ended" && status === "ended";
 }
 
 export function isCurrentLectureSession(activeGeneration: number, eventGeneration: number): boolean {

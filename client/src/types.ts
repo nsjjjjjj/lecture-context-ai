@@ -18,7 +18,7 @@ export type AnalysisResult = {
   pages: PageText[];
   terms: GlossaryTerm[];
   phraseSet: string[];
-  mode: "gemini" | "heuristic" | "demo";
+  mode: "gemini" | "heuristic" | "demo" | "saved";
   warning?: string;
   pdfUrl?: string;
 };

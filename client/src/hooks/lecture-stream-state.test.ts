@@ -50,9 +50,20 @@ describe("lecture stream lifecycle", () => {
   });
 
   it("transitions to results only when an active lecture has ended", () => {
-    expect(shouldTransitionToResults("live", "ended")).toBe(true);
-    expect(shouldTransitionToResults("results", "ended")).toBe(false);
-    expect(shouldTransitionToResults("live", "ready")).toBe(false);
+    expect(shouldTransitionToResults("live", "ready", "ended")).toBe(true);
+    expect(shouldTransitionToResults("results", "ready", "ended")).toBe(false);
+    expect(shouldTransitionToResults("live", "connecting", "ready")).toBe(false);
+  });
+
+  it("does not treat a previous session's ended status as a new ending during restart", () => {
+    const ended = lectureStreamReducer(createInitialLectureStreamState("rag"), { type: "ended" });
+
+    expect(shouldTransitionToResults("live", ended.status, ended.status)).toBe(false);
+
+    const restarting = lectureStreamReducer(ended, { type: "starting", mode: "demo", activeTermId: "rag" });
+    expect(restarting.status).toBe("connecting");
+    expect(restarting.lines).toEqual([]);
+    expect(shouldTransitionToResults("live", ended.status, restarting.status)).toBe(false);
   });
 
   it("rejects asynchronous completion from an older session", () => {

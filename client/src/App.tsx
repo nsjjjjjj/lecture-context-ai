@@ -5,6 +5,7 @@ import {
   ArrowRight,
   BookOpen,
   Check,
+  Database,
   FileText,
   Gauge,
   Highlighter,
@@ -14,11 +15,13 @@ import {
   Mic,
   MonitorUp,
   Pause,
+  Pencil,
   Play,
   RotateCcw,
   ScanText,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Upload,
   Volume2,
   WandSparkles,
@@ -27,12 +30,32 @@ import {
   X
 } from "lucide-react";
 import { analyzePdf, getDemo, getHealth } from "./lib/api";
+import {
+  loadStoredGlossaryReadyState,
+  requireNonEmptyGlossary,
+  shouldSyncGlossaryStorageEvent,
+  type AppStage as Stage
+} from "./app-state";
+import {
+  clearStoredGlossaries,
+  deleteStoredGlossary,
+  glossaryStorageIssue,
+  listStoredGlossaries,
+  renameStoredGlossary,
+  saveAnalyzedGlossary,
+  type GlossaryStorageIssue,
+  type StoredGlossary
+} from "./lib/glossary-storage";
 import { useLectureStream } from "./hooks/useLectureStream";
 import { shouldTransitionToResults } from "./hooks/lecture-stream-state";
 import type { AnalysisResult, GlossaryTerm, ServiceStatus, TranscriptLine } from "./types";
 
-type Stage = "upload" | "analyzing" | "ready" | "live" | "results";
 type FontScale = "normal" | "large" | "xlarge";
+
+export const UPLOAD_CARD_GLOW_PROPS = {
+  "aria-hidden": true,
+  className: "pointer-events-none absolute -inset-3 rounded-[2.4rem] bg-gradient-to-br from-cyan-300/15 via-transparent to-blue-500/10 blur-2xl"
+} as const;
 
 function Logo() {
   return (
@@ -89,18 +112,114 @@ function ServicePill({ status }: { status: ServiceStatus | null }) {
   );
 }
 
+function StoredGlossaryLibrary({
+  glossaries,
+  issue,
+  onLoad,
+  onRename,
+  onDelete,
+  onReset
+}: {
+  glossaries: StoredGlossary[];
+  issue: GlossaryStorageIssue | null;
+  onLoad: (id: string) => void;
+  onRename: (id: string, name: string) => void;
+  onDelete: (id: string) => void;
+  onReset: () => void;
+}) {
+  const canReset = issue?.code === "invalid" || issue?.code === "version";
+  return (
+    <section className="mt-4 rounded-[1.6rem] border border-white/[0.08] bg-[#0b1727]/95 p-5 shadow-xl shadow-black/20 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-extrabold text-white"><Database className="size-4 text-cyan-300" /> 이 브라우저의 용어집</div>
+          <p className="mt-1 text-xs leading-5 text-slate-500">분석 결과만 이 브라우저에 저장됩니다. PDF와 음성은 저장하지 않습니다.</p>
+        </div>
+        <span className="shrink-0 rounded-full bg-white/[0.06] px-2.5 py-1 text-[10px] font-black text-slate-400">{glossaries.length}개</span>
+      </div>
+
+      {issue && (
+        <div role="alert" className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-4 text-xs leading-5 text-rose-100">
+          <div className="flex items-start gap-3"><X className="mt-0.5 size-4 shrink-0" /> {issue.message}</div>
+          {canReset && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm("호환되지 않거나 손상된 저장 데이터를 이 브라우저에서 초기화할까요? 저장된 용어집이 모두 삭제됩니다.")) onReset();
+              }}
+              className="danger-button mt-3"
+            >
+              <RotateCcw className="size-3.5" /> 저장 데이터 초기화
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="mt-4 max-h-[260px] space-y-2 overflow-y-auto pr-1">
+        {glossaries.length ? glossaries.map((glossary) => (
+          <div key={glossary.id} className="flex items-center gap-2 rounded-2xl border border-white/[0.065] bg-[#07111f]/65 p-2 transition hover:border-cyan-300/20">
+            <button type="button" onClick={() => onLoad(glossary.id)} className="min-w-0 flex-1 rounded-xl px-2 py-2 text-left outline-none ring-cyan-300 focus-visible:ring-2">
+              <div className="truncate text-sm font-extrabold text-white">{glossary.name}</div>
+              <div className="mt-1 text-[11px] font-semibold text-slate-500">전문용어 {glossary.terms.length}개 · {new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(new Date(glossary.updatedAt))}</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const name = window.prompt("새 용어집 이름을 입력해 주세요.", glossary.name);
+                if (name !== null) onRename(glossary.id, name);
+              }}
+              className="control-button !size-9 !min-h-0 !min-w-0 shrink-0"
+              aria-label={`${glossary.name} 이름 바꾸기`}
+              title="이름 바꾸기"
+            >
+              <Pencil className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`“${glossary.name}” 용어집을 이 브라우저에서 삭제할까요?`)) onDelete(glossary.id);
+              }}
+              className="danger-button !size-9 !min-h-0 !p-0 shrink-0"
+              aria-label={`${glossary.name} 삭제`}
+              title="삭제"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          </div>
+        )) : (
+          <div className="rounded-2xl border border-dashed border-white/[0.08] px-4 py-6 text-center text-xs leading-5 text-slate-600">
+            PDF 분석을 마치면 용어집이 여기에 자동 저장됩니다.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function UploadScreen({
   onFile,
   onDemo,
   busy,
   error,
-  serviceStatus
+  serviceStatus,
+  storedGlossaries,
+  storageIssue,
+  onLoadGlossary,
+  onRenameGlossary,
+  onDeleteGlossary,
+  onResetGlossaries
 }: {
   onFile: (file: File) => void;
   onDemo: () => void;
   busy: boolean;
   error: string;
   serviceStatus: ServiceStatus | null;
+  storedGlossaries: StoredGlossary[];
+  storageIssue: GlossaryStorageIssue | null;
+  onLoadGlossary: (id: string) => void;
+  onRenameGlossary: (id: string, name: string) => void;
+  onDeleteGlossary: (id: string) => void;
+  onResetGlossaries: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -145,7 +264,7 @@ function UploadScreen({
         </div>
 
         <div className="relative mx-auto w-full max-w-[590px]">
-          <div className="absolute -inset-3 rounded-[2.4rem] bg-gradient-to-br from-cyan-300/15 via-transparent to-blue-500/10 blur-2xl" />
+          <div {...UPLOAD_CARD_GLOW_PROPS} />
           <div className="relative rounded-[2rem] border border-white/10 bg-[#0b1727]/95 p-5 shadow-2xl shadow-black/30 sm:p-7">
             <div className="mb-6 flex items-center justify-between">
               <div>
@@ -193,6 +312,14 @@ function UploadScreen({
               <Play className="size-4 fill-current" /> 샘플 강연 바로 체험하기
             </button>
           </div>
+          <StoredGlossaryLibrary
+            glossaries={storedGlossaries}
+            issue={storageIssue}
+            onLoad={onLoadGlossary}
+            onRename={onRenameGlossary}
+            onDelete={onDeleteGlossary}
+            onReset={onResetGlossaries}
+          />
         </div>
       </section>
     </main>
@@ -235,22 +362,50 @@ function AnalyzingScreen({ fileName, progress }: { fileName: string; progress: n
   );
 }
 
-function ReadyScreen({ analysis, speechReady, onStart, onBack }: { analysis: AnalysisResult; speechReady: boolean; onStart: (mode: "live" | "demo") => void; onBack: () => void }) {
+function ReadyScreen({
+  analysis,
+  speechReady,
+  analysisSaved,
+  storageIssue,
+  storedGlossaries,
+  onStart,
+  onBack,
+  onRetryStorage,
+  onDeleteGlossary,
+  onResetGlossaries
+}: {
+  analysis: AnalysisResult;
+  speechReady: boolean;
+  analysisSaved: boolean;
+  storageIssue: GlossaryStorageIssue | null;
+  storedGlossaries: StoredGlossary[];
+  onStart: (mode: "live" | "demo") => void;
+  onBack: () => void;
+  onRetryStorage: () => void;
+  onDeleteGlossary: (id: string) => void;
+  onResetGlossaries: () => void;
+}) {
   const visibleTerms = analysis.terms.slice(0, 12);
+  const glossaryOnly = analysis.mode === "saved";
+  const modeLabel = analysis.mode === "gemini" ? "GEMINI" : analysis.mode === "saved" ? "저장됨" : analysis.mode.toUpperCase();
+  const canReset = storageIssue?.code === "invalid" || storageIssue?.code === "version";
+  const needsSpace = storageIssue?.code === "quota" || storageIssue?.code === "limit";
   return (
     <main className="mx-auto max-w-[1240px] px-5 py-12 sm:px-8 sm:py-16">
-      <button onClick={onBack} className="text-button"><ArrowLeft className="size-4" /> 다른 PDF 선택</button>
+      <button onClick={onBack} className="text-button"><ArrowLeft className="size-4" /> 처음 화면으로</button>
       <div className="mt-8 grid gap-8 lg:grid-cols-[.82fr_1.18fr]">
         <section>
-          <div className="eyebrow"><Check className="size-3.5" /> 자동 분석 완료</div>
+          <div className="eyebrow"><Check className="size-3.5" /> {glossaryOnly ? "저장된 용어집 불러옴" : analysisSaved ? "자동 분석·저장 완료" : "자동 분석 완료 · 저장 필요"}</div>
           <h2 className="mt-5 text-4xl font-black leading-tight tracking-[-0.055em] text-white sm:text-5xl">강연을 시작할<br />준비가 됐어요.</h2>
           <p className="mt-5 max-w-[460px] text-base leading-7 text-slate-400">
-            PDF에 실제로 존재하는 표기만 검증해 {analysis.phraseSet.length}개의 Google STT 힌트를 만들었습니다.
+            {glossaryOnly
+              ? `저장된 전문용어와 ${analysis.phraseSet.length}개의 PhraseSet을 바로 Google STT에 전달합니다.`
+              : `PDF에 실제로 존재하는 표기만 검증해 ${analysis.phraseSet.length}개의 Google STT 힌트를 만들었습니다.`}
           </p>
 
           <div className="mt-8 grid grid-cols-3 gap-3">
             {[
-              [analysis.pages.length, "PDF 페이지"],
+              [analysis.pages.length || "—", glossaryOnly ? "PDF 미저장" : "PDF 페이지"],
               [analysis.terms.length, "전문용어"],
               [analysis.phraseSet.length, "PhraseSet"]
             ].map(([value, label]) => (
@@ -262,6 +417,54 @@ function ReadyScreen({ analysis, speechReady, onStart, onBack }: { analysis: Ana
           </div>
 
           {analysis.warning && <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/[0.07] p-4 text-xs leading-5 text-amber-100">{analysis.warning}</div>}
+          {!analysisSaved ? (
+            <div role="alert" className="mt-5 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-4 text-xs leading-5 text-rose-100">
+              <div className="flex items-start gap-3"><X className="mt-0.5 size-4 shrink-0" /> {storageIssue?.message || "이 분석 결과는 아직 브라우저에 저장되지 않았습니다."}</div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {canReset ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm("호환되지 않거나 손상된 저장 데이터를 초기화하고 현재 분석 결과를 다시 저장할까요? 기존 저장 용어집이 모두 삭제됩니다.")) onResetGlossaries();
+                    }}
+                    className="danger-button"
+                  >
+                    <RotateCcw className="size-3.5" /> 초기화 후 현재 분석 저장
+                  </button>
+                ) : (
+                  <button type="button" onClick={onRetryStorage} className="secondary-button !min-h-10 !px-3 !py-2 text-xs">
+                    <RotateCcw className="size-3.5" /> 저장 다시 시도
+                  </button>
+                )}
+              </div>
+              {needsSpace && storedGlossaries.length > 0 && (
+                <div className="mt-4 border-t border-rose-200/10 pt-3">
+                  <p className="mb-2 text-rose-100/75">기존 용어집을 삭제한 뒤 현재 분석을 다시 저장할 수 있습니다.</p>
+                  <div className="max-h-36 space-y-1.5 overflow-y-auto pr-1">
+                    {storedGlossaries.map((glossary) => (
+                      <div key={glossary.id} className="flex items-center justify-between gap-3 rounded-xl bg-black/15 px-3 py-2">
+                        <span className="min-w-0 truncate text-slate-200">{glossary.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`“${glossary.name}” 용어집을 삭제할까요? 삭제 후 위의 저장 다시 시도를 눌러 주세요.`)) onDeleteGlossary(glossary.id);
+                          }}
+                          className="danger-button !min-h-8 shrink-0 !px-2 !py-1"
+                        >
+                          <Trash2 className="size-3" /> 삭제
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-5 flex items-start gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.055] p-4 text-xs leading-5 text-slate-300">
+              <Database className="mt-0.5 size-4 shrink-0 text-cyan-300" />
+              <span>{glossaryOnly ? "이 브라우저에 저장된 용어집입니다." : "용어집을 이 브라우저에 자동 저장했습니다."} PDF, 추출한 페이지 텍스트, 음성은 저장하지 않습니다.</span>
+            </div>
+          )}
 
           <div className="mt-8 space-y-3">
             <button disabled={!speechReady} onClick={() => onStart("live")} className="primary-button w-full disabled:cursor-not-allowed disabled:opacity-40">
@@ -280,7 +483,7 @@ function ReadyScreen({ analysis, speechReady, onStart, onBack }: { analysis: Ana
               <div className="text-sm font-extrabold text-white">자동 추출된 전문용어</div>
               <div className="mt-1 text-xs text-slate-500">검수 없이 PDF 원문과 자동 대조된 항목</div>
             </div>
-            <div className="rounded-full bg-cyan-300/10 px-3 py-1.5 text-xs font-extrabold text-cyan-300">{analysis.mode === "gemini" ? "GEMINI" : analysis.mode.toUpperCase()}</div>
+            <div className="rounded-full bg-cyan-300/10 px-3 py-1.5 text-xs font-extrabold text-cyan-300">{modeLabel}</div>
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {visibleTerms.map((term) => (
@@ -340,6 +543,7 @@ function LiveScreen({
   const currentLine = stream.lines.at(-1);
   const previousLines = stream.lines.slice(-4, -1);
   const currentPage = activeTerm ? analysis.pages.find((page) => page.pageNumber === activeTerm.pageNumber) : analysis.pages[0];
+  const glossaryOnly = analysis.mode === "saved";
   const sizeClass = fontScale === "xlarge" ? "caption-xlarge" : fontScale === "large" ? "caption-large" : "caption-normal";
   const fontScaleLabel = fontScale === "xlarge" ? "매우 크게" : fontScale === "large" ? "크게" : "보통";
 
@@ -409,7 +613,7 @@ function LiveScreen({
             <section className="min-h-[260px] min-w-0 rounded-[1.6rem] border border-cyan-300/15 bg-gradient-to-br from-cyan-300/[0.09] to-blue-400/[0.03] p-5 sm:p-6 md:min-h-[320px] lg:min-h-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-cyan-300"><BookOpen className="size-4" /> CONTEXT</div>
-                {activeTerm && <span className="rounded-full bg-cyan-300 px-2.5 py-1 text-[10px] font-black text-slate-950">PDF {activeTerm.pageNumber}</span>}
+                {activeTerm && <span className="rounded-full bg-cyan-300 px-2.5 py-1 text-[10px] font-black text-slate-950">{glossaryOnly ? "원본 p." : "PDF "}{activeTerm.pageNumber}</span>}
               </div>
               {activeTerm ? (
                 <div className="mt-5 min-w-0">
@@ -424,11 +628,11 @@ function LiveScreen({
             <section className="flex min-h-[320px] min-w-0 flex-col overflow-hidden rounded-[1.6rem] border border-white/[0.08] bg-white/[0.035] lg:min-h-[220px]">
               <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
                 <div className="flex items-center gap-2 text-xs font-extrabold text-slate-300"><FileText className="size-4 text-cyan-300" /> 관련 자료</div>
-                <span className="text-[11px] font-bold text-slate-600">PAGE {currentPage?.pageNumber || 1}</span>
+                <span className="text-[11px] font-bold text-slate-600">{currentPage ? `PAGE ${currentPage.pageNumber}` : "저장 안 됨"}</span>
               </div>
               {analysis.pdfUrl ? (
                 <iframe title={`PDF ${currentPage?.pageNumber || 1}페이지`} src={`${analysis.pdfUrl}#page=${currentPage?.pageNumber || 1}&view=FitH&toolbar=0`} className="min-h-[260px] w-full flex-1 bg-white" />
-              ) : (
+              ) : currentPage ? (
                 <div className="lecture-slide relative flex min-h-[260px] flex-1 flex-col justify-center overflow-hidden bg-[#f3f5f7] p-6 text-slate-900">
                   <div className="absolute right-[-60px] top-[-60px] size-44 rounded-full bg-cyan-300/40 blur-2xl" />
                   <div className="relative text-[10px] font-black tracking-[0.2em] text-cyan-700">LECTURE SLIDE</div>
@@ -436,6 +640,12 @@ function LiveScreen({
                   <div className="relative mt-5 h-1 w-12 bg-cyan-500" />
                   <p className="relative mt-5 line-clamp-5 text-xs font-medium leading-6 text-slate-600">{currentPage?.text}</p>
                   <div className="relative mt-auto pt-5 text-[10px] font-bold text-slate-400">강연맥락 AI · {currentPage?.pageNumber || 1}</div>
+                </div>
+              ) : (
+                <div className="flex min-h-[260px] flex-1 flex-col items-center justify-center bg-[#091523] p-7 text-center">
+                  <div className="grid size-12 place-items-center rounded-2xl border border-white/[0.08] bg-white/[0.045] text-slate-500"><FileText className="size-5" /></div>
+                  <div className="mt-4 text-sm font-extrabold text-slate-300">PDF 미리보기 없음</div>
+                  <p className="mt-2 max-w-[300px] text-xs leading-5 text-slate-600">저장 용어집에는 PDF와 페이지 텍스트가 포함되지 않습니다. 자막 강조와 쉬운 설명은 그대로 제공됩니다.</p>
                 </div>
               )}
             </section>
@@ -516,16 +726,45 @@ export function App() {
   const [error, setError] = useState("");
   const [progress, setProgress] = useState(0);
   const [fileName, setFileName] = useState("");
+  const [storedGlossaries, setStoredGlossaries] = useState<StoredGlossary[]>([]);
+  const [storageIssue, setStorageIssue] = useState<GlossaryStorageIssue | null>(null);
+  const [analysisSaved, setAnalysisSaved] = useState(false);
   const [fontScale, setFontScale] = useState<FontScale>("normal");
   const [highContrast, setHighContrast] = useState(false);
   const stream = useLectureStream(analysis?.terms || [], analysis?.phraseSet || []);
+  const previousStreamStatusRef = useRef(stream.status);
 
   useEffect(() => {
     void getHealth().then(setServiceStatus).catch(() => setServiceStatus(null));
   }, []);
 
   useEffect(() => {
-    if (shouldTransitionToResults(stage, stream.status)) setStage("results");
+    try {
+      setStoredGlossaries(listStoredGlossaries(window.localStorage));
+    } catch (caught) {
+      setStorageIssue(glossaryStorageIssue(caught));
+    }
+  }, []);
+
+  useEffect(() => {
+    const syncGlossaries = (event: StorageEvent) => {
+      if (!shouldSyncGlossaryStorageEvent(event.key)) return;
+      try {
+        setStoredGlossaries(listStoredGlossaries(window.localStorage));
+        setStorageIssue(null);
+      } catch (caught) {
+        setStoredGlossaries([]);
+        setStorageIssue(glossaryStorageIssue(caught));
+      }
+    };
+    window.addEventListener("storage", syncGlossaries);
+    return () => window.removeEventListener("storage", syncGlossaries);
+  }, []);
+
+  useEffect(() => {
+    const previousStatus = previousStreamStatusRef.current;
+    previousStreamStatusRef.current = stream.status;
+    if (shouldTransitionToResults(stage, previousStatus, stream.status)) setStage("results");
   }, [stage, stream.status]);
 
   const reset = () => {
@@ -535,7 +774,22 @@ export function App() {
     setError("");
     setProgress(0);
     setFileName("");
+    setAnalysisSaved(false);
     setStage("upload");
+  };
+
+  const persistAnalysis = (result: AnalysisResult, fallbackName: string): StoredGlossary | null => {
+    try {
+      const saved = saveAnalyzedGlossary(window.localStorage, result, result.title.trim() || fallbackName);
+      setStoredGlossaries(listStoredGlossaries(window.localStorage));
+      setStorageIssue(null);
+      setAnalysisSaved(true);
+      return saved;
+    } catch (caught) {
+      setStorageIssue(glossaryStorageIssue(caught));
+      setAnalysisSaved(false);
+      return null;
+    }
   };
 
   const handleFile = async (file: File) => {
@@ -547,9 +801,11 @@ export function App() {
       const { extractPdfPages } = await import("./lib/pdf");
       const pages = await extractPdfPages(file, (current, total) => setProgress(10 + Math.round((current / total) * 32)));
       setProgress(56);
-      const result = await analyzePdf(file.name.replace(/\.pdf$/i, ""), pages);
+      const result = requireNonEmptyGlossary(await analyzePdf(file.name.replace(/\.pdf$/i, ""), pages));
       setProgress(100);
-      setAnalysis({ ...result, pdfUrl: URL.createObjectURL(file) });
+      const nextAnalysis = { ...result, pdfUrl: URL.createObjectURL(file) };
+      const saved = persistAnalysis(nextAnalysis, "강연 용어집");
+      setAnalysis(saved ? { ...nextAnalysis, terms: saved.terms, phraseSet: saved.phraseSet } : nextAnalysis);
       window.setTimeout(() => setStage("ready"), 420);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "PDF를 분석하지 못했습니다.");
@@ -563,13 +819,67 @@ export function App() {
     setStage("analyzing");
     setProgress(26);
     try {
-      const result = await getDemo();
+      const result = requireNonEmptyGlossary(await getDemo());
       setProgress(100);
-      setAnalysis(result);
+      const saved = persistAnalysis(result, "샘플 강연 용어집");
+      setAnalysis(saved ? { ...result, terms: saved.terms, phraseSet: saved.phraseSet } : result);
       window.setTimeout(() => setStage("ready"), 500);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "데모를 불러오지 못했습니다.");
       setStage("upload");
+    }
+  };
+
+  const handleLoadGlossary = async (id: string) => {
+    setError("");
+    try {
+      const readyState = loadStoredGlossaryReadyState(window.localStorage, id);
+      if (analysis?.pdfUrl) URL.revokeObjectURL(analysis.pdfUrl);
+      await stream.stop();
+      setAnalysis(readyState.analysis);
+      setFileName(readyState.fileName);
+      setStorageIssue(null);
+      setAnalysisSaved(true);
+      setStage(readyState.stage);
+    } catch (caught) {
+      setStorageIssue(glossaryStorageIssue(caught));
+    }
+  };
+
+  const handleRenameGlossary = (id: string, name: string) => {
+    try {
+      renameStoredGlossary(window.localStorage, id, name);
+      setStoredGlossaries(listStoredGlossaries(window.localStorage));
+      setStorageIssue(null);
+    } catch (caught) {
+      setStorageIssue(glossaryStorageIssue(caught));
+    }
+  };
+
+  const handleDeleteGlossary = (id: string) => {
+    try {
+      deleteStoredGlossary(window.localStorage, id);
+      setStoredGlossaries(listStoredGlossaries(window.localStorage));
+      setStorageIssue(null);
+    } catch (caught) {
+      setStorageIssue(glossaryStorageIssue(caught));
+    }
+  };
+
+  const retryAnalysisStorage = () => {
+    if (!analysis) return;
+    const saved = persistAnalysis(analysis, "강연 용어집");
+    if (saved) setAnalysis({ ...analysis, terms: saved.terms, phraseSet: saved.phraseSet });
+  };
+
+  const handleResetGlossaries = () => {
+    try {
+      clearStoredGlossaries(window.localStorage);
+      setStoredGlossaries([]);
+      setStorageIssue(null);
+      if (analysis && stage === "ready" && !analysisSaved) retryAnalysisStorage();
+    } catch (caught) {
+      setStorageIssue(glossaryStorageIssue(caught));
     }
   };
 
@@ -590,9 +900,36 @@ export function App() {
   return (
     <div className={`min-h-screen bg-[#07111f] text-slate-100 ${highContrast ? "contrast-more" : ""}`}>
       <Header stage={stage} onHome={reset} />
-      {stage === "upload" && <UploadScreen onFile={handleFile} onDemo={handleDemo} busy={false} error={error} serviceStatus={serviceStatus} />}
+      {stage === "upload" && (
+        <UploadScreen
+          onFile={handleFile}
+          onDemo={handleDemo}
+          busy={false}
+          error={error}
+          serviceStatus={serviceStatus}
+          storedGlossaries={storedGlossaries}
+          storageIssue={storageIssue}
+          onLoadGlossary={(id) => void handleLoadGlossary(id)}
+          onRenameGlossary={handleRenameGlossary}
+          onDeleteGlossary={handleDeleteGlossary}
+          onResetGlossaries={handleResetGlossaries}
+        />
+      )}
       {stage === "analyzing" && <AnalyzingScreen fileName={fileName} progress={progress} />}
-      {stage === "ready" && analysis && <ReadyScreen analysis={analysis} speechReady={Boolean(serviceStatus?.services.speech)} onStart={beginLecture} onBack={reset} />}
+      {stage === "ready" && analysis && (
+        <ReadyScreen
+          analysis={analysis}
+          speechReady={Boolean(serviceStatus?.services.speech)}
+          analysisSaved={analysisSaved}
+          storageIssue={storageIssue}
+          storedGlossaries={storedGlossaries}
+          onStart={beginLecture}
+          onBack={reset}
+          onRetryStorage={retryAnalysisStorage}
+          onDeleteGlossary={handleDeleteGlossary}
+          onResetGlossaries={handleResetGlossaries}
+        />
+      )}
       {stage === "live" && analysis && <LiveScreen analysis={analysis} stream={stream} fontScale={fontScale} onFontScale={cycleFontScale} highContrast={highContrast} onHighContrast={() => setHighContrast((value) => !value)} onFinish={finishLecture} />}
       {stage === "results" && analysis && <ResultsScreen analysis={analysis} lines={stream.lines} onRestart={() => beginLecture("demo")} onHome={reset} />}
     </div>
