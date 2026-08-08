@@ -7,8 +7,20 @@ import { WebSocket, WebSocketServer } from "ws";
 import { analyzeRequestSchema, type GlossaryTerm, type StartMessage, type TranscriptEvent } from "./types.js";
 import { analyzeGlossary, matchTerms } from "./services/glossary.js";
 import { demoPages, demoTerms, demoTranscript } from "./services/demo.js";
-import { createGoogleSpeechSession, isGoogleSpeechConfigured, type SpeechSession } from "./services/speech.js";
+import {
+  createGoogleSpeechSession,
+  getGoogleSpeechConfigurationError,
+  isGoogleSpeechConfigured,
+  type SpeechSession
+} from "./services/speech.js";
 import { resolveStartContext } from "./services/ws-start.js";
+import {
+  clearPendingSpeechEnd,
+  closeSpeechSessionForSocket,
+  consumeSpeechEndMessage,
+  requestLectureStop,
+  type SpeechSessionSlot
+} from "./services/ws-lifecycle.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -91,7 +103,7 @@ function startDemo(websocket: WebSocket, terms: GlossaryTerm[], onEnd: () => voi
 }
 
 wss.on("connection", (websocket) => {
-  let speechSession: SpeechSession | null = null;
+  const speechSessionSlot: SpeechSessionSlot = { active: null, pendingEndMessage: null };
   let terms: GlossaryTerm[] = [];
   let started = false;
   let ended = false;
@@ -106,16 +118,14 @@ wss.on("connection", (websocket) => {
 
   websocket.on("message", (data, isBinary) => {
     if (isBinary) {
-      if (speechSession) speechSession.writeAudio(Buffer.from(data as Buffer));
+      if (speechSessionSlot.active) speechSessionSlot.active.writeAudio(Buffer.from(data as Buffer));
       return;
     }
 
     try {
       const message = JSON.parse(data.toString()) as StartMessage | { type?: string };
       if (message.type === "stop") {
-        endOnce("강연을 종료했습니다.");
-        speechSession?.close();
-        speechSession = null;
+        requestLectureStop(speechSessionSlot, endOnce);
         return;
       }
       if (message.type !== "start" || started) return;
@@ -131,8 +141,9 @@ wss.on("connection", (websocket) => {
         return;
       }
 
-      if (!isGoogleSpeechConfigured()) {
-        send(websocket, { type: "error", message: "Google STT가 설정되지 않았습니다. 데모 모드를 이용해 주세요." });
+      const speechConfigurationError = getGoogleSpeechConfigurationError();
+      if (speechConfigurationError) {
+        send(websocket, { type: "error", message: `${speechConfigurationError} 데모 모드를 이용해 주세요.` });
         return;
       }
 
@@ -142,21 +153,22 @@ wss.on("connection", (websocket) => {
         onTranscript: (text, isFinal) => emitTranscript(websocket, text, isFinal, terms),
         onError: (error) => {
           sessionTerminated = true;
-          if (speechSession === createdSession) speechSession = null;
+          if (speechSessionSlot.active === createdSession) speechSessionSlot.active = null;
+          clearPendingSpeechEnd(speechSessionSlot);
           createdSession?.close();
           send(websocket, { type: "error", message: `음성인식 오류: ${error.message}` });
         },
         onEnd: () => {
           sessionTerminated = true;
-          if (speechSession === createdSession) speechSession = null;
-          endOnce("Google STT 연결이 종료되었습니다.");
+          if (speechSessionSlot.active === createdSession) speechSessionSlot.active = null;
+          endOnce(consumeSpeechEndMessage(speechSessionSlot, "Google STT 연결이 종료되었습니다."));
         }
       });
       if (sessionTerminated) {
         createdSession.close();
         return;
       }
-      speechSession = createdSession;
+      speechSessionSlot.active = createdSession;
       send(websocket, { type: "ready", message: "Google STT에 연결되었습니다." });
     } catch (error) {
       send(websocket, { type: "error", message: error instanceof Error ? error.message : "요청을 처리하지 못했습니다." });
@@ -165,7 +177,7 @@ wss.on("connection", (websocket) => {
 
   websocket.on("close", () => {
     ended = true;
-    speechSession?.close();
+    closeSpeechSessionForSocket(speechSessionSlot);
     timers.forEach(clearTimeout);
   });
 });

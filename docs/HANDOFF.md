@@ -2,7 +2,7 @@
 
 ## 현재 상태
 
-한신대학교 ABC 해커톤에서 시연할 수 있는 MVP입니다. Google 자격증명이 없어도 내장 데모로 업로드 이후의 준비 화면, 실시간 자막, 용어 카드, 관련 페이지와 결과 리포트를 확인할 수 있습니다.
+한신대학교 ABC 해커톤에서 시연할 수 있는 MVP입니다. Google 자격증명이 없어도 내장 데모로 업로드 이후의 준비 화면, 실시간 자막, 용어 카드, 관련 페이지와 결과 리포트를 확인할 수 있습니다. 로컬 ADC가 연결된 환경에서는 Google STT V2 실시간 스트림도 검증했습니다.
 
 ### 구현 완료
 
@@ -11,6 +11,7 @@
 - Gemini 구조화 JSON 기반 자동 용어집 생성
 - PDF 원문 대조, 중복 제거, 최대 50개 제한
 - Google STT V2 Chirp 3 인라인 PhraseSet 구성
+- Google STT V2 typed bidi 스트림과 실제 `us` 리전 연결 검증
 - 브라우저 마이크 PCM 변환과 WebSocket 전송
 - 임시·확정 자막, 용어 강조, 쉬운 설명과 PDF 페이지 연결
 - API 없는 데모 모드
@@ -24,10 +25,23 @@
 - 타입 검사, 프로토콜·용어 검증 테스트, 프로덕션 빌드
 - Docker 이미지 빌드와 컨테이너 헬스 체크
 
-## 아직 실제 자격증명으로 검증하지 않은 부분
+## 실제 Google STT 검증 결과
+
+2026-08-08 기준으로 프로젝트 ID가 활성 `gcloud` 프로젝트와 일치하고, Speech-to-Text API 활성화와 ADC 인증이 유효한 로컬 환경에서 확인했습니다. 프로젝트 ID와 인증정보는 문서와 로그에 기록하지 않았습니다.
+
+- 엔드포인트: `us-speech.googleapis.com`
+- recognizer: `projects/{project}/locations/us/recognizers/_`
+- 모델·언어: `chirp_3`, `ko-KR`
+- 빈 PhraseSet + 0.25초 무음: 스트림 정상 수락·종료, 임시 0개·확정 0개
+- 인라인 PhraseSet 1개 + 0.25초 무음: 스트림 정상 수락·종료, 임시 0개·확정 1개
+- 빈 PhraseSet + 로컬 한국어 음성: 3,200바이트 단위 16kHz mono LINEAR16 전송, 임시 1개·확정 1개
+
+무음 인라인 PhraseSet 호출의 확정 결과는 연결 성공 근거로만 사용하며 정확도 근거로 사용하지 않습니다. 실제 발표 마이크에서 PhraseSet 적용 전후 오인식과 무음 false positive를 함께 비교해야 합니다.
+
+## 아직 실제 자격증명·기기로 검증하지 않은 부분
 
 - Gemini 3.6 Flash 실제 PDF 호출
-- 한국어 마이크를 이용한 Chirp 3 스트리밍
+- 실제 발표용 브라우저·마이크 권한과 음질
 - PhraseSet 적용 전후 전문용어 인식률 비교
 - Cloud Run 배포 환경의 WebSocket 장시간 연결
 - Secret Manager와 Cloud Run 서비스 계정 연결
@@ -35,8 +49,8 @@
 ## 다음 개발 우선순위
 
 1. 별도의 테스트용 Google Cloud 프로젝트와 결제 예산 한도를 설정합니다.
-2. Gemini 키와 Google Application Default Credentials를 연결합니다.
-3. 실제 텍스트 PDF와 1~2분 한국어 강연 대본으로 전체 흐름을 검증합니다.
+2. Gemini 키를 연결하고 Google Application Default Credentials를 팀 실행 환경에 준비합니다.
+3. 실제 텍스트 PDF와 1~2분 한국어 강연 대본을 발표용 브라우저·마이크로 전체 검증합니다.
 4. glossary 결과에 `contextExplanation`을 추가해 용어가 현재 문맥에서 등장한 이유를 표시합니다.
 5. Google STT 스트리밍 제한에 대비한 자동 재연결과 자막 연속성 처리를 구현합니다.
 6. Cloud Run에 배포하고 모바일·노트북 마이크 권한과 WebSocket을 재검증합니다.
@@ -94,6 +108,9 @@ pnpm dev
 - 같은 사이트의 다른 탭에서 발생한 저장 변경은 `storage` 이벤트로 목록을 갱신합니다. 동시 read-modify-write는 잠그지 않으므로 실제 동시 변경은 마지막 쓰기가 우선합니다.
 - 손상되거나 지원하지 않는 버전은 자동 삭제하지 않고 오류와 명시적 초기화 동작을 표시합니다. 저장 실패 시 현재 분석은 유지되어 초기화·정리 후 다시 저장할 수 있습니다.
 - 실시간 모드의 용어집이 비어 있어도 데모 용어를 대신 넣지 않습니다. 데모 용어 fallback은 사용자가 데모 모드를 명시적으로 선택했을 때만 적용합니다.
+- `@google-cloud/speech` 7.5.0의 공개 `streamingRecognize()` 호환 래퍼는 V2 첫 설정을 빈 설정과 `audioContent` 쓰기로 변형하므로 사용하지 않습니다. 설치된 타입이 제공하는 `_streamingRecognize()`를 직접 호출해 첫 메시지는 recognizer+전체 설정, 이후 메시지는 `audio`만 보냅니다.
+- Google STT 환경은 검증된 `us` + `chirp_3` 조합만 허용하며 다른 location/model 값은 API 호출 전에 거부합니다.
+- Google STT 오디오 write는 15KB 이하로 제한합니다. 정상 종료는 request 쪽만 half-close한 뒤 지연된 final과 readable `end`/`close`를 기다리고, 5초 안에 종료되지 않으면 강제 정리합니다. error/end/close/크기 초과 중 첫 terminal event만 콜백하고 클라이언트 close는 한 번만 실행합니다.
 - 실제 발화 시작 시점을 신뢰성 있게 측정하지 않으므로 결과 리포트에서 표시 지연을 추정하지 않고, 검증된 PhraseSet 힌트 수를 표시합니다.
 - 공개 사용자 인증은 없으므로 외부 공개 시 Cloud Run·API 할당량으로 비용을 제한해야 합니다.
 - 현재의 `easyExplanation`은 쉬운 정의에 가깝습니다. 제품명을 유지하려면 실제 발화 문맥을 설명하는 `contextExplanation` 확장을 권장합니다.

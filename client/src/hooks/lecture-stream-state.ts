@@ -1,7 +1,7 @@
 import type { GlossaryTerm, TranscriptLine } from "../types";
 
 export type LectureMode = "live" | "demo";
-export type LectureStreamStatus = "idle" | "connecting" | "ready" | "ended" | "error";
+export type LectureStreamStatus = "idle" | "connecting" | "ready" | "stopping" | "ended" | "error";
 
 export type LectureStreamState = {
   status: LectureStreamStatus;
@@ -14,6 +14,7 @@ export type LectureStreamState = {
 export type LectureStreamAction =
   | { type: "starting"; mode: LectureMode; activeTermId: string | null }
   | { type: "ready"; message?: string }
+  | { type: "stopping"; message?: string }
   | { type: "interim"; text: string; activeTermId?: string }
   | { type: "final"; line: TranscriptLine; activeTermId?: string }
   | { type: "error"; message?: string }
@@ -43,6 +44,8 @@ export function lectureStreamReducer(state: LectureStreamState, action: LectureS
       };
     case "ready":
       return { ...state, status: "ready", statusMessage: action.message || "강연 중" };
+    case "stopping":
+      return { ...state, status: "stopping", statusMessage: action.message || "마지막 자막을 정리하고 있습니다." };
     case "interim":
       return {
         ...state,

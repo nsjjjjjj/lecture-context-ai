@@ -1,0 +1,140 @@
+import { describe, expect, it, vi } from "vitest";
+import {
+  beginLiveStopRequest,
+  handleSocketTransportFailure,
+  resolveMissingLiveStopRequestDisposition,
+  resolveSocketTransportFailureDisposition
+} from "./useLectureStream";
+
+describe("useLectureStream live stop ordering", () => {
+  it("recorder가 완전히 멈춘 뒤 wait를 등록하고 stop 메시지를 보낸다", async () => {
+    const events: string[] = [];
+    let finishRecorderStop!: () => void;
+    const stopRecorder = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          events.push("recorder-stop-start");
+          finishRecorderStop = () => {
+            events.push("recorder-stop-end");
+            resolve();
+          };
+        })
+    );
+    const waitForServer = new Promise<void>(() => undefined);
+    const operation = beginLiveStopRequest(
+      stopRecorder,
+      () => true,
+      () => {
+        events.push("wait-registered");
+        return waitForServer;
+      },
+      () => events.push("stop-sent")
+    );
+
+    await Promise.resolve();
+    expect(events).toEqual(["recorder-stop-start"]);
+
+    finishRecorderStop();
+    const request = await operation;
+
+    expect(request?.waitForServer).toBe(waitForServer);
+    expect(events).toEqual(["recorder-stop-start", "recorder-stop-end", "wait-registered", "stop-sent"]);
+  });
+
+  it("restart로 세션 소유권이 바뀌면 stop 메시지를 보내지 않는다", async () => {
+    const prepareWait = vi.fn(() => Promise.resolve());
+    const sendStop = vi.fn();
+
+    const request = await beginLiveStopRequest(async () => undefined, () => false, prepareWait, sendStop);
+
+    expect(request).toBeNull();
+    expect(prepareWait).not.toHaveBeenCalled();
+    expect(sendStop).not.toHaveBeenCalled();
+  });
+
+  it("server ended 대기 중 socket close를 불완전 종료 error로 판정하고 gate를 해제한다", () => {
+    expect(resolveSocketTransportFailureDisposition("close", true)).toEqual({
+      status: "error",
+      message: "강연 종료 중 자막 연결이 끊어졌습니다. 마지막 자막이 모두 반영되지 않았을 수 있습니다.",
+      completeStopGate: true
+    });
+  });
+
+  it("일반 socket close도 error지만 stop gate는 건드리지 않는다", () => {
+    expect(resolveSocketTransportFailureDisposition("close", false)).toEqual({
+      status: "error",
+      message: "자막 연결이 예기치 않게 종료되었습니다.",
+      completeStopGate: false
+    });
+  });
+
+  it("stop 대기 중 onerror가 shutdown/error/gate complete를 한 번 수행하고 뒤이은 close는 무시한다", () => {
+    const events: string[] = [];
+    let current = true;
+    const options = {
+      isWaitingForServerEnd: true,
+      isCurrent: () => current,
+      shutDown: () => {
+        events.push("shutdown");
+        current = false;
+      },
+      dispatchError: (message: string) => events.push(`error:${message}`),
+      completeStopGate: () => events.push("gate-complete")
+    };
+
+    expect(handleSocketTransportFailure({ ...options, source: "error" })).toBe(true);
+    expect(handleSocketTransportFailure({ ...options, source: "close" })).toBe(false);
+    expect(events).toEqual([
+      "shutdown",
+      "error:강연 종료 중 자막 연결이 끊어졌습니다. 마지막 자막이 모두 반영되지 않았을 수 있습니다.",
+      "gate-complete"
+    ]);
+  });
+
+  it("recorder stop 대기 중 transport failure가 나면 null continuation이 기존 error를 ended로 덮지 않는다", async () => {
+    const events: string[] = [];
+    let ownsSocket = true;
+    let finishRecorderStop!: () => void;
+    const operation = beginLiveStopRequest(
+      () =>
+        new Promise<void>((resolve) => {
+          events.push("recorder-stop-start");
+          finishRecorderStop = resolve;
+        }),
+      () => ownsSocket,
+      () => Promise.resolve(),
+      () => events.push("stop-sent")
+    );
+
+    await Promise.resolve();
+    handleSocketTransportFailure({
+      source: "error",
+      isWaitingForServerEnd: false,
+      isCurrent: () => ownsSocket,
+      shutDown: () => {
+        ownsSocket = false;
+        events.push("shutdown");
+      },
+      dispatchError: (message) => events.push(`error:${message}`),
+      completeStopGate: () => events.push("gate-complete")
+    });
+    finishRecorderStop();
+
+    const request = await operation;
+    const continuation = resolveMissingLiveStopRequestDisposition(!ownsSocket);
+    if (continuation) events.push(continuation.status);
+
+    expect(request).toBeNull();
+    expect(continuation).toBeNull();
+    expect(events).toEqual(["recorder-stop-start", "shutdown", "error:서버에 연결하지 못했습니다."]);
+    expect(events).not.toContain("ended");
+  });
+
+  it("같은 generation에서 terminal handler 없이 request가 null이면 불완전 종료 error만 반환한다", () => {
+    expect(resolveMissingLiveStopRequestDisposition(false)).toEqual({
+      status: "error",
+      message: "강연 종료 중 자막 연결이 끊어졌습니다. 마지막 자막이 모두 반영되지 않았을 수 있습니다.",
+      completeStopGate: false
+    });
+  });
+});

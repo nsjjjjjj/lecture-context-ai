@@ -49,6 +49,22 @@ describe("lecture stream lifecycle", () => {
     expect(ended.lines).toEqual(withFinal.lines);
   });
 
+  it("live stop 중 delayed final을 보존하고 server ended에서만 종료한다", () => {
+    const ready = lectureStreamReducer(createInitialLectureStreamState("rag"), { type: "ready" });
+    const stopping = lectureStreamReducer(ready, { type: "stopping" });
+    const withFinal = lectureStreamReducer(stopping, {
+      type: "final",
+      line: { id: "tail", text: "마지막 확정 자막", termIds: [], relatedPage: 3 }
+    });
+
+    expect(stopping.status).toBe("stopping");
+    expect(withFinal.status).toBe("stopping");
+
+    const ended = lectureStreamReducer(withFinal, { type: "ended", message: "강연을 종료했습니다." });
+    expect(ended.status).toBe("ended");
+    expect(ended.lines).toEqual([expect.objectContaining({ id: "tail", text: "마지막 확정 자막" })]);
+  });
+
   it("transitions to results only when an active lecture has ended", () => {
     expect(shouldTransitionToResults("live", "ready", "ended")).toBe(true);
     expect(shouldTransitionToResults("results", "ready", "ended")).toBe(false);
