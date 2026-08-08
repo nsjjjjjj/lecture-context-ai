@@ -1,10 +1,33 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   beginLiveStopRequest,
+  createFinalTranscriptLine,
   handleSocketTransportFailure,
   resolveMissingLiveStopRequestDisposition,
   resolveSocketTransportFailureDisposition
 } from "./useLectureStream";
+
+describe("useLectureStream final transcript mapping", () => {
+  it("자막 termIds는 고유하게 유지하고 피드용 occurrence 목록은 반복을 보존한다", () => {
+    const result = createFinalTranscriptLine(
+      {
+        type: "final",
+        text: "RAG와 다시 RAG",
+        detectedTerms: ["rag", "rag"],
+        relatedPage: 3
+      },
+      "line-rag"
+    );
+
+    expect(result.line).toEqual({
+      id: "line-rag",
+      text: "RAG와 다시 RAG",
+      termIds: ["rag"],
+      relatedPage: 3
+    });
+    expect(result.occurrenceTermIds).toEqual(["rag", "rag"]);
+  });
+});
 
 describe("useLectureStream live stop ordering", () => {
   it("recorder가 완전히 멈춘 뒤 wait를 등록하고 stop 메시지를 보낸다", async () => {

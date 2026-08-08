@@ -86,8 +86,24 @@ export async function beginLiveStopRequest(
   return { waitForServer };
 }
 
+export function createFinalTranscriptLine(event: TranscriptEvent, id: string): {
+  line: TranscriptLine;
+  occurrenceTermIds: string[];
+} {
+  const occurrenceTermIds = event.detectedTerms || [];
+  return {
+    line: {
+      id,
+      text: event.text || "",
+      termIds: [...new Set(occurrenceTermIds)],
+      relatedPage: event.relatedPage
+    },
+    occurrenceTermIds
+  };
+}
+
 export function useLectureStream(terms: GlossaryTerm[], phraseSet: string[]) {
-  const [state, dispatch] = useReducer(lectureStreamReducer, terms[0]?.id ?? null, createInitialLectureStreamState);
+  const [state, dispatch] = useReducer(lectureStreamReducer, undefined, createInitialLectureStreamState);
   const socketRef = useRef<WebSocket | null>(null);
   const recorderRef = useRef<PcmRecorder | null>(null);
   const sessionGenerationRef = useRef(0);
@@ -201,7 +217,7 @@ export function useLectureStream(terms: GlossaryTerm[], phraseSet: string[]) {
       await shutDownConnection(true);
       if (!isCurrentLectureSession(sessionGenerationRef.current, sessionGeneration)) return;
       stopPromiseRef.current = null;
-      dispatch({ type: "starting", mode, activeTermId: terms[0]?.id ?? null });
+      dispatch({ type: "starting", mode });
 
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
@@ -249,15 +265,13 @@ export function useLectureStream(terms: GlossaryTerm[], phraseSet: string[]) {
         if (event.type === "ready") {
           dispatch({ type: "ready", message: event.message });
         } else if (event.type === "interim") {
-          dispatch({ type: "interim", text: event.text || "", activeTermId: event.detectedTerms?.[0] });
+          dispatch({ type: "interim", text: event.text || "" });
         } else if (event.type === "final" && event.text) {
-          const line: TranscriptLine = {
-            id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            text: event.text,
-            termIds: event.detectedTerms || [],
-            relatedPage: event.relatedPage
-          };
-          dispatch({ type: "final", line, activeTermId: event.detectedTerms?.[0] });
+          const { line, occurrenceTermIds } = createFinalTranscriptLine(
+            event,
+            `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+          );
+          dispatch({ type: "final", line, occurrenceTermIds });
         } else if (event.type === "error") {
           dispatch({ type: "error", message: event.message });
           void shutDownConnection(false, socket, false).then(() => liveStopGateRef.current?.complete(socket));
@@ -298,9 +312,5 @@ export function useLectureStream(terms: GlossaryTerm[], phraseSet: string[]) {
     [shutDownConnection]
   );
 
-  const setActiveTermId = useCallback((termId: string | null) => {
-    dispatch({ type: "select-term", termId });
-  }, []);
-
-  return { ...state, setActiveTermId, start, stop };
+  return { ...state, start, stop };
 }

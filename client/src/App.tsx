@@ -3,7 +3,6 @@ import {
   Accessibility,
   ArrowLeft,
   ArrowRight,
-  BookOpen,
   Check,
   Database,
   FileText,
@@ -48,6 +47,7 @@ import {
 } from "./lib/glossary-storage";
 import { useLectureStream } from "./hooks/useLectureStream";
 import { shouldTransitionToResults } from "./hooks/lecture-stream-state";
+import { buildHighlightedTextParts } from "./lib/term-highlights";
 import type { AnalysisResult, GlossaryTerm, ServiceStatus, TranscriptLine } from "./types";
 
 type FontScale = "normal" | "large" | "xlarge";
@@ -243,7 +243,7 @@ function UploadScreen({
             <span className="text-cyan-300">맥락</span>까지.
           </h1>
           <p className="mt-8 max-w-[590px] text-pretty text-lg font-medium leading-8 text-slate-400 sm:text-xl">
-            강연 PDF에서 전문용어를 자동으로 찾아 Google STT에 전달하고, 용어가 등장하는 순간 쉬운 설명과 자료 페이지를 연결합니다.
+            강연 PDF에서 전문용어를 자동으로 찾아 Google STT에 전달하고, 용어가 등장할 때마다 쉬운 설명을 최신순으로 기록합니다.
           </p>
           <div className="mt-9 grid max-w-[610px] gap-3 sm:grid-cols-3">
             {[
@@ -507,17 +507,12 @@ function ReadyScreen({
 }
 
 function HighlightedText({ text, terms, sizeClass }: { text: string; terms: GlossaryTerm[]; sizeClass: string }) {
-  const matching = terms.filter((term) => text.toLocaleLowerCase("ko-KR").includes(term.term.toLocaleLowerCase("ko-KR"))).sort((a, b) => b.term.length - a.term.length);
-  if (!matching.length) return <p className={sizeClass}>{text}</p>;
-  const escaped = matching.map((term) => term.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const regex = new RegExp(`(${escaped.join("|")})`, "gi");
-  const parts = text.split(regex);
+  const parts = buildHighlightedTextParts(text, terms);
   return (
     <p className={sizeClass}>
-      {parts.map((part, index) => {
-        const matched = matching.some((term) => term.term.toLocaleLowerCase("ko-KR") === part.toLocaleLowerCase("ko-KR"));
-        return matched ? <mark key={`${part}-${index}`} className="rounded-md bg-cyan-300 px-1.5 py-0.5 text-slate-950">{part}</mark> : <span key={`${part}-${index}`}>{part}</span>;
-      })}
+      {parts.map((part, index) => part.highlighted
+        ? <mark key={`${part.termId}-${index}`} className="rounded-md bg-cyan-300 px-1.5 py-0.5 text-slate-950">{part.text}</mark>
+        : <span key={`text-${index}`}>{part.text}</span>)}
     </p>
   );
 }
@@ -539,11 +534,9 @@ function LiveScreen({
   onHighContrast: () => void;
   onFinish: () => void;
 }) {
-  const activeTerm = analysis.terms.find((term) => term.id === stream.activeTermId) ?? analysis.terms[0];
+  const termById = useMemo(() => new Map(analysis.terms.map((term) => [term.id, term])), [analysis.terms]);
   const currentLine = stream.lines.at(-1);
   const previousLines = stream.lines.slice(-4, -1);
-  const currentPage = activeTerm ? analysis.pages.find((page) => page.pageNumber === activeTerm.pageNumber) : analysis.pages[0];
-  const glossaryOnly = analysis.mode === "saved";
   const sizeClass = fontScale === "xlarge" ? "caption-xlarge" : fontScale === "large" ? "caption-large" : "caption-normal";
   const fontScaleLabel = fontScale === "xlarge" ? "매우 크게" : fontScale === "large" ? "크게" : "보통";
 
@@ -609,45 +602,42 @@ function LiveScreen({
             </div>
           </section>
 
-          <aside className="grid min-w-0 gap-3 md:grid-cols-2 lg:min-h-0 lg:grid-cols-1 lg:grid-rows-[auto_minmax(220px,1fr)] lg:overflow-y-auto">
-            <section className="min-h-[260px] min-w-0 rounded-[1.6rem] border border-cyan-300/15 bg-gradient-to-br from-cyan-300/[0.09] to-blue-400/[0.03] p-5 sm:p-6 md:min-h-[320px] lg:min-h-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-cyan-300"><BookOpen className="size-4" /> CONTEXT</div>
-                {activeTerm && <span className="rounded-full bg-cyan-300 px-2.5 py-1 text-[10px] font-black text-slate-950">{glossaryOnly ? "원본 p." : "PDF "}{activeTerm.pageNumber}</span>}
+          <aside className="min-w-0 lg:min-h-0" aria-label="실시간 용어 설명">
+            <section className={`flex h-[min(65dvh,560px)] min-h-[360px] min-w-0 flex-col overflow-hidden rounded-[1.6rem] border lg:h-full lg:min-h-0 ${highContrast ? "border-white bg-black" : "border-cyan-300/15 bg-gradient-to-br from-cyan-300/[0.09] to-blue-400/[0.03]"}`}>
+              <div className="shrink-0 border-b border-white/[0.07] px-5 py-4 sm:px-6 sm:py-5">
+                <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-cyan-300"><Sparkles className="size-4" /> TERM FLOW</div>
+                <p className="mt-2 text-xs leading-5 text-slate-500">새로 언급된 용어가 위에 추가되고, 지난 설명은 아래에 남습니다.</p>
               </div>
-              {activeTerm ? (
-                <div className="mt-5 min-w-0">
-                  <h2 className="break-words text-[clamp(1.5rem,2.2vw,2rem)] font-black leading-tight tracking-[-0.04em] text-white [overflow-wrap:anywhere]">{activeTerm.term}</h2>
-                  <p className="mt-2 break-words text-xs font-bold leading-5 text-cyan-300/80 [overflow-wrap:anywhere]">{activeTerm.english}</p>
-                  <p className="mt-4 break-words text-sm font-medium leading-6 text-slate-200 [overflow-wrap:anywhere] sm:text-[15px]">{activeTerm.easyExplanation}</p>
-                  <div className="mt-5 flex items-center gap-2 text-[11px] font-bold text-slate-400"><Sparkles className="size-3.5 shrink-0" /> PDF 기반 AI 쉬운 풀이</div>
-                </div>
-              ) : <p className="mt-7 text-sm text-slate-500">전문용어가 등장하면 쉬운 설명을 보여드립니다.</p>}
-            </section>
 
-            <section className="flex min-h-[320px] min-w-0 flex-col overflow-hidden rounded-[1.6rem] border border-white/[0.08] bg-white/[0.035] lg:min-h-[220px]">
-              <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-4">
-                <div className="flex items-center gap-2 text-xs font-extrabold text-slate-300"><FileText className="size-4 text-cyan-300" /> 관련 자료</div>
-                <span className="text-[11px] font-bold text-slate-600">{currentPage ? `PAGE ${currentPage.pageNumber}` : "저장 안 됨"}</span>
+              <div
+                role="log"
+                aria-label="확정 자막에서 언급된 용어 기록"
+                aria-relevant="additions"
+                tabIndex={0}
+                className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3 outline-none ring-inset ring-cyan-300 focus-visible:ring-2 sm:p-4"
+              >
+                {stream.termOccurrences.length > 0 ? stream.termOccurrences.map((occurrence, index) => {
+                  const term = termById.get(occurrence.termId);
+                  if (!term) return null;
+                  return (
+                    <article
+                      key={occurrence.id}
+                      data-term-occurrence-id={occurrence.id}
+                      className={`min-w-0 rounded-2xl border p-4 sm:p-5 ${index === 0 ? "border-cyan-300/25 bg-cyan-300/[0.09]" : "border-white/[0.075] bg-[#07111f]/60"}`}
+                    >
+                      <h2 className="break-words text-xl font-black leading-tight tracking-[-0.04em] text-white [overflow-wrap:anywhere] sm:text-2xl">{term.term}</h2>
+                      {term.english && <p className="mt-1.5 break-words text-xs font-bold leading-5 text-cyan-300/80 [overflow-wrap:anywhere]">{term.english}</p>}
+                      <p className="mt-3 break-words text-sm font-medium leading-6 text-slate-200 [overflow-wrap:anywhere]">{term.easyExplanation}</p>
+                    </article>
+                  );
+                }) : (
+                  <div className="flex min-h-[240px] flex-col items-center justify-center px-5 text-center">
+                    <div className="grid size-12 place-items-center rounded-2xl border border-white/[0.08] bg-white/[0.045] text-cyan-300"><Sparkles className="size-5" /></div>
+                    <div className="mt-4 text-sm font-extrabold text-slate-300">아직 언급된 용어가 없습니다</div>
+                    <p className="mt-2 max-w-[280px] text-xs leading-5 text-slate-600">확정 자막에 전문용어가 등장하면 쉬운 설명이 이곳에 차례로 쌓입니다.</p>
+                  </div>
+                )}
               </div>
-              {analysis.pdfUrl ? (
-                <iframe title={`PDF ${currentPage?.pageNumber || 1}페이지`} src={`${analysis.pdfUrl}#page=${currentPage?.pageNumber || 1}&view=FitH&toolbar=0`} className="min-h-[260px] w-full flex-1 bg-white" />
-              ) : currentPage ? (
-                <div className="lecture-slide relative flex min-h-[260px] flex-1 flex-col justify-center overflow-hidden bg-[#f3f5f7] p-6 text-slate-900">
-                  <div className="absolute right-[-60px] top-[-60px] size-44 rounded-full bg-cyan-300/40 blur-2xl" />
-                  <div className="relative text-[10px] font-black tracking-[0.2em] text-cyan-700">LECTURE SLIDE</div>
-                  <div className="relative mt-3 text-2xl font-black tracking-[-0.04em]">{activeTerm?.term || "생성형 AI"}</div>
-                  <div className="relative mt-5 h-1 w-12 bg-cyan-500" />
-                  <p className="relative mt-5 line-clamp-5 text-xs font-medium leading-6 text-slate-600">{currentPage?.text}</p>
-                  <div className="relative mt-auto pt-5 text-[10px] font-bold text-slate-400">강연맥락 AI · {currentPage?.pageNumber || 1}</div>
-                </div>
-              ) : (
-                <div className="flex min-h-[260px] flex-1 flex-col items-center justify-center bg-[#091523] p-7 text-center">
-                  <div className="grid size-12 place-items-center rounded-2xl border border-white/[0.08] bg-white/[0.045] text-slate-500"><FileText className="size-5" /></div>
-                  <div className="mt-4 text-sm font-extrabold text-slate-300">PDF 미리보기 없음</div>
-                  <p className="mt-2 max-w-[300px] text-xs leading-5 text-slate-600">저장 용어집에는 PDF와 페이지 텍스트가 포함되지 않습니다. 자막 강조와 쉬운 설명은 그대로 제공됩니다.</p>
-                </div>
-              )}
             </section>
           </aside>
         </div>

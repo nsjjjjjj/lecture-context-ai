@@ -38,4 +38,57 @@ describe("matchTerms", () => {
   it("확정 자막에서 대소문자와 무관하게 용어를 찾는다", () => {
     expect(matchTerms("이번에는 rag를 사용합니다.", terms).map((term) => term.id)).toEqual(["rag"]);
   });
+
+  it("같은 final 안의 반복 용어를 실제 출현 순서대로 모두 반환한다", () => {
+    expect(matchTerms("RAG를 설명한 뒤 RAG와 LangChain을 비교합니다.", terms).map((term) => term.id)).toEqual([
+      "rag",
+      "rag",
+      "missing"
+    ]);
+  });
+
+  it("같은 위치에서 시작하거나 겹치는 용어는 가장 긴 표기 하나만 선택한다", () => {
+    const overlappingTerms: GlossaryTerm[] = [
+      { ...terms[0], id: "ai", term: "AI" },
+      { ...terms[0], id: "generative-ai", term: "생성형 AI" }
+    ];
+
+    expect(matchTerms("생성형 AI와 AI를 비교합니다.", overlappingTerms).map((term) => term.id)).toEqual([
+      "generative-ai",
+      "ai"
+    ]);
+  });
+
+  it("ASCII 단어 내부의 부분 문자열은 막고 한국어 조사가 붙은 용어는 인식한다", () => {
+    const asciiTerms: GlossaryTerm[] = [
+      { ...terms[0], id: "ai", term: "AI" },
+      { ...terms[0], id: "rag", term: "RAG" }
+    ];
+
+    expect(matchTerms("daily 모델과 AI는 다르고 RAG를 사용합니다.", asciiTerms).map((term) => term.id)).toEqual([
+      "ai",
+      "rag"
+    ]);
+  });
+
+  it("정규화 뒤 빈 용어는 건너뛰고 탐색을 종료한다", () => {
+    const emptyTerm = { ...terms[0], id: "empty", term: "   " };
+
+    expect(matchTerms("RAG", [emptyTerm])).toEqual([]);
+  });
+
+  it("문맥 독립 소문자화로 Greek final sigma 위치를 클라이언트와 동일하게 찾는다", () => {
+    const sigma = { ...terms[0], id: "sigma", term: "Σ" };
+
+    expect(matchTerms("ΟΣ", [sigma]).map((term) => term.id)).toEqual(["sigma"]);
+  });
+
+  it("하나의 NFKC 호환문자 안에서 순차로 등장한 용어를 모두 찾는다", () => {
+    const compatibilityTerms: GlossaryTerm[] = [
+      { ...terms[0], id: "kilo", term: "キロ" },
+      { ...terms[0], id: "meter", term: "メートル" }
+    ];
+
+    expect(matchTerms("㌖", compatibilityTerms).map((term) => term.id)).toEqual(["kilo", "meter"]);
+  });
 });

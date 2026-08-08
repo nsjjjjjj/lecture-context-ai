@@ -3,6 +3,7 @@ import type { AnalysisResult, GlossaryTerm, PageText } from "../types.js";
 
 const MAX_TERMS = 50;
 const MAX_GEMINI_CHARACTERS = 120_000;
+const termMatchSegmenter = new Intl.Segmenter("ko-KR", { granularity: "grapheme" });
 
 const DOMAIN_HINTS: Array<[string, string, string]> = [
   ["RAG", "Retrieval-Augmented Generation", "외부 자료를 검색한 뒤 답변을 만드는 AI 방식"],
@@ -25,6 +26,25 @@ type GeminiTerm = {
 
 function normalize(value: string): string {
   return value.normalize("NFKC").replace(/\s+/g, " ").trim().toLocaleLowerCase("ko-KR");
+}
+
+function normalizeForTermMatching(value: string): string {
+  let normalizedValue = "";
+  let pendingWhitespace = false;
+
+  for (const grapheme of termMatchSegmenter.segment(value)) {
+    const normalizedSegment = grapheme.segment.normalize("NFKC").toLocaleLowerCase("ko-KR");
+    if (!normalizedSegment) continue;
+    if (/^\s+$/u.test(normalizedSegment)) {
+      if (normalizedValue.length > 0) pendingWhitespace = true;
+      continue;
+    }
+    if (pendingWhitespace) normalizedValue += " ";
+    pendingWhitespace = false;
+    normalizedValue += normalizedSegment;
+  }
+
+  return normalizedValue;
 }
 
 function countOccurrences(text: string, term: string): number {
@@ -225,8 +245,38 @@ export async function analyzeGlossary(title: string, pages: PageText[]): Promise
 }
 
 export function matchTerms(text: string, terms: GlossaryTerm[]): GlossaryTerm[] {
-  const normalizedText = normalize(text);
-  return terms
-    .filter((term) => normalizedText.includes(normalize(term.term)))
-    .sort((a, b) => b.term.length - a.term.length);
+  const normalizedText = normalizeForTermMatching(text);
+  const candidates = terms
+    .map((term, sourceIndex) => ({ term, sourceIndex, normalizedTerm: normalizeForTermMatching(term.term) }))
+    .filter((candidate) => candidate.normalizedTerm.length > 0);
+  const matches: GlossaryTerm[] = [];
+  let cursor = 0;
+
+  while (cursor < normalizedText.length) {
+    const selected = candidates
+      .filter((candidate) => normalizedText.startsWith(candidate.normalizedTerm, cursor))
+      .filter((candidate) => hasValidAsciiBoundaries(normalizedText, cursor, candidate.normalizedTerm))
+      .sort((a, b) => b.normalizedTerm.length - a.normalizedTerm.length || a.sourceIndex - b.sourceIndex)[0];
+
+    if (!selected) {
+      cursor += 1;
+      continue;
+    }
+
+    matches.push(selected.term);
+    cursor += Math.max(selected.normalizedTerm.length, 1);
+  }
+
+  return matches;
+}
+
+function isAsciiWordCharacter(value: string | undefined): boolean {
+  return Boolean(value && /[A-Za-z0-9_]/.test(value));
+}
+
+function hasValidAsciiBoundaries(text: string, start: number, term: string): boolean {
+  const end = start + term.length;
+  if (isAsciiWordCharacter(term[0]) && isAsciiWordCharacter(text[start - 1])) return false;
+  if (isAsciiWordCharacter(term[term.length - 1]) && isAsciiWordCharacter(text[end])) return false;
+  return true;
 }

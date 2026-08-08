@@ -35,11 +35,11 @@ describe("lecture stream protocol", () => {
 
 describe("lecture stream lifecycle", () => {
   it("retains final transcript data when the server ends the stream", () => {
-    const initial = createInitialLectureStreamState("rag");
+    const initial = createInitialLectureStreamState();
     const withFinal = lectureStreamReducer(initial, {
       type: "final",
       line: { id: "line-1", text: "RAG를 설명합니다.", termIds: ["rag"], relatedPage: 3 },
-      activeTermId: "rag"
+      occurrenceTermIds: ["rag"]
     });
 
     const ended = lectureStreamReducer(withFinal, { type: "ended", message: "데모 강연이 끝났습니다." });
@@ -47,22 +47,75 @@ describe("lecture stream lifecycle", () => {
     expect(ended.status).toBe("ended");
     expect(ended.interim).toBe("");
     expect(ended.lines).toEqual(withFinal.lines);
+    expect(ended.termOccurrences).toEqual(withFinal.termOccurrences);
   });
 
   it("live stop 중 delayed final을 보존하고 server ended에서만 종료한다", () => {
-    const ready = lectureStreamReducer(createInitialLectureStreamState("rag"), { type: "ready" });
+    const ready = lectureStreamReducer(createInitialLectureStreamState(), { type: "ready" });
     const stopping = lectureStreamReducer(ready, { type: "stopping" });
     const withFinal = lectureStreamReducer(stopping, {
       type: "final",
-      line: { id: "tail", text: "마지막 확정 자막", termIds: [], relatedPage: 3 }
+      line: { id: "tail", text: "마지막 RAG 확정 자막", termIds: ["rag"], relatedPage: 3 },
+      occurrenceTermIds: ["rag"]
     });
 
     expect(stopping.status).toBe("stopping");
     expect(withFinal.status).toBe("stopping");
+    expect(withFinal.termOccurrences).toEqual([
+      { id: "tail:term:0", termId: "rag", transcriptLineId: "tail" }
+    ]);
 
     const ended = lectureStreamReducer(withFinal, { type: "ended", message: "강연을 종료했습니다." });
     expect(ended.status).toBe("ended");
-    expect(ended.lines).toEqual([expect.objectContaining({ id: "tail", text: "마지막 확정 자막" })]);
+    expect(ended.lines).toEqual([expect.objectContaining({ id: "tail", text: "마지막 RAG 확정 자막" })]);
+    expect(ended.termOccurrences).toEqual(withFinal.termOccurrences);
+  });
+
+  it("한 final의 마지막 언급을 맨 위에 두고 원래 occurrence index로 안정적인 id를 만든다", () => {
+    const withFinal = lectureStreamReducer(createInitialLectureStreamState(), {
+      type: "final",
+      line: { id: "line-ordered", text: "LLM 다음 RAG", termIds: ["llm", "rag"] },
+      occurrenceTermIds: ["llm", "rag"]
+    });
+
+    expect(withFinal.termOccurrences).toEqual([
+      { id: "line-ordered:term:1", termId: "rag", transcriptLineId: "line-ordered" },
+      { id: "line-ordered:term:0", termId: "llm", transcriptLineId: "line-ordered" }
+    ]);
+  });
+
+  it("같은 용어가 다시 언급되면 기존 기록을 유지한 채 새 카드를 맨 위에 추가한다", () => {
+    const first = lectureStreamReducer(createInitialLectureStreamState(), {
+      type: "final",
+      line: { id: "line-1", text: "첫 RAG", termIds: ["rag"] },
+      occurrenceTermIds: ["rag"]
+    });
+    const second = lectureStreamReducer(first, {
+      type: "final",
+      line: { id: "line-2", text: "RAG와 다시 RAG", termIds: ["rag"] },
+      occurrenceTermIds: ["rag", "rag"]
+    });
+
+    expect(second.termOccurrences).toEqual([
+      { id: "line-2:term:1", termId: "rag", transcriptLineId: "line-2" },
+      { id: "line-2:term:0", termId: "rag", transcriptLineId: "line-2" },
+      { id: "line-1:term:0", termId: "rag", transcriptLineId: "line-1" }
+    ]);
+  });
+
+  it("interim은 용어 기록을 만들지 않고 새 강연 시작은 기존 기록을 초기화한다", () => {
+    const withFinal = lectureStreamReducer(createInitialLectureStreamState(), {
+      type: "final",
+      line: { id: "line-1", text: "RAG", termIds: ["rag"] },
+      occurrenceTermIds: ["rag"]
+    });
+    const withInterim = lectureStreamReducer(withFinal, { type: "interim", text: "RAG를 다시" });
+
+    expect(withInterim.termOccurrences).toEqual(withFinal.termOccurrences);
+
+    const restarted = lectureStreamReducer(withInterim, { type: "starting", mode: "live" });
+    expect(restarted.lines).toEqual([]);
+    expect(restarted.termOccurrences).toEqual([]);
   });
 
   it("transitions to results only when an active lecture has ended", () => {
@@ -72,13 +125,14 @@ describe("lecture stream lifecycle", () => {
   });
 
   it("does not treat a previous session's ended status as a new ending during restart", () => {
-    const ended = lectureStreamReducer(createInitialLectureStreamState("rag"), { type: "ended" });
+    const ended = lectureStreamReducer(createInitialLectureStreamState(), { type: "ended" });
 
     expect(shouldTransitionToResults("live", ended.status, ended.status)).toBe(false);
 
-    const restarting = lectureStreamReducer(ended, { type: "starting", mode: "demo", activeTermId: "rag" });
+    const restarting = lectureStreamReducer(ended, { type: "starting", mode: "demo" });
     expect(restarting.status).toBe("connecting");
     expect(restarting.lines).toEqual([]);
+    expect(restarting.termOccurrences).toEqual([]);
     expect(shouldTransitionToResults("live", ended.status, restarting.status)).toBe(false);
   });
 
