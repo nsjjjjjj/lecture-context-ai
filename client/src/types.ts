@@ -7,6 +7,7 @@ export type GlossaryTerm = {
   id: string;
   term: string;
   english: string;
+  spokenAliases: string[];
   easyExplanation: string;
   pageNumber: number;
   occurrences: number;
@@ -26,16 +27,29 @@ export type AnalysisResult = {
 export type TranscriptEvent = {
   type: "ready" | "interim" | "final" | "status" | "error" | "ended";
   text?: string;
+  rawText?: string;
   message?: string;
   detectedTerms?: string[];
   relatedPage?: number;
+  corrections?: TranscriptCorrection[];
+};
+
+export type TranscriptCorrection = {
+  originalText: string;
+  correctedText: string;
+  termId: string;
+  displayStart: number;
+  displayEnd: number;
+  reason: "spokenAlias";
 };
 
 export type TranscriptLine = {
   id: string;
   text: string;
+  rawText: string;
   termIds: string[];
   relatedPage?: number;
+  corrections: TranscriptCorrection[];
 };
 
 export type ServiceStatus = {

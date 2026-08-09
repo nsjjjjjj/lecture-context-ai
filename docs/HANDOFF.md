@@ -20,8 +20,12 @@
 - temp WAV 검증·rename·atomic manifest, 실패 rollback/queue 회복과 cross-process writer lock
 - 저장 WAV의 offline PCM 재로드와 15KB 이하 짝수 청크 분할 계약
 - 임시·확정 자막, 용어 강조, 반복 언급마다 생성되는 최신순 쉬운 설명 피드
+- `spokenAliases` 검증과 알려진 기술용어 발음 보완, 별칭을 포함할 수 있는 50개 제한 PhraseSet
+- 임시 자막 원문 유지, 확정 자막의 위치 기반 canonical 정정, `rawText`·정정 내역 보존
+- 자막의 눈에 보이는 `자동 정정` 표지와 포커스/호버 가능한 `레그 → RAG` 설명, canonical 용어 설명 카드 연결
 - API 없는 데모 모드
-- 분석 완료 시 전체 `GlossaryTerm[]`과 `phraseSet`의 브라우저 `localStorage` v1 자동 저장
+- 분석 완료 시 전체 `GlossaryTerm[]`과 `phraseSet`의 브라우저 `localStorage` v2 자동 저장
+- 기존 localStorage v1의 엄격 검증 후 ID를 보존하는 v2 명시적 이전
 - 앱 새로고침·서버 재시작 뒤 저장 용어집 목록/로드, 이름 변경, 삭제
 - 저장 용어집 로드 시 Gemini 분석 없이 기존 WebSocket live/demo 시작 메시지 재사용
 - 저장 형식 엄격 검증, 정규화 중복 제거, 용어 ID 보존, 저장 공간·차단·손상·버전 오류 표시
@@ -58,10 +62,10 @@
 
 ## 다음 개발 우선순위
 
-1. glossary에 `spokenAliases`를 추가하고 영문·한글 발음 별칭을 PhraseSet과 자막 용어 매칭에 함께 사용합니다.
-2. 기존 106초 음원으로 PhraseSet 없음/영문/영문+한글 별칭 A/B/C 연결 스모크를 수행합니다.
-3. 개발용 고정 실험 문장을 화면 그대로 다시 녹음하거나 기존 음원의 정답 대본·실제 발화 용어를 검수합니다.
-4. 출현 단위 전문용어 연결률과 PhraseSet 오탐을 자동 집계합니다.
+1. 기존 106초 음원으로 PhraseSet 없음/영문/영문+한글 별칭 A/B/C 연결 스모크를 수행합니다.
+2. 개발용 고정 실험 문장을 화면 그대로 다시 녹음하거나 기존 음원의 정답 대본·실제 발화 용어를 검수합니다.
+3. 출현 단위 전문용어 연결률, 자동 정정 성공률과 PhraseSet 오탐을 자동 집계합니다.
+4. 용어별 발음 별칭을 사용자가 검수·수정하는 최소 UI의 필요성을 실험 오정정 결과로 판단합니다.
 5. glossary 결과에 `contextExplanation`을 추가해 용어가 현재 문맥에서 등장한 이유를 표시합니다.
 6. Google STT 스트리밍 제한에 대비한 자동 재연결과 자막 연속성 처리를 구현합니다.
 7. Cloud Run에 배포하고 모바일·노트북 마이크 권한과 WebSocket을 재검증합니다.
@@ -91,17 +95,18 @@ pnpm dev
 2. `샘플 강연 바로 체험하기`를 누릅니다.
 3. 자동 용어집 5개가 표시되는지 확인합니다.
 4. `데모 자막으로 미리보기`를 누릅니다.
-5. 확정 자막에 전문용어가 등장할 때마다 오른쪽 피드 맨 위에 새 쉬운 설명 카드가 추가되고 이전 카드가 아래에 남는지 확인합니다.
-6. 마지막 데모 자막 뒤 자동으로 결과 리포트가 표시되고 확정 자막 4개가 유지되는지 확인합니다.
-7. `처음으로` 이동해 `이 브라우저의 용어집`에 샘플 용어집이 표시되는지 확인합니다.
-8. 페이지를 새로고침하거나 개발 서버를 다시 시작한 뒤 같은 용어집이 유지되는지 확인합니다.
-9. 저장 용어집을 불러와 분석 화면이나 `/api/analyze` 요청 없이 준비 화면으로 이동하는지 확인합니다.
-10. `실시간 강연 시작` 시 저장된 전체 용어와 PhraseSet이 WebSocket `start` 메시지에 포함되고, 자막 강조와 쉬운 설명이 동작하는지 확인합니다.
-11. 저장 용어집 세션에서도 관련 자료 영역 없이 오른쪽 전체를 용어 설명 피드로 사용하고, 같은 용어의 반복 카드가 각각 유지되는지 확인합니다.
-12. 첫 화면에서 용어집 이름 변경과 삭제를 확인합니다.
-13. localhost 개발 화면의 `개발용 고정음원 녹음`에서 가명 화자와 환경을 선택하고 고정 문장을 녹음합니다.
-14. 녹음 종료와 최대 120초 timer/PCM hard cap 종료가 한 번만 처리되는지, 미리 듣기와 재녹음이 동작하는지 확인합니다.
-15. 저장 뒤 `test-fixtures/stt/audio/*.wav`와 `manifest.local.json`이 생성되고 Git 상태에 나타나지 않는지 확인합니다.
+5. 두 번째 임시 자막의 `알에이지`가 원문 그대로 보이고, 확정 자막은 `레그` 대신 `RAG`와 눈에 보이는 `자동 정정` 표지를 표시하는지 확인합니다. 표지에 포커스하거나 마우스를 올리면 `레그 → RAG`가 보여야 합니다.
+6. 정정된 `RAG`가 오른쪽 피드 맨 위에 새 쉬운 설명 카드를 만들고 이전 카드가 아래에 남는지 확인합니다.
+7. 마지막 데모 자막 뒤 자동으로 결과 리포트가 표시되고 확정 자막 4개와 자동 정정 표지가 유지되는지 확인합니다.
+8. `처음으로` 이동해 `이 브라우저의 용어집`에 샘플 용어집이 표시되는지 확인합니다.
+9. 페이지를 새로고침하거나 개발 서버를 다시 시작한 뒤 같은 용어집이 유지되는지 확인합니다.
+10. 저장 용어집을 불러와 분석 화면이나 `/api/analyze` 요청 없이 준비 화면으로 이동하는지 확인합니다.
+11. `실시간 강연 시작` 시 저장된 전체 용어와 PhraseSet이 WebSocket `start` 메시지에 포함되고, 자막 강조와 쉬운 설명이 동작하는지 확인합니다.
+12. 저장 용어집 세션에서도 관련 자료 영역 없이 오른쪽 전체를 용어 설명 피드로 사용하고, 같은 용어의 반복 카드가 각각 유지되는지 확인합니다.
+13. 첫 화면에서 용어집 이름 변경과 삭제를 확인합니다.
+14. localhost 개발 화면의 `개발용 고정음원 녹음`에서 가명 화자와 환경을 선택하고 고정 문장을 녹음합니다.
+15. 녹음 종료와 최대 120초 timer/PCM hard cap 종료가 한 번만 처리되는지, 미리 듣기와 재녹음이 동작하는지 확인합니다.
+16. 저장 뒤 `test-fixtures/stt/audio/*.wav`와 `manifest.local.json`이 생성되고 Git 상태에 나타나지 않는지 확인합니다.
 
 ## 알려진 제한과 결정 사항
 
@@ -109,8 +114,8 @@ pnpm dev
 - PDF는 브라우저에서 추출하며 Python 런타임을 사용하지 않습니다.
 - 강연자 검수 단계 없이 PDF 원문 대조 결과를 자동 채택합니다.
 - PDF와 실시간 강연 음성은 서버에 저장하지 않으며 데이터베이스가 없습니다. localhost 개발 녹음 카드에서 사용자가 명시적으로 만든 fixture만 프로젝트 로컬에 보존합니다.
-- 용어집은 `lecture-context-ai.glossaries` 키의 버전 1 브라우저 저장소에만 저장합니다. 서버 저장소는 추가하지 않았습니다.
-- 저장 필드는 용어집 메타데이터(`id`, `name`, `createdAt`, `updatedAt`), 완전한 `GlossaryTerm[]`, `phraseSet`으로 제한합니다. PDF, 추출 페이지 텍스트, `pdfUrl`, 음성, 경고, API 키는 제외합니다.
+- 용어집은 `lecture-context-ai.glossaries` 키의 버전 2 브라우저 저장소에만 저장합니다. 유효한 버전 1 데이터는 용어 ID와 기존 PhraseSet을 유지하고 각 용어에 빈 `spokenAliases`를 넣어 버전 2로 이전합니다. 서버 저장소는 추가하지 않았습니다.
+- 저장 필드는 용어집 메타데이터(`id`, `name`, `createdAt`, `updatedAt`), `spokenAliases`를 포함한 완전한 `GlossaryTerm[]`, `phraseSet`으로 제한합니다. PDF, 추출 페이지 텍스트, `pdfUrl`, 음성, 경고, API 키는 제외합니다.
 - 저장 데이터는 정확한 필드 집합과 타입·길이·개수·타임스탬프·PhraseSet/용어 대응 관계를 검증합니다. 정규화 중복은 제거하되 채택한 용어의 기존 ID는 유지합니다.
 - 전문용어가 비어 있는 분석·저장 항목은 거부해 데모 서버 fallback과 클라이언트 설명 상태가 어긋나지 않게 합니다.
 - 동일한 이름과 내용의 자동 저장은 기존 항목을 갱신해 중복 목록을 만들지 않습니다.
@@ -125,7 +130,9 @@ pnpm dev
 - Google STT 환경은 검증된 `us` + `chirp_3` 조합만 허용하며 다른 location/model 값은 API 호출 전에 거부합니다.
 - Google STT 오디오 write는 15KB 이하로 제한합니다. 정상 종료는 request 쪽만 half-close한 뒤 지연된 final과 readable `end`/`close`를 기다리고, 5초 안에 종료되지 않으면 강제 정리합니다. error/end/close/크기 초과 중 첫 terminal event만 콜백하고 클라이언트 close는 한 번만 실행합니다.
 - 실제 발화 시작 시점을 신뢰성 있게 측정하지 않으므로 결과 리포트에서 표시 지연을 추정하지 않고, 검증된 PhraseSet 힌트 수를 표시합니다.
-- 서버의 `final.detectedTerms`는 왼쪽부터 실제 출현한 순서와 반복을 보존합니다. 서버 matcher와 클라이언트 자막 강조는 grapheme별 NFKC·문맥 독립 소문자화·공백·ASCII 경계 규칙을 함께 사용합니다. 같은 글자 구간에 용어가 겹치면 가장 긴 표기 하나를 선택하고, 한 원문 grapheme이 여러 용어로 확장되면 클라이언트는 겹친 원문 범위를 병합해 glyph를 한 번만 표시합니다. 자막·결과용 `termIds`는 고유하게 유지하고 설명 피드용 출현 목록만 중복을 보존합니다.
+- 서버의 `final.detectedTerms`는 왼쪽부터 실제 출현한 순서와 반복을 보존합니다. canonical 자막 강조와 서버 matcher는 grapheme별 NFKC·문맥 독립 소문자화·공백·ASCII 경계 기반을 공유하고, 서버는 여기에 영문 표기·검증된 한글 별칭 경계를 추가합니다. 같은 글자 구간에 용어가 겹치면 가장 긴 표기 하나를 선택하고, 한 원문 grapheme이 여러 용어로 확장돼도 표시 자막은 glyph를 중복 생성하지 않습니다. 자막·결과용 `termIds`는 고유하게 유지하고 설명 피드용 출현 목록만 중복을 보존합니다.
+- 발음 별칭은 영문 원어가 있는 용어에만 허용하며 용어당 최대 6개·별칭당 2~40자, 완성형 한글과 내부 공백/하이픈만 허용합니다. 고빈도 일반 표현 차단 목록·다른 canonical/영문 표기·다른 용어의 별칭과 충돌하면 제거하거나 저장을 거부합니다. 짧은 별칭은 한국어 조사·지정사 뒤붙임만 허용해 `레그는`은 찾고 `레그레이즈` 내부는 찾지 않습니다.
+- 임시 자막은 STT 원문 그대로입니다. 확정 자막은 `text`와 별도로 `rawText`, `corrections`를 보존하고, 원문 위치 기준 왼쪽→오른쪽 최장 일치로 겹침·반복 치환을 방지합니다. UI는 정정을 감추지 않고 항상 표시하며 결과 화면에서도 원문→canonical 근거를 확인할 수 있습니다.
 - 공개 사용자 인증은 없으므로 외부 공개 시 Cloud Run·API 할당량으로 비용을 제한해야 합니다.
 - `pnpm dev`의 Vite와 백엔드는 `127.0.0.1`에만 listen합니다. 개발용 녹음 API도 `NODE_ENV=development`와 loopback socket·Host·Origin을 확인하며, production의 모든 미등록 `/api` 경로는 SPA fallback 전에 JSON 404로 종료합니다.
 - 개발 fixture WAV와 `manifest.local.json`은 Git·Docker에서 제외되며 자동 삭제되지 않습니다. 가명 화자 label만 사용하고 개발자가 직접 정리해야 합니다.
@@ -147,6 +154,8 @@ pnpm dev
 - WebSocket·listen: `server/src/index.ts`
 - WAV fixture 저장·offline load: `server/src/services/audio-fixtures.ts`
 - 저장 WAV Google STT A/B 실행기: `server/src/tools/compare-stt-fixture.ts`
+- 발음 별칭 검증: `server/src/services/spoken-aliases.ts`
+- 원문 보존 자막 정정: `server/src/services/caption.ts`
 - Gemini·자동 용어집: `server/src/services/glossary.ts`
 - Google STT: `server/src/services/speech.ts`
 - 데모 데이터: `server/src/services/demo.ts`

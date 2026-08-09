@@ -1,6 +1,7 @@
 import type { GlossaryTerm, StartMessage } from "../types.js";
 import { glossaryTermSchema } from "../types.js";
 import { demoTerms } from "./demo.js";
+import { withValidatedSpokenAliases } from "./spoken-aliases.js";
 
 const MAX_TERMS = 50;
 const MAX_PHRASES = 50;
@@ -35,7 +36,7 @@ export function sanitizeGlossaryTerms(value: unknown): GlossaryTerm[] {
     terms.push({ ...parsed.data, term, english });
     if (terms.length === MAX_TERMS) break;
   }
-  return terms;
+  return withValidatedSpokenAliases(terms);
 }
 
 export function sanitizePhraseSet(value: unknown, terms: GlossaryTerm[]): string[] {
@@ -45,6 +46,7 @@ export function sanitizePhraseSet(value: unknown, terms: GlossaryTerm[]): string
   for (const term of terms) {
     allowed.set(normalize(term.term), term.term);
     if (term.english) allowed.set(normalize(term.english), term.english);
+    for (const alias of term.spokenAliases) allowed.set(normalize(alias), alias);
   }
 
   const seen = new Set<string>();

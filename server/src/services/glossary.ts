@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import type { AnalysisResult, GlossaryTerm, PageText } from "../types.js";
+import { findTranscriptTermMatches } from "./caption.js";
+import { withValidatedSpokenAliases } from "./spoken-aliases.js";
 
 const MAX_TERMS = 50;
 const MAX_GEMINI_CHARACTERS = 120_000;
-const termMatchSegmenter = new Intl.Segmenter("ko-KR", { granularity: "grapheme" });
 
 const DOMAIN_HINTS: Array<[string, string, string]> = [
   ["RAG", "Retrieval-Augmented Generation", "외부 자료를 검색한 뒤 답변을 만드는 AI 방식"],
@@ -21,30 +22,12 @@ const DOMAIN_HINTS: Array<[string, string, string]> = [
 type GeminiTerm = {
   term?: unknown;
   english?: unknown;
+  spokenAliases?: unknown;
   easyExplanation?: unknown;
 };
 
 function normalize(value: string): string {
   return value.normalize("NFKC").replace(/\s+/g, " ").trim().toLocaleLowerCase("ko-KR");
-}
-
-function normalizeForTermMatching(value: string): string {
-  let normalizedValue = "";
-  let pendingWhitespace = false;
-
-  for (const grapheme of termMatchSegmenter.segment(value)) {
-    const normalizedSegment = grapheme.segment.normalize("NFKC").toLocaleLowerCase("ko-KR");
-    if (!normalizedSegment) continue;
-    if (/^\s+$/u.test(normalizedSegment)) {
-      if (normalizedValue.length > 0) pendingWhitespace = true;
-      continue;
-    }
-    if (pendingWhitespace) normalizedValue += " ";
-    pendingWhitespace = false;
-    normalizedValue += normalizedSegment;
-  }
-
-  return normalizedValue;
 }
 
 function countOccurrences(text: string, term: string): number {
@@ -105,6 +88,7 @@ function validateCandidates(
       id: idFor(term),
       term,
       english,
+      spokenAliases: Array.isArray(candidate.spokenAliases) ? candidate.spokenAliases.filter((value): value is string => typeof value === "string") : [],
       easyExplanation: explanation,
       pageNumber: location.pageNumber,
       occurrences: location.occurrences,
@@ -112,13 +96,14 @@ function validateCandidates(
     });
   }
 
-  return terms
-    .sort((a, b) => {
+  return withValidatedSpokenAliases(
+    terms.sort((a, b) => {
       const acronymA = /^[A-Z][A-Z0-9-]{1,12}$/.test(a.term) ? 1 : 0;
       const acronymB = /^[A-Z][A-Z0-9-]{1,12}$/.test(b.term) ? 1 : 0;
       return acronymB - acronymA || b.occurrences - a.occurrences || a.pageNumber - b.pageNumber;
     })
-    .slice(0, MAX_TERMS);
+      .slice(0, MAX_TERMS)
+  );
 }
 
 function extractHeuristicCandidates(pages: PageText[]): GeminiTerm[] {
@@ -160,6 +145,7 @@ async function extractWithGemini(pages: PageText[]): Promise<GeminiTerm[]> {
 - 일상적인 단어와 너무 긴 문장은 제외한다.
 - easyExplanation은 비전공자가 이해할 수 있는 한국어 한 문장으로 60자 이내로 작성한다.
 - english는 PDF에 명시된 경우에만 넣고, 없으면 빈 문자열로 둔다.
+- spokenAliases에는 한국인이 실제로 말했을 때 STT가 만들 수 있는 한글 발음 표기만 최대 3개 넣는다. 예: RAG는 ["래그", "레그", "알에이지"]. 일반 단어는 넣지 않는다.
 - 같은 용어의 중복은 제거한다.
 
 PDF 텍스트:
@@ -184,9 +170,10 @@ ${documentText}`;
                   properties: {
                     term: { type: "STRING" },
                     english: { type: "STRING" },
+                    spokenAliases: { type: "ARRAY", items: { type: "STRING" } },
                     easyExplanation: { type: "STRING" }
                   },
-                  required: ["term", "english", "easyExplanation"]
+                  required: ["term", "english", "spokenAliases", "easyExplanation"]
                 }
               }
             },
@@ -215,10 +202,12 @@ ${documentText}`;
 export function buildPhraseSet(terms: GlossaryTerm[], pages: PageText[]): string[] {
   const phrases = new Map<string, string>();
   for (const term of terms) {
-    if (locateTerm(pages, term.term)) phrases.set(normalize(term.term), term.term);
-    if (term.english && locateTerm(pages, term.english)) {
-      phrases.set(normalize(term.english), term.english);
-    }
+    const hasCanonicalEvidence = Boolean(locateTerm(pages, term.term));
+    const hasEnglishEvidence = Boolean(term.english && locateTerm(pages, term.english));
+    if (!hasCanonicalEvidence && !hasEnglishEvidence) continue;
+    if (hasCanonicalEvidence) phrases.set(normalize(term.term), term.term);
+    for (const alias of term.spokenAliases) phrases.set(normalize(alias), alias);
+    if (hasEnglishEvidence) phrases.set(normalize(term.english), term.english);
   }
   return [...phrases.values()].slice(0, MAX_TERMS);
 }
@@ -245,38 +234,5 @@ export async function analyzeGlossary(title: string, pages: PageText[]): Promise
 }
 
 export function matchTerms(text: string, terms: GlossaryTerm[]): GlossaryTerm[] {
-  const normalizedText = normalizeForTermMatching(text);
-  const candidates = terms
-    .map((term, sourceIndex) => ({ term, sourceIndex, normalizedTerm: normalizeForTermMatching(term.term) }))
-    .filter((candidate) => candidate.normalizedTerm.length > 0);
-  const matches: GlossaryTerm[] = [];
-  let cursor = 0;
-
-  while (cursor < normalizedText.length) {
-    const selected = candidates
-      .filter((candidate) => normalizedText.startsWith(candidate.normalizedTerm, cursor))
-      .filter((candidate) => hasValidAsciiBoundaries(normalizedText, cursor, candidate.normalizedTerm))
-      .sort((a, b) => b.normalizedTerm.length - a.normalizedTerm.length || a.sourceIndex - b.sourceIndex)[0];
-
-    if (!selected) {
-      cursor += 1;
-      continue;
-    }
-
-    matches.push(selected.term);
-    cursor += Math.max(selected.normalizedTerm.length, 1);
-  }
-
-  return matches;
-}
-
-function isAsciiWordCharacter(value: string | undefined): boolean {
-  return Boolean(value && /[A-Za-z0-9_]/.test(value));
-}
-
-function hasValidAsciiBoundaries(text: string, start: number, term: string): boolean {
-  const end = start + term.length;
-  if (isAsciiWordCharacter(term[0]) && isAsciiWordCharacter(text[start - 1])) return false;
-  if (isAsciiWordCharacter(term[term.length - 1]) && isAsciiWordCharacter(text[end])) return false;
-  return true;
+  return findTranscriptTermMatches(text, terms).map((match) => match.term);
 }

@@ -34,6 +34,7 @@ function term(overrides: Partial<GlossaryTerm> = {}): GlossaryTerm {
     id: "term-rag",
     term: "RAG",
     english: "Retrieval-Augmented Generation",
+    spokenAliases: ["래그", "레그", "알에이지"],
     easyExplanation: "외부 자료를 찾아 답변에 활용하는 방식",
     pageNumber: 3,
     occurrences: 2,
@@ -59,7 +60,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("browser glossary storage v1", () => {
+describe("browser glossary storage v2", () => {
   it("roundtrips complete terms and PhraseSet while excluding PDF-derived and transient data", () => {
     const storage = new MemoryStorage();
     const saved = saveAnalyzedGlossary(storage, analysis(), "생성형 AI 용어집", {
@@ -75,7 +76,7 @@ describe("browser glossary storage v1", () => {
     expect(raw).not.toContain("민감한 PDF 추출 페이지 텍스트");
     expect(raw).not.toContain("private-pdf");
     expect(raw).not.toContain("저장하면 안 되는 분석 경고");
-    expect(JSON.parse(raw || "{}")).toEqual({ version: 1, glossaries: [saved] });
+    expect(JSON.parse(raw || "{}")).toEqual({ version: 2, glossaries: [saved] });
   });
 
   it("rejects malformed JSON and strict-shape violations", () => {
@@ -84,13 +85,13 @@ describe("browser glossary storage v1", () => {
 
     expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "invalid" }));
 
-    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({ version: 1, glossaries: [], unexpected: true }));
+    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({ version: 2, glossaries: [], unexpected: true }));
     expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "invalid" }));
   });
 
   it("rejects an unsupported schema version without rewriting it", () => {
     const storage = new MemoryStorage();
-    const raw = JSON.stringify({ version: 2, glossaries: [] });
+    const raw = JSON.stringify({ version: 3, glossaries: [] });
     storage.setItem(GLOSSARY_STORAGE_KEY, raw);
 
     expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "version" }));
@@ -99,7 +100,7 @@ describe("browser glossary storage v1", () => {
 
   it("clears corrupt or unsupported data only after an explicit recovery call", () => {
     const storage = new MemoryStorage();
-    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({ version: 2, glossaries: [] }));
+    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({ version: 3, glossaries: [] }));
 
     expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "version" }));
     expect(storage.getItem(GLOSSARY_STORAGE_KEY)).not.toBeNull();
@@ -119,6 +120,50 @@ describe("browser glossary storage v1", () => {
     expect(listStoredGlossaries(storage)).toEqual([]);
   });
 
+  it("explicitly migrates valid v1 glossaries to v2 without changing IDs or invoking analysis", () => {
+    const storage = new MemoryStorage();
+    const legacyTerm = { ...term() } as Record<string, unknown>;
+    delete legacyTerm.spokenAliases;
+    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      glossaries: [{
+        id: "legacy-glossary",
+        name: "기존 용어집",
+        createdAt: "2026-08-08T01:00:00.000Z",
+        updatedAt: "2026-08-08T01:00:00.000Z",
+        terms: [legacyTerm],
+        phraseSet: ["RAG", "Retrieval-Augmented Generation"]
+      }]
+    }));
+
+    const migrated = listStoredGlossaries(storage);
+
+    expect(migrated[0]).toMatchObject({
+      id: "legacy-glossary",
+      terms: [{ id: "term-rag", spokenAliases: [] }]
+    });
+    expect(JSON.parse(storage.getItem(GLOSSARY_STORAGE_KEY) || "{}")).toMatchObject({
+      version: 2,
+      glossaries: [{ id: "legacy-glossary", terms: [{ spokenAliases: [] }] }]
+    });
+  });
+
+  it("validates alias limits, common-word hazards, collisions, and PhraseSet correspondence", () => {
+    const storage = new MemoryStorage();
+    expect(() => saveAnalyzedGlossary(storage, analysis({
+      terms: [term({ spokenAliases: ["모델"] })],
+      phraseSet: ["RAG", "모델"]
+    }), "위험 별칭")).toThrowError(expect.objectContaining({ code: "invalid" }));
+
+    expect(() => saveAnalyzedGlossary(storage, analysis({
+      terms: [
+        term({ id: "one", term: "Alpha", english: "Alpha", spokenAliases: ["공유발음"] }),
+        term({ id: "two", term: "Beta", english: "Beta", spokenAliases: ["공유발음"] })
+      ],
+      phraseSet: ["Alpha", "Beta", "공유발음"]
+    }), "충돌 별칭")).toThrowError(expect.objectContaining({ code: "invalid" }));
+  });
+
   it("deduplicates normalized term text, term IDs, and PhraseSet values while preserving the first term ID", () => {
     const storage = new MemoryStorage();
     const saved = saveAnalyzedGlossary(
@@ -127,7 +172,7 @@ describe("browser glossary storage v1", () => {
         terms: [
           term(),
           term({ id: "term-duplicate", term: " ＲＡＧ " }),
-          term({ id: "term-transformer", term: "Transformer", english: "Transformer", easyExplanation: "문맥을 처리하는 신경망 구조" })
+          term({ id: "term-transformer", term: "Transformer", english: "Transformer", spokenAliases: ["트랜스포머"], easyExplanation: "문맥을 처리하는 신경망 구조" })
         ],
         phraseSet: [" RAG ", "ＲＡＧ", " retrieval-augmented   generation ", "Transformer", " Transformer "]
       }),
@@ -146,6 +191,7 @@ describe("browser glossary storage v1", () => {
       id: "term-transformer",
       term: "Transformer",
       english: "Transformer",
+      spokenAliases: ["트랜스포머"],
       easyExplanation: "문맥을 처리하는 신경망 구조"
     });
     const first = saveAnalyzedGlossary(storage, analysis({

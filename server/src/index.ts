@@ -3,7 +3,7 @@ import http from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
 import { createApp, resolveListenHost } from "./app.js";
 import { type GlossaryTerm, type StartMessage, type TranscriptEvent } from "./types.js";
-import { matchTerms } from "./services/glossary.js";
+import { createTranscriptEvent } from "./services/caption.js";
 import { demoTranscript } from "./services/demo.js";
 import {
   createGoogleSpeechSession,
@@ -39,13 +39,7 @@ function send(websocket: WebSocket, event: TranscriptEvent): void {
 }
 
 function emitTranscript(websocket: WebSocket, text: string, isFinal: boolean, terms: GlossaryTerm[]): void {
-  const matched = matchTerms(text, terms);
-  send(websocket, {
-    type: isFinal ? "final" : "interim",
-    text,
-    detectedTerms: matched.map((term) => term.id),
-    relatedPage: matched[0]?.pageNumber
-  });
+  send(websocket, createTranscriptEvent(text, isFinal, terms));
 }
 
 function startDemo(websocket: WebSocket, terms: GlossaryTerm[], onEnd: () => void): Array<NodeJS.Timeout> {

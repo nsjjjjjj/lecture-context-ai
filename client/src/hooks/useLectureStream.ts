@@ -95,8 +95,10 @@ export function createFinalTranscriptLine(event: TranscriptEvent, id: string): {
     line: {
       id,
       text: event.text || "",
+      rawText: event.rawText || event.text || "",
       termIds: [...new Set(occurrenceTermIds)],
-      relatedPage: event.relatedPage
+      relatedPage: event.relatedPage,
+      corrections: event.corrections || []
     },
     occurrenceTermIds
   };

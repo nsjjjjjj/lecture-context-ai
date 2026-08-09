@@ -8,6 +8,7 @@ function term(overrides: Partial<GlossaryTerm> = {}): GlossaryTerm {
     id: "rag",
     term: "RAG",
     english: "Retrieval-Augmented Generation",
+    spokenAliases: ["래그", "레그", "알에이지"],
     easyExplanation: "외부 자료를 찾아 답변에 활용하는 방식",
     pageNumber: 1,
     occurrences: 1,
@@ -31,6 +32,14 @@ describe("sanitizeGlossaryTerms", () => {
     expect(result.some((candidate) => candidate.id === "duplicate")).toBe(false);
   });
 
+  it("발음 별칭을 안전 규칙으로 정리하고 알려진 RAG 발음을 보완한다", () => {
+    const result = sanitizeGlossaryTerms([
+      term({ spokenAliases: [" 레그 ", "모델", "not-korean", "레그"] })
+    ]);
+
+    expect(result[0]?.spokenAliases).toEqual(["레그", "래그", "알에이지"]);
+  });
+
   it("공백뿐인 용어는 거부하고 허용한 용어와 영문 표기는 정규화된 값으로 반환한다", () => {
     const result = sanitizeGlossaryTerms([
       term({ id: "blank", term: "  ", english: "  " }),
@@ -48,11 +57,11 @@ describe("sanitizeGlossaryTerms", () => {
 describe("sanitizePhraseSet", () => {
   it("검증된 term과 english에 대응하는 표기만 정규화 기준으로 허용한다", () => {
     const result = sanitizePhraseSet(
-      [" rag ", "ＲＡＧ", " retrieval-augmented   generation ", "없는 용어", 123],
+      [" rag ", "ＲＡＧ", " retrieval-augmented   generation ", " 레그 ", "없는 용어", 123],
       [term()]
     );
 
-    expect(result).toEqual(["RAG", "Retrieval-Augmented Generation"]);
+    expect(result).toEqual(["RAG", "Retrieval-Augmented Generation", "레그"]);
   });
 
   it("허용된 표기가 많아도 PhraseSet을 50개로 제한한다", () => {

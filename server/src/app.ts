@@ -119,7 +119,7 @@ export function createApp(options: AppOptions = {}) {
       title: "생성형 AI 입문 강연",
       pages: demoPages,
       terms: demoTerms,
-      phraseSet: demoTerms.map((term) => term.term),
+      phraseSet: demoTerms.flatMap((term) => [term.term, ...term.spokenAliases]).slice(0, 50),
       mode: "demo"
     });
   });

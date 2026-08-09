@@ -1,12 +1,19 @@
 import type { AnalysisResult, GlossaryTerm } from "../types";
 
 export const GLOSSARY_STORAGE_KEY = "lecture-context-ai.glossaries";
-export const GLOSSARY_STORAGE_VERSION = 1 as const;
+export const GLOSSARY_STORAGE_VERSION = 2 as const;
 
 const MAX_GLOSSARIES = 50;
 const MAX_TERMS = 50;
 const MAX_PHRASES = 50;
 const MAX_RAW_ITEMS = 200;
+const MAX_SPOKEN_ALIASES = 6;
+const MAX_SPOKEN_ALIAS_LENGTH = 40;
+const UNSAFE_ALIASES = new Set([
+  "강연", "검색", "결과", "경우", "관련", "그래서", "기능", "다시", "다음", "데이터", "모델", "문서",
+  "방식", "생성", "서비스", "사용자", "설명", "그리고", "이것", "입니다", "인식", "오늘", "외부", "이유",
+  "이미", "이번", "자료", "정도", "자막", "저것", "하지만", "답변", "용어", "우리", "페이지", "현재"
+]);
 
 export type StoredGlossary = {
   id: string;
@@ -17,7 +24,7 @@ export type StoredGlossary = {
   phraseSet: string[];
 };
 
-type GlossaryStoreV1 = {
+type GlossaryStoreV2 = {
   version: typeof GLOSSARY_STORAGE_VERSION;
   glossaries: StoredGlossary[];
 };
@@ -76,8 +83,36 @@ function validatedTimestamp(value: unknown, label: string): string {
   return value;
 }
 
-function validateTerm(value: unknown): GlossaryTerm {
-  if (!isRecord(value) || !hasExactKeys(value, ["id", "term", "english", "easyExplanation", "pageNumber", "occurrences", "source"])) {
+function validateSpokenAliases(value: unknown, term: string, english: string): string[] {
+  if (!Array.isArray(value) || value.length > MAX_RAW_ITEMS) {
+    fail("invalid", "저장된 발음 별칭 형식이 올바르지 않습니다.");
+  }
+  const protectedKeys = new Set([normalizedKey(term), normalizedKey(english)].filter(Boolean));
+  if (!/[A-Za-z]/u.test(`${term}${english}`) && value.length > 0) {
+    fail("invalid", "발음 별칭은 영문 표기가 있는 전문용어에만 사용할 수 있습니다.");
+  }
+  const aliases: string[] = [];
+  const seen = new Set<string>();
+  for (const candidate of value) {
+    const alias = validatedString(candidate, "발음 별칭", 2, MAX_SPOKEN_ALIAS_LENGTH);
+    const key = normalizedKey(alias);
+    const hangulCount = [...alias].filter((character) => /[가-힣]/u.test(character)).length;
+    if (!/^[가-힣]+(?:[ -][가-힣]+)*$/u.test(alias) || hangulCount < 2 || protectedKeys.has(key) || UNSAFE_ALIASES.has(key)) {
+      fail("invalid", "안전하지 않거나 전문용어와 중복되는 발음 별칭이 있습니다.");
+    }
+    if (seen.has(key)) continue;
+    seen.add(key);
+    aliases.push(alias);
+    if (aliases.length > MAX_SPOKEN_ALIASES) fail("invalid", "전문용어 하나의 발음 별칭은 최대 6개입니다.");
+  }
+  return aliases;
+}
+
+function validateTerm(value: unknown, legacy = false): GlossaryTerm {
+  const expectedKeys = legacy
+    ? ["id", "term", "english", "easyExplanation", "pageNumber", "occurrences", "source"]
+    : ["id", "term", "english", "spokenAliases", "easyExplanation", "pageNumber", "occurrences", "source"];
+  if (!isRecord(value) || !hasExactKeys(value, expectedKeys)) {
     fail("invalid", "저장된 전문용어 형식이 올바르지 않습니다.");
   }
 
@@ -94,10 +129,13 @@ function validateTerm(value: unknown): GlossaryTerm {
     fail("invalid", "저장된 전문용어 출처가 올바르지 않습니다.");
   }
 
+  const term = validatedString(value.term, "전문용어", 2, 80);
+  const english = validatedString(value.english, "영문 표기", 0, 120);
   return {
     id: value.id,
-    term: validatedString(value.term, "전문용어", 2, 80),
-    english: validatedString(value.english, "영문 표기", 0, 120),
+    term,
+    english,
+    spokenAliases: legacy ? [] : validateSpokenAliases(value.spokenAliases, term, english),
     easyExplanation: validatedString(value.easyExplanation, "쉬운 설명", 2, 240),
     pageNumber: value.pageNumber as number,
     occurrences: value.occurrences as number,
@@ -105,7 +143,7 @@ function validateTerm(value: unknown): GlossaryTerm {
   };
 }
 
-function validateTerms(value: unknown): GlossaryTerm[] {
+function validateTerms(value: unknown, legacy = false): GlossaryTerm[] {
   if (!Array.isArray(value) || value.length > MAX_RAW_ITEMS) {
     fail("invalid", "저장된 전문용어 목록이 올바르지 않습니다.");
   }
@@ -114,7 +152,7 @@ function validateTerms(value: unknown): GlossaryTerm[] {
   const seenIds = new Set<string>();
   const seenTerms = new Set<string>();
   for (const candidate of value) {
-    const term = validateTerm(candidate);
+    const term = validateTerm(candidate, legacy);
     const termKey = normalizedKey(term.term);
     if (seenIds.has(term.id) || seenTerms.has(termKey)) continue;
     seenIds.add(term.id);
@@ -123,6 +161,26 @@ function validateTerms(value: unknown): GlossaryTerm[] {
     if (terms.length > MAX_TERMS) fail("invalid", "저장 가능한 전문용어는 최대 50개입니다.");
   }
   if (terms.length === 0) fail("invalid", "전문용어가 하나 이상 있는 용어집만 저장할 수 있습니다.");
+
+  const protectedOwners = new Map<string, string>();
+  const aliasOwners = new Map<string, string>();
+  for (const term of terms) {
+    for (const label of [term.term, term.english]) {
+      const key = normalizedKey(label);
+      if (key) protectedOwners.set(key, term.id);
+    }
+  }
+  for (const term of terms) {
+    for (const alias of term.spokenAliases) {
+      const key = normalizedKey(alias);
+      const protectedOwner = protectedOwners.get(key);
+      const aliasOwner = aliasOwners.get(key);
+      if ((protectedOwner && protectedOwner !== term.id) || (aliasOwner && aliasOwner !== term.id)) {
+        fail("invalid", "서로 다른 전문용어가 같은 발음 별칭을 사용할 수 없습니다.");
+      }
+      aliasOwners.set(key, term.id);
+    }
+  }
   return terms;
 }
 
@@ -135,6 +193,7 @@ function validatePhraseSet(value: unknown, terms: GlossaryTerm[]): string[] {
   for (const term of terms) {
     allowed.set(normalizedKey(term.term), term.term);
     if (term.english) allowed.set(normalizedKey(term.english), term.english);
+    for (const alias of term.spokenAliases) allowed.set(normalizedKey(alias), alias);
   }
 
   const phraseSet: string[] = [];
@@ -152,7 +211,7 @@ function validatePhraseSet(value: unknown, terms: GlossaryTerm[]): string[] {
   return phraseSet;
 }
 
-function validateStoredGlossary(value: unknown): StoredGlossary {
+function validateStoredGlossary(value: unknown, legacy = false): StoredGlossary {
   if (!isRecord(value) || !hasExactKeys(value, ["id", "name", "createdAt", "updatedAt", "terms", "phraseSet"])) {
     fail("invalid", "저장된 용어집 형식이 올바르지 않습니다.");
   }
@@ -160,7 +219,7 @@ function validateStoredGlossary(value: unknown): StoredGlossary {
     fail("invalid", "저장된 용어집 ID가 올바르지 않습니다.");
   }
 
-  const terms = validateTerms(value.terms);
+  const terms = validateTerms(value.terms, legacy);
   const createdAt = validatedTimestamp(value.createdAt, "생성 시각");
   const updatedAt = validatedTimestamp(value.updatedAt, "수정 시각");
   if (updatedAt < createdAt) fail("invalid", "용어집 수정 시각이 생성 시각보다 빠릅니다.");
@@ -175,7 +234,18 @@ function validateStoredGlossary(value: unknown): StoredGlossary {
   };
 }
 
-function validateStore(value: unknown): GlossaryStoreV1 {
+function collectGlossaries(value: unknown[], legacy = false): StoredGlossary[] {
+  const byId = new Map<string, StoredGlossary>();
+  for (const candidate of value) {
+    const glossary = validateStoredGlossary(candidate, legacy);
+    const existing = byId.get(glossary.id);
+    if (!existing || glossary.updatedAt > existing.updatedAt) byId.set(glossary.id, glossary);
+  }
+  if (byId.size > MAX_GLOSSARIES) fail("limit", "이 브라우저에는 용어집을 최대 50개까지 저장할 수 있습니다. 기존 용어집을 삭제한 뒤 다시 시도해 주세요.");
+  return [...byId.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+function validateStore(value: unknown): GlossaryStoreV2 {
   if (!isRecord(value) || !hasExactKeys(value, ["version", "glossaries"])) {
     fail("invalid", "저장된 용어집 데이터가 손상되었습니다.");
   }
@@ -186,18 +256,20 @@ function validateStore(value: unknown): GlossaryStoreV1 {
     fail("invalid", "저장된 용어집 목록이 올바르지 않습니다.");
   }
 
-  const byId = new Map<string, StoredGlossary>();
-  for (const candidate of value.glossaries) {
-    const glossary = validateStoredGlossary(candidate);
-    const existing = byId.get(glossary.id);
-    if (!existing || glossary.updatedAt > existing.updatedAt) byId.set(glossary.id, glossary);
-  }
-  if (byId.size > MAX_GLOSSARIES) fail("limit", "이 브라우저에는 용어집을 최대 50개까지 저장할 수 있습니다. 기존 용어집을 삭제한 뒤 다시 시도해 주세요.");
-
   return {
     version: GLOSSARY_STORAGE_VERSION,
-    glossaries: [...byId.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    glossaries: collectGlossaries(value.glossaries)
   };
+}
+
+function migrateStoreV1(value: unknown): GlossaryStoreV2 {
+  if (!isRecord(value) || !hasExactKeys(value, ["version", "glossaries"]) || value.version !== 1) {
+    fail("version", "저장된 용어집 버전이 현재 앱과 호환되지 않습니다.");
+  }
+  if (!Array.isArray(value.glossaries) || value.glossaries.length > MAX_RAW_ITEMS) {
+    fail("invalid", "저장된 용어집 목록이 올바르지 않습니다.");
+  }
+  return { version: GLOSSARY_STORAGE_VERSION, glossaries: collectGlossaries(value.glossaries, true) };
 }
 
 function isQuotaError(error: unknown): boolean {
@@ -205,7 +277,7 @@ function isQuotaError(error: unknown): boolean {
   return error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED" || error.code === 22 || error.code === 1014;
 }
 
-function readStore(storage: GlossaryStorageAdapter): GlossaryStoreV1 {
+function readStore(storage: GlossaryStorageAdapter): GlossaryStoreV2 {
   let raw: string | null;
   try {
     raw = storage.getItem(GLOSSARY_STORAGE_KEY);
@@ -219,6 +291,15 @@ function readStore(storage: GlossaryStorageAdapter): GlossaryStoreV1 {
     parsed = JSON.parse(raw);
   } catch {
     fail("invalid", "저장된 용어집 데이터가 손상되어 불러오지 못했습니다.");
+  }
+  if (isRecord(parsed) && parsed.version === 1) {
+    const migrated = migrateStoreV1(parsed);
+    try {
+      storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify(migrated));
+    } catch {
+      // In-memory migration still keeps existing glossaries loadable when storage is read-only or full.
+    }
+    return migrated;
   }
   return validateStore(parsed);
 }
@@ -246,6 +327,7 @@ function glossaryContentFingerprint(glossary: StoredGlossary): string {
       term.id,
       term.term,
       term.english,
+      term.spokenAliases.map(normalizedKey).sort(),
       term.easyExplanation,
       term.pageNumber,
       term.occurrences,

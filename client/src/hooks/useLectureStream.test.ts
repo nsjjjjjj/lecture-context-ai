@@ -22,10 +22,36 @@ describe("useLectureStream final transcript mapping", () => {
     expect(result.line).toEqual({
       id: "line-rag",
       text: "RAG와 다시 RAG",
+      rawText: "RAG와 다시 RAG",
       termIds: ["rag"],
-      relatedPage: 3
+      relatedPage: 3,
+      corrections: []
     });
     expect(result.occurrenceTermIds).toEqual(["rag", "rag"]);
+  });
+
+  it("정정된 표시 자막과 원본 STT·정정 근거를 함께 보존한다", () => {
+    const correction = {
+      originalText: "레그",
+      correctedText: "RAG",
+      termId: "rag",
+      displayStart: 0,
+      displayEnd: 3,
+      reason: "spokenAlias" as const
+    };
+    const result = createFinalTranscriptLine({
+      type: "final",
+      text: "RAG를 설명합니다.",
+      rawText: "레그를 설명합니다.",
+      detectedTerms: ["rag"],
+      corrections: [correction]
+    }, "line-corrected");
+
+    expect(result.line).toMatchObject({
+      text: "RAG를 설명합니다.",
+      rawText: "레그를 설명합니다.",
+      corrections: [correction]
+    });
   });
 });
 

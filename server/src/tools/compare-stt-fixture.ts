@@ -9,7 +9,8 @@ import {
   FIXTURE_BYTES_PER_SECOND,
   splitPcmForSpeech
 } from "../services/audio-fixtures.js";
-import type { GlossaryTerm, StartMessage, TranscriptEvent } from "../types.js";
+import { findTranscriptTermMatches } from "../services/caption.js";
+import type { GlossaryTerm, StartMessage, TranscriptCorrection, TranscriptEvent } from "../types.js";
 
 const REPLAY_CHUNK_BYTES = 3_200;
 const RUN_GRACE_MS = 30_000;
@@ -35,7 +36,9 @@ type FixtureRunLabel = "without-phrase-set" | "with-phrase-set";
 
 type FinalTranscript = {
   text: string;
+  rawText: string;
   detectedTermIds: string[];
+  corrections: TranscriptCorrection[];
 };
 
 type FixtureRunResult = {
@@ -49,13 +52,14 @@ type FixtureRunResult = {
   interimCount: number;
   finalTranscripts: FinalTranscript[];
   transcript: string;
+  rawTranscript: string;
   recognizedTerms: string[];
   unrecognizedTerms: string[];
   errors: string[];
 };
 
 type ComparisonReport = {
-  version: 1;
+  version: 2;
   createdAt: string;
   recordingId: string;
   scriptId: string;
@@ -80,6 +84,7 @@ export function buildFixtureTerms(targetTerms: string[]): GlossaryTerm[] {
     id: `fixture-term-${String(index + 1).padStart(2, "0")}`,
     term,
     english: term,
+    spokenAliases: [],
     easyExplanation: "고정음원 STT 비교용 전문용어",
     pageNumber: 1,
     occurrences: 1,
@@ -92,12 +97,12 @@ export function findRecognizedTerms(
   terms: GlossaryTerm[],
   finalTranscripts: FinalTranscript[]
 ): string[] {
-  const detectedIds = new Set(finalTranscripts.flatMap((event) => event.detectedTermIds));
-  const termById = new Map(terms.map((term) => [term.id, term.term]));
-  const detectedTerms = new Set(
-    [...detectedIds].map((id) => termById.get(id)).filter((term): term is string => Boolean(term))
+  const exactTerms = terms.map((term) => ({ ...term, spokenAliases: [] }));
+  const detectedIds = new Set(
+    finalTranscripts.flatMap((event) => findTranscriptTermMatches(event.rawText, exactTerms).map((match) => match.term.id))
   );
-  return targetTerms.filter((term) => detectedTerms.has(term));
+  const idByTerm = new Map(exactTerms.map((term) => [term.term, term.id]));
+  return targetTerms.filter((term) => detectedIds.has(idByTerm.get(term) ?? ""));
 }
 
 function send(socket: WebSocket, payload: string | Buffer): Promise<void> {
@@ -140,6 +145,7 @@ async function runFixture(options: {
       if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) socket.close();
 
       const transcript = finalTranscripts.map((event) => event.text).join(" ").trim();
+      const rawTranscript = finalTranscripts.map((event) => event.rawText).join(" ").trim();
       const recognizedTerms = findRecognizedTerms(options.targetTerms, options.terms, finalTranscripts);
 
       resolve({
@@ -153,6 +159,7 @@ async function runFixture(options: {
         interimCount,
         finalTranscripts,
         transcript,
+        rawTranscript,
         recognizedTerms,
         unrecognizedTerms: options.targetTerms.filter((term) => !recognizedTerms.includes(term)),
         errors
@@ -200,7 +207,12 @@ async function runFixture(options: {
       } else if (event.type === "interim") {
         interimCount += 1;
       } else if (event.type === "final" && event.text) {
-        finalTranscripts.push({ text: event.text, detectedTermIds: event.detectedTerms ?? [] });
+        finalTranscripts.push({
+          text: event.text,
+          rawText: event.rawText ?? event.text,
+          detectedTermIds: event.detectedTerms ?? [],
+          corrections: event.corrections ?? []
+        });
       } else if (event.type === "error") {
         finish("error", event.message || "Google STT가 오류를 반환했습니다.");
       } else if (event.type === "ended") {
@@ -255,7 +267,7 @@ async function main(): Promise<void> {
   const baseline = runs[0];
   const adapted = runs[1];
   const report: ComparisonReport = {
-    version: 1,
+    version: 2,
     createdAt: new Date().toISOString(),
     recordingId: recording.id,
     scriptId: script.id,

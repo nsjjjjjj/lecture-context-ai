@@ -12,7 +12,19 @@ describe("fixed audio STT comparison helpers", () => {
   it("counts only terms explicitly matched by the server", () => {
     const terms = buildFixtureTerms(["RAG", "PhraseSet"]);
     expect(findRecognizedTerms(["RAG", "PhraseSet"], terms, [
-      { text: "레그와 PhraseSet을 설명합니다.", detectedTermIds: ["fixture-term-02"] }
+      {
+        text: "RAG와 PhraseSet을 설명합니다.",
+        rawText: "레그와 PhraseSet을 설명합니다.",
+        detectedTermIds: ["fixture-term-01", "fixture-term-02"],
+        corrections: [{
+          originalText: "레그",
+          correctedText: "RAG",
+          termId: "fixture-term-01",
+          displayStart: 0,
+          displayEnd: 3,
+          reason: "spokenAlias"
+        }]
+      }
     ])).toEqual(["PhraseSet"]);
   });
 });

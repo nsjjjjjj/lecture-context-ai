@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { analyzePdf, getDemo, getHealth } from "./lib/api";
 import { AudioFixtureRecorder } from "./components/AudioFixtureRecorder";
+import { TransparentCaption } from "./components/TransparentCaption";
 import {
   loadStoredGlossaryReadyState,
   requireNonEmptyGlossary,
@@ -48,7 +49,6 @@ import {
 } from "./lib/glossary-storage";
 import { useLectureStream } from "./hooks/useLectureStream";
 import { shouldTransitionToResults } from "./hooks/lecture-stream-state";
-import { buildHighlightedTextParts } from "./lib/term-highlights";
 import type { AnalysisResult, GlossaryTerm, ServiceStatus, TranscriptLine } from "./types";
 
 type FontScale = "normal" | "large" | "xlarge";
@@ -498,6 +498,9 @@ function ReadyScreen({
                   <div className="shrink-0 rounded-lg bg-white/[0.06] px-2 py-1 text-[10px] font-bold text-slate-400">p.{term.pageNumber}</div>
                 </div>
                 <p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-500">{term.easyExplanation}</p>
+                {term.spokenAliases.length > 0 && (
+                  <p className="mt-2 line-clamp-1 text-[11px] font-semibold text-amber-200/70">인식 발음: {term.spokenAliases.join(" · ")}</p>
+                )}
               </div>
             ))}
           </div>
@@ -505,17 +508,6 @@ function ReadyScreen({
         </section>
       </div>
     </main>
-  );
-}
-
-function HighlightedText({ text, terms, sizeClass }: { text: string; terms: GlossaryTerm[]; sizeClass: string }) {
-  const parts = buildHighlightedTextParts(text, terms);
-  return (
-    <p className={sizeClass}>
-      {parts.map((part, index) => part.highlighted
-        ? <mark key={`${part.termId}-${index}`} className="rounded-md bg-cyan-300 px-1.5 py-0.5 text-slate-950">{part.text}</mark>
-        : <span key={`text-${index}`}>{part.text}</span>)}
-    </p>
   );
 }
 
@@ -584,12 +576,12 @@ function LiveScreen({
 
             <div className="flex min-h-0 flex-1 flex-col justify-end overflow-y-auto py-5 sm:py-6">
               <div className="space-y-3 opacity-35">
-                {previousLines.map((line) => <p key={line.id} className="text-sm font-bold leading-relaxed text-slate-300 sm:text-base xl:text-lg">{line.text}</p>)}
+                {previousLines.map((line) => <TransparentCaption key={line.id} line={line} terms={analysis.terms} className="text-sm font-bold leading-relaxed text-slate-300 sm:text-base xl:text-lg" />)}
               </div>
               <div className="mt-5 min-h-[120px] border-t border-white/[0.07] pt-5 sm:min-h-[140px]">
                 <div aria-live="polite" aria-atomic="true">
                   {currentLine ? (
-                    <HighlightedText text={currentLine.text} terms={analysis.terms.filter((term) => currentLine.termIds.includes(term.id))} sizeClass={sizeClass} />
+                    <TransparentCaption line={currentLine} terms={analysis.terms} className={sizeClass} />
                   ) : (
                     <p className={`${sizeClass} text-slate-600`}>마이크에 대고 강연을 시작해 주세요.</p>
                   )}
@@ -699,7 +691,7 @@ function ResultsScreen({ analysis, lines, onRestart, onHome }: { analysis: Analy
               <div key={line.id} className="flex gap-4 rounded-2xl border border-white/[0.055] bg-[#07111f]/55 p-4">
                 <div className="grid size-7 shrink-0 place-items-center rounded-full bg-white/[0.06] text-[10px] font-black text-slate-500">{index + 1}</div>
                 <div>
-                  <p className="text-sm font-semibold leading-6 text-slate-300">{line.text}</p>
+                  <TransparentCaption line={line} terms={analysis.terms} className="text-sm font-semibold leading-6 text-slate-300" />
                   {line.termIds.length > 0 && <div className="mt-2 text-[11px] font-bold text-cyan-300">{line.termIds.map((id) => analysis.terms.find((term) => term.id === id)?.term).filter(Boolean).join(" · ")}</div>}
                 </div>
               </div>

@@ -13,6 +13,7 @@ const terms: GlossaryTerm[] = [
     id: "rag",
     term: "RAG",
     english: "Retrieval-Augmented Generation",
+    spokenAliases: ["래그", "레그", "알에이지"],
     easyExplanation: "외부 자료를 찾아 답변하는 방식",
     pageNumber: 3,
     occurrences: 2,
@@ -38,7 +39,7 @@ describe("lecture stream lifecycle", () => {
     const initial = createInitialLectureStreamState();
     const withFinal = lectureStreamReducer(initial, {
       type: "final",
-      line: { id: "line-1", text: "RAG를 설명합니다.", termIds: ["rag"], relatedPage: 3 },
+      line: { id: "line-1", text: "RAG를 설명합니다.", rawText: "RAG를 설명합니다.", termIds: ["rag"], relatedPage: 3, corrections: [] },
       occurrenceTermIds: ["rag"]
     });
 
@@ -55,7 +56,7 @@ describe("lecture stream lifecycle", () => {
     const stopping = lectureStreamReducer(ready, { type: "stopping" });
     const withFinal = lectureStreamReducer(stopping, {
       type: "final",
-      line: { id: "tail", text: "마지막 RAG 확정 자막", termIds: ["rag"], relatedPage: 3 },
+      line: { id: "tail", text: "마지막 RAG 확정 자막", rawText: "마지막 RAG 확정 자막", termIds: ["rag"], relatedPage: 3, corrections: [] },
       occurrenceTermIds: ["rag"]
     });
 
@@ -74,7 +75,7 @@ describe("lecture stream lifecycle", () => {
   it("한 final의 마지막 언급을 맨 위에 두고 원래 occurrence index로 안정적인 id를 만든다", () => {
     const withFinal = lectureStreamReducer(createInitialLectureStreamState(), {
       type: "final",
-      line: { id: "line-ordered", text: "LLM 다음 RAG", termIds: ["llm", "rag"] },
+      line: { id: "line-ordered", text: "LLM 다음 RAG", rawText: "LLM 다음 RAG", termIds: ["llm", "rag"], corrections: [] },
       occurrenceTermIds: ["llm", "rag"]
     });
 
@@ -87,12 +88,12 @@ describe("lecture stream lifecycle", () => {
   it("같은 용어가 다시 언급되면 기존 기록을 유지한 채 새 카드를 맨 위에 추가한다", () => {
     const first = lectureStreamReducer(createInitialLectureStreamState(), {
       type: "final",
-      line: { id: "line-1", text: "첫 RAG", termIds: ["rag"] },
+      line: { id: "line-1", text: "첫 RAG", rawText: "첫 RAG", termIds: ["rag"], corrections: [] },
       occurrenceTermIds: ["rag"]
     });
     const second = lectureStreamReducer(first, {
       type: "final",
-      line: { id: "line-2", text: "RAG와 다시 RAG", termIds: ["rag"] },
+      line: { id: "line-2", text: "RAG와 다시 RAG", rawText: "RAG와 다시 RAG", termIds: ["rag"], corrections: [] },
       occurrenceTermIds: ["rag", "rag"]
     });
 
@@ -106,7 +107,7 @@ describe("lecture stream lifecycle", () => {
   it("interim은 용어 기록을 만들지 않고 새 강연 시작은 기존 기록을 초기화한다", () => {
     const withFinal = lectureStreamReducer(createInitialLectureStreamState(), {
       type: "final",
-      line: { id: "line-1", text: "RAG", termIds: ["rag"] },
+      line: { id: "line-1", text: "RAG", rawText: "RAG", termIds: ["rag"], corrections: [] },
       occurrenceTermIds: ["rag"]
     });
     const withInterim = lectureStreamReducer(withFinal, { type: "interim", text: "RAG를 다시" });
