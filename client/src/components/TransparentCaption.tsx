@@ -1,4 +1,4 @@
-import { Fragment, useId } from "react";
+import { Fragment } from "react";
 import { buildHighlightedTextParts } from "../lib/term-highlights";
 import type { GlossaryTerm, TranscriptCorrection, TranscriptLine } from "../types";
 
@@ -42,7 +42,6 @@ export function TransparentCaption({
   terms: GlossaryTerm[];
   className: string;
 }) {
-  const tooltipPrefix = useId();
   const relevantTerms = terms.filter((term) => line.termIds.includes(term.id));
   const parts = buildCaptionDisplayParts(line.text, line.corrections);
 
@@ -52,19 +51,15 @@ export function TransparentCaption({
         if (part.kind === "text") {
           return <HighlightedPart key={`text-${index}`} text={part.text} terms={relevantTerms} />;
         }
-        const tooltipId = `${tooltipPrefix}-correction-${index}`;
-        const explanation = `자동 정정: ${part.correction.originalText} → ${part.correction.correctedText}`;
+        const explanation = `정정 표기: ${part.correction.correctedText}, 원래 음성 인식: ${part.correction.originalText}`;
         return (
           <span
             key={`${part.correction.termId}-${part.correction.displayStart}`}
             className="caption-correction"
-            tabIndex={0}
             aria-label={explanation}
-            aria-describedby={tooltipId}
           >
-            <mark className="caption-correction-term">{part.text}</mark>
-            <span className="caption-correction-badge" aria-hidden="true">자동 정정</span>
-            <span id={tooltipId} role="tooltip" className="caption-correction-tooltip">{explanation}</span>
+            <span className="caption-correction-term" aria-hidden="true">{part.text}</span>
+            <span className="caption-correction-original" aria-hidden="true">({part.correction.originalText})</span>
           </span>
         );
       })}

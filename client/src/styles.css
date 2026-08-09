@@ -66,59 +66,20 @@ button:disabled { cursor: default; }
 .caption-xlarge { font-size: clamp(2.35rem, 4.15vw, 4.15rem); }
 
 .caption-correction {
-  position: relative;
   display: inline-flex;
   align-items: baseline;
-  gap: .3em;
-  border-radius: .45rem;
-  outline: none;
+  gap: .08em;
 }
-.caption-correction:focus-visible { box-shadow: 0 0 0 2px #fbbf24; }
 .caption-correction-term {
-  border-bottom: 2px dashed #fbbf24;
-  border-radius: .35rem;
-  background: rgb(251 191 36 / .15);
-  padding: 0 .18em;
-  color: #fef3c7;
+  color: inherit;
+  font: inherit;
 }
-.caption-correction-badge {
-  border: 1px solid rgb(251 191 36 / .35);
-  border-radius: 999px;
-  background: rgb(251 191 36 / .12);
-  padding: .2em .48em;
-  color: #fcd34d;
-  font-size: .36em;
-  font-weight: 900;
-  line-height: 1.4;
-  letter-spacing: 0;
-  white-space: nowrap;
-  vertical-align: middle;
-}
-.caption-correction-tooltip {
-  position: absolute;
-  z-index: 30;
-  bottom: calc(100% + .55rem);
-  left: 0;
-  visibility: hidden;
-  width: max-content;
-  max-width: min(22rem, 80vw);
-  border: 1px solid rgb(251 191 36 / .3);
-  border-radius: .75rem;
-  background: #111827;
-  padding: .55rem .7rem;
-  color: #fef3c7;
-  font-size: .75rem;
+.caption-correction-original {
+  color: #94a3b8;
+  font-size: .68em;
   font-weight: 750;
-  line-height: 1.35;
-  letter-spacing: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 120ms ease;
-}
-.caption-correction:hover .caption-correction-tooltip,
-.caption-correction:focus .caption-correction-tooltip {
-  visibility: visible;
-  opacity: 1;
+  letter-spacing: -.015em;
+  white-space: nowrap;
 }
 
 .contrast-more { --tw-bg-opacity: 1; }

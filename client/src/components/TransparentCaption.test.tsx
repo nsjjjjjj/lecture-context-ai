@@ -35,13 +35,14 @@ describe("transparent caption correction", () => {
     ]);
   });
 
-  it("renders a visible marker and accessible original-to-canonical explanation", () => {
+  it("renders the corrected term with the original recognition inline and accessibly", () => {
     const html = renderToStaticMarkup(<TransparentCaption line={correctedLine} terms={[rag]} className="caption" />);
 
-    expect(html).toContain("자동 정정");
-    expect(html).toContain("레그 → RAG");
-    expect(html).toContain('tabindex="0"');
-    expect(html).toContain('role="tooltip"');
+    expect(html).toContain("RAG");
+    expect(html.match(/\(레그\)/g)).toHaveLength(2);
+    expect(html).toContain("정정 표기: RAG, 원래 음성 인식: 레그");
+    expect(html).not.toContain("자동 정정");
+    expect(html).not.toContain('role="tooltip"');
   });
 
   it("ignores malformed or overlapping ranges instead of duplicating text", () => {
