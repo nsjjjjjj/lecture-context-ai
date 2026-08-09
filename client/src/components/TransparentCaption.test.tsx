@@ -35,10 +35,11 @@ describe("transparent caption correction", () => {
     ]);
   });
 
-  it("renders the corrected term with the original recognition inline and accessibly", () => {
+  it("highlights the corrected term while keeping the original recognition inline and accessible", () => {
     const html = renderToStaticMarkup(<TransparentCaption line={correctedLine} terms={[rag]} className="caption" />);
 
-    expect(html).toContain("RAG");
+    expect(html.match(/<mark[^>]*>RAG<\/mark>/g)).toHaveLength(2);
+    expect(html).toContain("bg-cyan-300");
     expect(html.match(/\(레그\)/g)).toHaveLength(2);
     expect(html).toContain("정정 표기: RAG, 원래 음성 인식: 레그");
     expect(html).not.toContain("자동 정정");

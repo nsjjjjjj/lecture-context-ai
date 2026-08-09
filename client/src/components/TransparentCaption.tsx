@@ -6,6 +6,8 @@ export type CaptionDisplayPart =
   | { kind: "text"; text: string }
   | { kind: "correction"; text: string; correction: TranscriptCorrection };
 
+const TERM_HIGHLIGHT_CLASS_NAME = "rounded-md bg-cyan-300 px-1.5 py-0.5 text-slate-950";
+
 export function buildCaptionDisplayParts(text: string, corrections: TranscriptCorrection[]): CaptionDisplayPart[] {
   const parts: CaptionDisplayPart[] = [];
   let cursor = 0;
@@ -29,7 +31,7 @@ export function buildCaptionDisplayParts(text: string, corrections: TranscriptCo
 
 function HighlightedPart({ text, terms }: { text: string; terms: GlossaryTerm[] }) {
   return buildHighlightedTextParts(text, terms).map((part, index) => part.highlighted
-    ? <mark key={`${part.termId}-${index}`} className="rounded-md bg-cyan-300 px-1.5 py-0.5 text-slate-950">{part.text}</mark>
+    ? <mark key={`${part.termId}-${index}`} className={TERM_HIGHLIGHT_CLASS_NAME}>{part.text}</mark>
     : <Fragment key={`text-${index}`}>{part.text}</Fragment>);
 }
 
@@ -58,7 +60,7 @@ export function TransparentCaption({
             className="caption-correction"
             aria-label={explanation}
           >
-            <span className="caption-correction-term" aria-hidden="true">{part.text}</span>
+            <mark className={TERM_HIGHLIGHT_CLASS_NAME} aria-hidden="true">{part.text}</mark>
             <span className="caption-correction-original" aria-hidden="true">({part.correction.originalText})</span>
           </span>
         );
