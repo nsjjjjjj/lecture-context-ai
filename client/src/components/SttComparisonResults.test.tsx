@@ -19,10 +19,13 @@ import {
   aggregateComparisonReport,
   comparisonReportToTsv,
   defaultRecordingId,
+  handleLocalTerminalResultOnce,
   historyBadgeLabels,
   isPaperReadyComparison,
+  registerDiscoveredLocalJob,
   startSttComparisonAttempt,
   SttComparisonJobPanel,
+  SttComparisonResults,
   SttComparisonResultsView
 } from "./SttComparisonResults";
 
@@ -223,7 +226,7 @@ describe("STT comparison API request safety", () => {
     expect(owners).toEqual(["cli", "ui"]);
   });
 
-  it("sends the exact paid-call consent only from the explicit start helper", async () => {
+  it("sends the exact paid-call consent only to a mocked start endpoint", async () => {
     const job = createJob();
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ job }), {
       status: 202,
@@ -294,6 +297,69 @@ describe("STT comparison API request safety", () => {
 
     expect(successfulLoadCurrent).not.toHaveBeenCalled();
     expect(successfulResetConsent).toHaveBeenCalledOnce();
+  });
+
+  it("restores a remounted local job and handles its terminal result exactly once", () => {
+    const runningJob = createJob({
+      id: "job-remounted",
+      state: "running",
+      status: "running"
+    });
+    const terminalJob = createJob({
+      id: runningJob.id,
+      state: "completed",
+      status: "completed",
+      resultFileName: "comparison-job-remounted.json"
+    });
+    const locallyStartedJobIds = new Set<string>();
+    const handledJobIds = new Set<string>();
+    const calls: string[] = [];
+    const selectResult = vi.fn(() => calls.push("select"));
+    const refreshHistory = vi.fn(() => calls.push("refresh"));
+    const onResultReady = vi.fn(() => calls.push("ready"));
+
+    expect(registerDiscoveredLocalJob({ kind: "local", job: runningJob }, locallyStartedJobIds)).toBe(true);
+    expect(locallyStartedJobIds).toEqual(new Set([runningJob.id]));
+    expect(handleLocalTerminalResultOnce({ job: terminalJob, locallyStartedJobIds, handledJobIds, selectResult, refreshHistory, onResultReady })).toBe(true);
+    expect(handleLocalTerminalResultOnce({ job: terminalJob, locallyStartedJobIds, handledJobIds, selectResult, refreshHistory, onResultReady })).toBe(false);
+    expect(calls).toEqual(["select", "refresh", "ready"]);
+    expect(selectResult).toHaveBeenCalledOnce();
+    expect(selectResult).toHaveBeenCalledWith("comparison-job-remounted.json");
+    expect(refreshHistory).toHaveBeenCalledOnce();
+    expect(refreshHistory).toHaveBeenCalledWith("comparison-job-remounted.json");
+    expect(onResultReady).toHaveBeenCalledOnce();
+    expect(onResultReady).toHaveBeenCalledWith("comparison-job-remounted.json");
+  });
+
+  it("does not register null or externally owned current jobs", () => {
+    const locallyStartedJobIds = new Set<string>();
+
+    expect(registerDiscoveredLocalJob(null, locallyStartedJobIds)).toBe(false);
+    expect(registerDiscoveredLocalJob({
+      kind: "external",
+      job: {
+        id: "external-job",
+        owner: "cli",
+        recordingId: recordings[0]!.id,
+        startedAt: "2026-08-09T01:00:00.000Z",
+        state: "running"
+      }
+    }, locallyStartedJobIds)).toBe(false);
+    expect(locallyStartedJobIds).toEqual(new Set());
+  });
+});
+
+describe("STT comparison view separation", () => {
+  it("renders only paid run controls in run view and only result controls in results view", () => {
+    const runHtml = renderToStaticMarkup(<SttComparisonResults recordings={recordings} view="run" onResultReady={() => undefined} />);
+    const resultsHtml = renderToStaticMarkup(<SttComparisonResults recordings={recordings} view="results" onResultReady={() => undefined} />);
+
+    expect(runHtml).toContain("A/B/C STT 비교 실행");
+    expect(runHtml).toContain("정확히 3개의 유료 Google STT 스트림");
+    expect(runHtml).not.toContain("저장된 STT 비교 결과");
+    expect(resultsHtml).toContain("저장된 STT 비교 결과");
+    expect(resultsHtml).not.toContain("A/B/C STT 비교 실행");
+    expect(resultsHtml).not.toContain("유료 비교 시작");
   });
 });
 
@@ -439,6 +505,53 @@ describe("STT comparison result rendering", () => {
     expect(html).toContain("comparison-new.json");
     expect(html).toMatch(/aria-current="true"[^>]*>.*comparison-old\.json/s);
     expect(html).toContain("1–2 / 3");
+  });
+
+  it("uses mutually exclusive narrow list/detail panes and exposes a focused-detail target", () => {
+    const history = [{
+      fileName: "comparison-mobile.json",
+      modifiedAt: "2026-08-09T02:00:00.000Z",
+      version: 3 as const,
+      createdAt: "2026-08-09T02:00:00.000Z",
+      recordingId: recordings[1]!.id,
+      scriptTitle: "기준 문장",
+      evaluationMode: "accuracy" as const,
+      runOutcome: "complete" as const
+    }];
+    const listHtml = renderToStaticMarkup(
+      <SttComparisonResultsView
+        latest={createReport()}
+        reportCount={1}
+        loading={false}
+        error=""
+        onRefresh={() => undefined}
+        history={history}
+        selectedFileName={history[0]!.fileName}
+        mobileDetailOpen={false}
+      />
+    );
+    const detailHtml = renderToStaticMarkup(
+      <SttComparisonResultsView
+        latest={createReport()}
+        reportCount={1}
+        loading={false}
+        error=""
+        onRefresh={() => undefined}
+        history={history}
+        selectedFileName={history[0]!.fileName}
+        mobileDetailOpen
+        detailFocusRequest={1}
+      />
+    );
+
+    expect(listHtml).toContain('data-testid="stt-results-list-pane" class="block min-w-0 lg:block"');
+    expect(listHtml).toContain('data-testid="stt-results-detail-pane" aria-labelledby="stt-comparison-detail-heading" class="hidden min-w-0 lg:block"');
+    expect(detailHtml).toContain('data-testid="stt-results-list-pane" class="hidden min-w-0 lg:block"');
+    expect(detailHtml).toContain('data-testid="stt-results-detail-pane" aria-labelledby="stt-comparison-detail-heading" class="block min-w-0 lg:block"');
+    expect(detailHtml).toMatch(/data-testid="stt-results-mobile-back" class="mb-3 lg:hidden"><button type="button" class="secondary-button !min-h-10 text-xs">.*결과 목록으로/s);
+    expect(detailHtml).not.toContain('secondary-button !min-h-10 text-xs lg:hidden');
+    expect(detailHtml).toContain('id="stt-comparison-detail-heading" tabindex="-1"');
+    expect(detailHtml).toContain("lg:grid-cols-[minmax(16rem,0.75fr)_minmax(0,1.75fr)]");
   });
 
   it("renders accuracy, smoke, outcome, and legacy badges only from history metadata", () => {

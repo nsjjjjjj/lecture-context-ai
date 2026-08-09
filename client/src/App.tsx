@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Accessibility,
   ArrowLeft,
@@ -29,7 +29,7 @@ import {
   X
 } from "lucide-react";
 import { analyzePdf, getDemo, getHealth } from "./lib/api";
-import { AudioFixtureRecorder } from "./components/AudioFixtureRecorder";
+import { ExperimentWorkspace, type ExperimentPanel } from "./components/ExperimentWorkspace";
 import { TransparentCaption } from "./components/TransparentCaption";
 import {
   loadStoredGlossaryReadyState,
@@ -53,6 +53,35 @@ import type { AnalysisResult, GlossaryTerm, ServiceStatus, TranscriptLine } from
 
 type FontScale = "normal" | "large" | "xlarge";
 
+export type AppRoute =
+  | { page: "lecture" }
+  | { page: "experiment"; panel: ExperimentPanel };
+
+const LECTURE_ROUTE: AppRoute = { page: "lecture" };
+
+export function parseAppHash(hash: string): AppRoute {
+  switch (hash) {
+    case "#/experiment/record":
+      return { page: "experiment", panel: "record" };
+    case "#/experiment/run":
+      return { page: "experiment", panel: "run" };
+    case "#/experiment/results":
+      return { page: "experiment", panel: "results" };
+    case "#/lecture":
+    default:
+      return LECTURE_ROUTE;
+  }
+}
+
+export function appRouteHash(route: AppRoute): string {
+  return route.page === "lecture" ? "#/lecture" : `#/experiment/${route.panel}`;
+}
+
+export function resolveAppRoute(hash: string, development: boolean): AppRoute {
+  const route = parseAppHash(hash);
+  return development || route.page === "lecture" ? route : LECTURE_ROUTE;
+}
+
 export const UPLOAD_CARD_GLOW_PROPS = {
   "aria-hidden": true,
   className: "pointer-events-none absolute -inset-3 rounded-[2.4rem] bg-gradient-to-br from-cyan-300/15 via-transparent to-blue-500/10 blur-2xl"
@@ -72,16 +101,66 @@ function Logo() {
   );
 }
 
-function Header({ stage, onHome }: { stage: Stage; onHome: () => void }) {
+export function Header({
+  stage,
+  route,
+  development,
+  experimentNavigationBlocked,
+  onHome,
+  onNavigate
+}: {
+  stage: Stage;
+  route: AppRoute;
+  development: boolean;
+  experimentNavigationBlocked: boolean;
+  onHome: () => void;
+  onNavigate: (route: AppRoute) => void;
+}) {
   const compact = stage === "live";
+  const lectureActive = route.page === "lecture";
+  const experimentActive = route.page === "experiment";
+  const experimentRoute: AppRoute = experimentActive ? route : { page: "experiment", panel: "record" };
+  const primaryLinkClass = "inline-flex min-h-10 items-center justify-center rounded-xl px-4 text-xs font-extrabold outline-none ring-cyan-300 transition focus-visible:ring-2";
 
   return (
     <header className="relative z-20 border-b border-white/[0.06] bg-[#07111f]/85 backdrop-blur-xl">
-      <div className={`mx-auto flex max-w-[1440px] items-center justify-between px-5 sm:px-8 ${compact ? "h-16" : "h-20"}`}>
+      <div className={`mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-4 px-5 py-3 sm:px-8 ${compact ? "min-h-16" : "min-h-20"}`}>
         <button onClick={onHome} aria-label="처음 화면으로 이동" className="rounded-2xl text-left outline-none ring-cyan-300 focus-visible:ring-2">
           <Logo />
         </button>
-        <div className="hidden items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] p-1 sm:flex">
+        <nav aria-label="주요 메뉴" className="order-3 mt-3 w-full sm:order-none sm:mt-0 sm:w-auto">
+          <ul className="flex items-center gap-1 rounded-2xl border border-white/[0.07] bg-white/[0.035] p-1">
+            <li className="min-w-0 flex-1 sm:flex-none">
+              <a
+                href="#/lecture"
+                aria-current={lectureActive ? "page" : undefined}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onNavigate(LECTURE_ROUTE);
+                }}
+                className={`${primaryLinkClass} w-full ${lectureActive ? "bg-white text-slate-950" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"}`}
+              >
+                강연
+              </a>
+            </li>
+            {development && !experimentNavigationBlocked ? (
+              <li className="min-w-0 flex-1 sm:flex-none">
+                <a
+                  href={appRouteHash(experimentRoute)}
+                  aria-current={experimentActive ? "page" : undefined}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onNavigate(experimentRoute);
+                  }}
+                  className={`${primaryLinkClass} w-full ${experimentActive ? "bg-amber-200 text-slate-950" : "text-slate-400 hover:bg-amber-200/10 hover:text-amber-100"}`}
+                >
+                  STT 실험실
+                </a>
+              </li>
+            ) : null}
+          </ul>
+        </nav>
+        {lectureActive ? <div className="hidden items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] p-1 xl:flex">
           {["자료 분석", "맥락 자막", "결과 확인"].map((label, index) => {
             const activeIndex = stage === "upload" || stage === "analyzing" || stage === "ready" ? 0 : stage === "live" ? 1 : 2;
             return (
@@ -93,8 +172,8 @@ function Header({ stage, onHome }: { stage: Stage; onHome: () => void }) {
               </div>
             );
           })}
-        </div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+        </div> : null}
+        <div className="hidden items-center gap-2 text-xs font-semibold text-slate-400 lg:flex">
           <ShieldCheck className="size-4 text-emerald-300" />
           실시간 강연 음성 미저장
         </div>
@@ -321,7 +400,6 @@ function UploadScreen({
             onDelete={onDeleteGlossary}
             onReset={onResetGlossaries}
           />
-          {import.meta.env.DEV && <AudioFixtureRecorder />}
         </div>
       </section>
     </main>
@@ -703,7 +781,13 @@ function ResultsScreen({ analysis, lines, onRestart, onHome }: { analysis: Analy
   );
 }
 
-export function App() {
+export function App({ initialHash }: { initialHash?: string } = {}) {
+  const development = import.meta.env.DEV;
+  const [route, setRoute] = useState<AppRoute>(() => resolveAppRoute(
+    initialHash ?? (typeof window === "undefined" ? "#/lecture" : window.location.hash),
+    development
+  ));
+  const [routeFocusRequest, setRouteFocusRequest] = useState(0);
   const [stage, setStage] = useState<Stage>("upload");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [serviceStatus, setServiceStatus] = useState<ServiceStatus | null>(null);
@@ -717,6 +801,51 @@ export function App() {
   const [highContrast, setHighContrast] = useState(false);
   const stream = useLectureStream(analysis?.terms || [], analysis?.phraseSet || []);
   const previousStreamStatusRef = useRef(stream.status);
+  const experimentNavigationBlocked = stage === "analyzing" || stage === "live";
+  const experimentNavigationBlockedRef = useRef(experimentNavigationBlocked);
+  experimentNavigationBlockedRef.current = experimentNavigationBlocked;
+
+  const navigateToRoute = useCallback((nextRoute: AppRoute) => {
+    if (nextRoute.page === "experiment" && experimentNavigationBlocked) return;
+
+    const nextHash = appRouteHash(nextRoute);
+    if (initialHash !== undefined || typeof window === "undefined") {
+      setRoute(nextRoute);
+      setRouteFocusRequest((current) => current + 1);
+      return;
+    }
+    if (window.location.hash === nextHash) {
+      setRoute(nextRoute);
+      setRouteFocusRequest((current) => current + 1);
+      return;
+    }
+    window.location.hash = nextHash;
+  }, [experimentNavigationBlocked, initialHash]);
+
+  useEffect(() => {
+    if (initialHash !== undefined || typeof window === "undefined") return;
+
+    const initialRoute = resolveAppRoute(window.location.hash, development);
+    const canonicalHash = appRouteHash(initialRoute);
+    if (window.location.hash !== canonicalHash) window.history.replaceState(null, "", canonicalHash);
+
+    const syncRoute = () => {
+      const nextRoute = resolveAppRoute(window.location.hash, development);
+      if (nextRoute.page === "experiment" && experimentNavigationBlockedRef.current) {
+        window.history.replaceState(null, "", "#/lecture");
+        setRoute(LECTURE_ROUTE);
+        return;
+      }
+
+      const nextHash = appRouteHash(nextRoute);
+      if (window.location.hash !== nextHash) window.history.replaceState(null, "", nextHash);
+      setRoute(nextRoute);
+      setRouteFocusRequest((current) => current + 1);
+    };
+
+    window.addEventListener("hashchange", syncRoute);
+    return () => window.removeEventListener("hashchange", syncRoute);
+  }, [development, initialHash]);
 
   useEffect(() => {
     void getHealth().then(setServiceStatus).catch(() => setServiceStatus(null));
@@ -760,6 +889,7 @@ export function App() {
     setFileName("");
     setAnalysisSaved(false);
     setStage("upload");
+    navigateToRoute(LECTURE_ROUTE);
   };
 
   const persistAnalysis = (result: AnalysisResult, fallbackName: string): StoredGlossary | null => {
@@ -881,10 +1011,21 @@ export function App() {
     setFontScale((current) => (current === "normal" ? "large" : current === "large" ? "xlarge" : "normal"));
   };
 
+  const handleExperimentResultReady = useCallback((_fileName: string) => {
+    navigateToRoute({ page: "experiment", panel: "results" });
+  }, [navigateToRoute]);
+
   return (
     <div className={`min-h-screen bg-[#07111f] text-slate-100 ${highContrast ? "contrast-more" : ""}`}>
-      <Header stage={stage} onHome={reset} />
-      {stage === "upload" && (
+      <Header
+        stage={stage}
+        route={route}
+        development={development}
+        experimentNavigationBlocked={experimentNavigationBlocked}
+        onHome={reset}
+        onNavigate={navigateToRoute}
+      />
+      {route.page === "lecture" && stage === "upload" && (
         <UploadScreen
           onFile={handleFile}
           onDemo={handleDemo}
@@ -899,8 +1040,8 @@ export function App() {
           onResetGlossaries={handleResetGlossaries}
         />
       )}
-      {stage === "analyzing" && <AnalyzingScreen fileName={fileName} progress={progress} />}
-      {stage === "ready" && analysis && (
+      {route.page === "lecture" && stage === "analyzing" && <AnalyzingScreen fileName={fileName} progress={progress} />}
+      {route.page === "lecture" && stage === "ready" && analysis && (
         <ReadyScreen
           analysis={analysis}
           speechReady={Boolean(serviceStatus?.services.speech)}
@@ -914,8 +1055,16 @@ export function App() {
           onResetGlossaries={handleResetGlossaries}
         />
       )}
-      {stage === "live" && analysis && <LiveScreen analysis={analysis} stream={stream} fontScale={fontScale} onFontScale={cycleFontScale} highContrast={highContrast} onHighContrast={() => setHighContrast((value) => !value)} onFinish={finishLecture} />}
-      {stage === "results" && analysis && <ResultsScreen analysis={analysis} lines={stream.lines} onRestart={() => beginLecture("demo")} onHome={reset} />}
+      {route.page === "lecture" && stage === "live" && analysis && <LiveScreen analysis={analysis} stream={stream} fontScale={fontScale} onFontScale={cycleFontScale} highContrast={highContrast} onHighContrast={() => setHighContrast((value) => !value)} onFinish={finishLecture} />}
+      {route.page === "lecture" && stage === "results" && analysis && <ResultsScreen analysis={analysis} lines={stream.lines} onRestart={() => beginLecture("demo")} onHome={reset} />}
+      {route.page === "experiment" && development ? (
+        <ExperimentWorkspace
+          panel={route.panel}
+          focusRequest={routeFocusRequest}
+          onPanelChange={(panel) => navigateToRoute({ page: "experiment", panel })}
+          onResultReady={handleExperimentResultReady}
+        />
+      ) : null}
     </div>
   );
 }

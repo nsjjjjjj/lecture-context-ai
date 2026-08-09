@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, CircleStop, FlaskConical, LoaderCircle, Mic, RotateCcw, Save } from "lucide-react";
 import {
-  getAudioFixtures,
   saveAudioFixture,
   type AudioFixtureCatalog,
   type AudioFixtureRecording
 } from "../lib/api";
 import { AudioFixtureCapture } from "../lib/audio-fixture-capture";
-import { SttComparisonResults } from "./SttComparisonResults";
 
 const MAX_RECORDING_MS = 120_000;
 
-type RecorderPhase = "loading" | "idle" | "requesting" | "recording" | "stopping" | "ready" | "saving" | "saved";
+type RecorderPhase = "idle" | "requesting" | "recording" | "stopping" | "ready" | "saving" | "saved";
+export type AudioFixtureRecorderProps = {
+  catalog: AudioFixtureCatalog | null;
+  catalogLoading: boolean;
+  catalogError: string;
+  onRecordingSaved: (recording: AudioFixtureRecording) => void;
+};
 export type FixtureCaptureMetadata = {
   scriptId: string;
   speakerLabel: "speaker-a" | "speaker-b";
@@ -24,8 +28,16 @@ export function snapshotFixtureMetadata(metadata: FixtureCaptureMetadata): Reado
   return Object.freeze({ ...metadata });
 }
 
-export function comparisonRecordings(catalog: AudioFixtureCatalog | null): AudioFixtureRecording[] {
-  return catalog?.recordings ?? [];
+export function createRecordingSavedNotifier(
+  onRecordingSaved: (recording: AudioFixtureRecording) => void
+): (recording: AudioFixtureRecording) => boolean {
+  let notified = false;
+  return (recording) => {
+    if (notified) return false;
+    notified = true;
+    onRecordingSaved(recording);
+    return true;
+  };
 }
 
 function formatDuration(durationMs: number): string {
@@ -39,7 +51,7 @@ function microphoneErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "마이크 녹음을 시작하지 못했습니다.";
 }
 
-export function AudioFixtureRecorder() {
+export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, onRecordingSaved }: AudioFixtureRecorderProps) {
   const controllerRef = useRef<AudioFixtureCapture | null>(null);
   if (!controllerRef.current) controllerRef.current = new AudioFixtureCapture();
 
@@ -53,8 +65,7 @@ export function AudioFixtureRecorder() {
   const preparedRef = useRef<PreparedRecording | null>(null);
   const captureMetadataRef = useRef<Readonly<FixtureCaptureMetadata> | null>(null);
 
-  const [catalog, setCatalog] = useState<AudioFixtureCatalog | null>(null);
-  const [phase, setPhase] = useState<RecorderPhase>("loading");
+  const [phase, setPhase] = useState<RecorderPhase>("idle");
   const [scriptId, setScriptId] = useState("");
   const [speakerLabel, setSpeakerLabel] = useState<"speaker-a" | "speaker-b">("speaker-a");
   const [environment, setEnvironment] = useState<"quiet" | "noisy">("quiet");
@@ -83,6 +94,12 @@ export function AudioFixtureRecorder() {
     preparedRef.current = null;
     setPrepared(null);
   }, []);
+
+  useEffect(() => {
+    setScriptId((current) => catalog?.scripts.some((script) => script.id === current)
+      ? current
+      : catalog?.scripts[0]?.id ?? "");
+  }, [catalog]);
 
   const stopCapture = useCallback((reason: "manual" | "timer" | "limit", requestedSessionId?: number): Promise<void> => {
     if (finalizeRef.current) return finalizeRef.current;
@@ -123,19 +140,6 @@ export function AudioFixtureRecorder() {
 
   useEffect(() => {
     mountedRef.current = true;
-    void getAudioFixtures()
-      .then((result) => {
-        if (!mountedRef.current) return;
-        setCatalog(result);
-        setScriptId(result.scripts[0]?.id ?? "");
-        setPhase("idle");
-      })
-      .catch((caught) => {
-        if (!mountedRef.current) return;
-        setError(caught instanceof Error ? caught.message : "개발용 녹음 설정을 불러오지 못했습니다.");
-        setPhase("idle");
-      });
-
     return () => {
       mountedRef.current = false;
       clearTimers();
@@ -198,6 +202,7 @@ export function AudioFixtureRecorder() {
     if (saveRef.current) return saveRef.current;
     const current = preparedRef.current;
     if (!current) return Promise.resolve();
+    const notifyRecordingSaved = createRecordingSavedNotifier(onRecordingSaved);
     setError("");
     setPhase("saving");
     const operation = saveAudioFixture({
@@ -207,18 +212,20 @@ export function AudioFixtureRecorder() {
       environment: current.environment,
       speakerReadReferenceScriptVerbatim: current.speakerReadReferenceScriptVerbatim
     })
-      .then(({ recording }) => {
-        if (!mountedRef.current) return;
-        setSaved(recording);
-        setCatalog((value) => value ? { ...value, recordings: [...value.recordings, recording] } : value);
-        setNotice(`저장 완료: test-fixtures/stt/${recording.relativePath}`);
-        setPhase("saved");
-      })
-      .catch((caught) => {
-        if (!mountedRef.current) return;
-        setError(caught instanceof Error ? caught.message : "로컬에 녹음을 저장하지 못했습니다.");
-        setPhase("ready");
-      })
+      .then(
+        ({ recording }) => {
+          if (!mountedRef.current) return;
+          setSaved(recording);
+          setNotice(`저장 완료: test-fixtures/stt/${recording.relativePath}`);
+          setPhase("saved");
+          notifyRecordingSaved(recording);
+        },
+        (caught: unknown) => {
+          if (!mountedRef.current) return;
+          setError(caught instanceof Error ? caught.message : "로컬에 녹음을 저장하지 못했습니다.");
+          setPhase("ready");
+        }
+      )
       .finally(() => {
         saveRef.current = null;
       });
@@ -226,8 +233,9 @@ export function AudioFixtureRecorder() {
     return operation;
   };
 
-  const busy = phase === "loading" || phase === "requesting" || phase === "stopping" || phase === "saving";
+  const busy = catalogLoading || phase === "requesting" || phase === "stopping" || phase === "saving";
   const latestRecordings = catalog?.recordings.slice(-3).reverse() ?? [];
+  const displayedError = error || catalogError;
 
   return (
     <section data-testid="audio-fixture-recorder" className="mt-4 rounded-[1.6rem] border border-amber-300/15 bg-[#0b1727]/95 p-5 shadow-xl shadow-black/20 sm:p-6">
@@ -305,7 +313,7 @@ export function AudioFixtureRecorder() {
           </div>
 
           {prepared && <audio className="mt-4 w-full" controls preload="metadata" src={prepared.url}>녹음 미리 듣기를 지원하지 않는 브라우저입니다.</audio>}
-          {error && <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs leading-5 text-rose-100"><AlertTriangle className="mt-0.5 size-4 shrink-0" /> {error}</div>}
+          {displayedError && <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs leading-5 text-rose-100"><AlertTriangle className="mt-0.5 size-4 shrink-0" /> {displayedError}</div>}
           {notice && <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.06] p-3 text-xs leading-5 text-emerald-100"><Check className="mt-0.5 size-4 shrink-0" /> {notice}</div>}
 
           <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3 text-[11px] leading-5 text-slate-500">
@@ -327,9 +335,12 @@ export function AudioFixtureRecorder() {
           )}
         </>
       ) : (
-        <div role="alert" className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-amber-100">{error || "고정 실험 문장을 불러오지 못했습니다."}</div>
+        catalogLoading ? (
+          <div role="status" className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin" /> 개발용 녹음 설정을 불러오는 중입니다.</div>
+        ) : (
+          <div role="alert" className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-amber-100">{displayedError || "고정 실험 문장을 불러오지 못했습니다."}</div>
+        )
       )}
-      <SttComparisonResults recordings={comparisonRecordings(catalog)} />
     </section>
   );
 }

@@ -22,6 +22,13 @@ import {
 const HISTORY_PAGE_SIZE = 5;
 const JOB_POLL_INTERVAL_MS = 1_000;
 
+export type SttComparisonView = "run" | "results";
+export type SttComparisonResultsProps = {
+  recordings: AudioFixtureRecording[];
+  view: SttComparisonView;
+  onResultReady: (fileName: string) => void;
+};
+
 const RUN_DETAILS: Record<ComparisonRunLabel, { shortLabel: "A" | "B" | "C"; title: string }> = {
   "without-phrase-set": { shortLabel: "A", title: "PhraseSet 없음" },
   "canonical-phrase-set": { shortLabel: "B", title: "기준 표기 PhraseSet" },
@@ -147,6 +154,44 @@ const TERMINAL_JOB_STATES = new Set<SttComparisonJobStatus["state"]>(["completed
 
 export function isTerminalSttComparisonJob(job: SttComparisonJobStatus): boolean {
   return TERMINAL_JOB_STATES.has(job.state);
+}
+
+export function registerDiscoveredLocalJob(
+  active: CurrentSttComparisonJob | null,
+  locallyStartedJobIds: Set<string>
+): boolean {
+  if (active?.kind !== "local") return false;
+  const sizeBefore = locallyStartedJobIds.size;
+  locallyStartedJobIds.add(active.job.id);
+  return locallyStartedJobIds.size > sizeBefore;
+}
+
+export function handleLocalTerminalResultOnce({
+  job,
+  locallyStartedJobIds,
+  handledJobIds,
+  selectResult,
+  refreshHistory,
+  onResultReady
+}: {
+  job: SttComparisonJobStatus | null;
+  locallyStartedJobIds: Set<string>;
+  handledJobIds: Set<string>;
+  selectResult: (fileName: string) => void;
+  refreshHistory: (fileName: string) => void;
+  onResultReady: (fileName: string) => void;
+}): boolean {
+  if (!job
+    || !isTerminalSttComparisonJob(job)
+    || !job.resultFileName
+    || !locallyStartedJobIds.has(job.id)
+    || handledJobIds.has(job.id)) return false;
+
+  handledJobIds.add(job.id);
+  selectResult(job.resultFileName);
+  refreshHistory(job.resultFileName);
+  onResultReady(job.resultFileName);
+  return true;
 }
 
 export function defaultRecordingId(recordings: AudioFixtureRecording[]): string {
@@ -607,7 +652,10 @@ export function SttComparisonResultsView({
   detailError = "",
   onSelectReport = () => undefined,
   onPreviousPage = () => undefined,
-  onNextPage = () => undefined
+  onNextPage = () => undefined,
+  mobileDetailOpen = false,
+  detailFocusRequest = 0,
+  onBackToList = () => undefined
 }: {
   latest: ComparisonReportFile | null;
   reportCount: number;
@@ -622,11 +670,19 @@ export function SttComparisonResultsView({
   onSelectReport?: (fileName: string) => void;
   onPreviousPage?: () => void;
   onNextPage?: () => void;
+  mobileDetailOpen?: boolean;
+  detailFocusRequest?: number;
+  onBackToList?: () => void;
 }) {
+  const detailHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const offset = page?.offset ?? 0;
   const limit = page?.limit ?? HISTORY_PAGE_SIZE;
   const hasPrevious = offset > 0;
   const hasNext = page?.hasMore ?? offset + history.length < reportCount;
+
+  useEffect(() => {
+    if (detailFocusRequest > 0) detailHeadingRef.current?.focus();
+  }, [detailFocusRequest]);
 
   return (
     <section aria-labelledby="stt-comparison-heading" className="mt-6 border-t border-white/[0.07] pt-5">
@@ -645,59 +701,81 @@ export function SttComparisonResultsView({
 
       {error ? <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs leading-5 text-rose-100"><AlertTriangle className="mt-0.5 size-4 shrink-0" /> {error}</div> : null}
 
-      {history.length > 0 ? (
-        <div className="mt-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3">
-          <div className="space-y-1.5" aria-label="저장된 STT 비교 결과 기록">
-            {history.map((item) => (
-              <button
-                key={item.fileName}
-                type="button"
-                onClick={() => onSelectReport(item.fileName)}
-                aria-current={selectedFileName === item.fileName ? "true" : undefined}
-                className={`flex min-h-10 w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-[11px] transition ${selectedFileName === item.fileName ? "bg-cyan-300/10 text-cyan-100" : "bg-white/[0.025] text-slate-400 hover:bg-white/[0.05]"}`}
-              >
-                <span className="min-w-0 flex-1 truncate font-bold">{item.fileName}</span>
-                <span className="flex shrink-0 flex-wrap justify-end gap-1" aria-label="결과 메타데이터">
-                  {historyBadgeLabels(item).map((label) => (
-                    <span key={label} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[9px] font-black text-slate-300">{label}</span>
-                  ))}
-                </span>
-                <span className="shrink-0 text-[10px] text-slate-500">{formatStoredAt(item.modifiedAt)}</span>
-              </button>
-            ))}
-          </div>
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <button type="button" onClick={onPreviousPage} disabled={!hasPrevious || loading} className="secondary-button !min-h-9 text-[11px] disabled:opacity-35"><ChevronLeft className="size-4" /> 이전</button>
-            <span className="text-[10px] text-slate-500">{reportCount === 0 ? 0 : offset + 1}–{Math.min(offset + history.length, reportCount)} / {reportCount}</span>
-            <button type="button" onClick={onNextPage} disabled={!hasNext || loading} className="secondary-button !min-h-9 text-[11px] disabled:opacity-35">다음 <ChevronRight className="size-4" /></button>
-          </div>
+      <div className="mt-4 gap-4 lg:grid lg:grid-cols-[minmax(16rem,0.75fr)_minmax(0,1.75fr)] lg:items-start">
+        <div
+          data-testid="stt-results-list-pane"
+          className={`${mobileDetailOpen ? "hidden" : "block"} min-w-0 lg:block`}
+        >
+          {history.length > 0 ? (
+            <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3">
+              <div className="space-y-1.5" aria-label="저장된 STT 비교 결과 기록">
+                {history.map((item) => (
+                  <button
+                    key={item.fileName}
+                    type="button"
+                    onClick={() => onSelectReport(item.fileName)}
+                    aria-current={selectedFileName === item.fileName ? "true" : undefined}
+                    className={`flex min-h-10 w-full flex-col items-start gap-2 rounded-xl px-3 py-2 text-left text-[11px] transition ${selectedFileName === item.fileName ? "bg-cyan-300/10 text-cyan-100" : "bg-white/[0.025] text-slate-400 hover:bg-white/[0.05]"}`}
+                  >
+                    <span className="w-full truncate font-bold">{item.fileName}</span>
+                    <span className="flex w-full flex-wrap items-center gap-1" aria-label="결과 메타데이터">
+                      {historyBadgeLabels(item).map((label) => (
+                        <span key={label} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[9px] font-black text-slate-300">{label}</span>
+                      ))}
+                      <span className="ml-auto text-[10px] text-slate-500">{formatStoredAt(item.modifiedAt)}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <button type="button" onClick={onPreviousPage} disabled={!hasPrevious || loading} className="secondary-button !min-h-9 text-[11px] disabled:opacity-35"><ChevronLeft className="size-4" /> 이전</button>
+                <span className="text-[10px] text-slate-500">{reportCount === 0 ? 0 : offset + 1}–{Math.min(offset + history.length, reportCount)} / {reportCount}</span>
+                <button type="button" onClick={onNextPage} disabled={!hasNext || loading} className="secondary-button !min-h-9 text-[11px] disabled:opacity-35">다음 <ChevronRight className="size-4" /></button>
+              </div>
+            </div>
+          ) : loading ? (
+            <div role="status" className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin" /> 결과 목록을 불러오는 중입니다.</div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-white/[0.09] px-4 py-6 text-center text-xs leading-6 text-slate-500">저장된 비교 결과가 없습니다.</div>
+          )}
         </div>
-      ) : null}
 
-      {detailError ? <div role="alert" className="mt-4 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs leading-5 text-rose-100">선택한 결과를 불러오지 못했습니다: {detailError}</div> : null}
-      {(loading || detailLoading) && !latest ? (
-        <div role="status" className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin" /> 비교 결과를 불러오는 중입니다.</div>
-      ) : !latest ? (
-        <div className="mt-4 rounded-2xl border border-dashed border-white/[0.09] px-4 py-6 text-center text-xs leading-6 text-slate-500">
-          저장된 비교 결과가 없습니다.<br />위에서 저장 녹음과 유료 호출 동의를 확인한 뒤 비교를 시작할 수 있습니다.
-        </div>
-      ) : !isV3ComparisonReport(latest) ? (
-        <div className="mt-4 rounded-2xl border border-amber-300/15 bg-amber-300/[0.06] p-4">
-          <h4 className="text-sm font-black text-amber-100">레거시 스모크 결과</h4>
-          <p className="mt-1 text-xs leading-5 text-amber-100/70">버전 {latest.version} 결과에는 정확도 평가 계약이 없습니다. 지표를 추정하거나 TSV를 만들지 않습니다.</p>
-        </div>
-      ) : (
-        <V3ComparisonReport report={latest} />
-      )}
+        <section
+          data-testid="stt-results-detail-pane"
+          aria-labelledby="stt-comparison-detail-heading"
+          className={`${mobileDetailOpen ? "block" : "hidden"} min-w-0 lg:block`}
+        >
+          <div data-testid="stt-results-mobile-back" className="mb-3 lg:hidden">
+            <button type="button" onClick={onBackToList} className="secondary-button !min-h-10 text-xs"><ChevronLeft className="size-4" /> 결과 목록으로</button>
+          </div>
+          <h4 ref={detailHeadingRef} id="stt-comparison-detail-heading" tabIndex={-1} className="text-xs font-black text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">선택한 STT 비교 결과</h4>
+          {detailError ? <div role="alert" className="mt-4 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs leading-5 text-rose-100">선택한 결과를 불러오지 못했습니다: {detailError}</div> : null}
+          {(loading || detailLoading) && !latest ? (
+            <div role="status" className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin" /> 비교 결과를 불러오는 중입니다.</div>
+          ) : !latest ? (
+            <div className="mt-4 rounded-2xl border border-dashed border-white/[0.09] px-4 py-6 text-center text-xs leading-6 text-slate-500">
+              {history.length > 0 ? "목록에서 확인할 결과를 선택해 주세요." : "저장된 비교 결과가 없습니다. 실행 화면에서 저장 녹음과 유료 호출 동의를 확인한 뒤 비교를 시작할 수 있습니다."}
+            </div>
+          ) : !isV3ComparisonReport(latest) ? (
+            <div className="mt-4 rounded-2xl border border-amber-300/15 bg-amber-300/[0.06] p-4">
+              <h5 className="text-sm font-black text-amber-100">레거시 스모크 결과</h5>
+              <p className="mt-1 text-xs leading-5 text-amber-100/70">버전 {latest.version} 결과에는 정확도 평가 계약이 없습니다. 지표를 추정하거나 TSV를 만들지 않습니다.</p>
+            </div>
+          ) : (
+            <V3ComparisonReport report={latest} />
+          )}
+        </section>
+      </div>
     </section>
   );
 }
 
-export function SttComparisonResults({ recordings }: { recordings: AudioFixtureRecording[] }) {
+export function SttComparisonResults({ recordings, view, onResultReady }: SttComparisonResultsProps) {
   const mountedRef = useRef(true);
   const historyRequestRef = useRef(0);
   const currentRequestRef = useRef(0);
   const selectedFileNameRef = useRef<string | null>(null);
+  const locallyStartedJobIdsRef = useRef(new Set<string>());
   const handledTerminalJobsRef = useRef(new Set<string>());
 
   const [selectedRecordingId, setSelectedRecordingId] = useState(() => defaultRecordingId(recordings));
@@ -718,6 +796,8 @@ export function SttComparisonResults({ recordings }: { recordings: AudioFixtureR
   const [historyError, setHistoryError] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [detailFocusRequest, setDetailFocusRequest] = useState(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -738,6 +818,12 @@ export function SttComparisonResults({ recordings }: { recordings: AudioFixtureR
     setSelectedFileName(fileName);
     if (changed) setReport(null);
   }, []);
+
+  const openReport = useCallback((fileName: string) => {
+    selectReport(fileName);
+    setMobileDetailOpen(true);
+    setDetailFocusRequest((current) => current + 1);
+  }, [selectReport]);
 
   const loadHistory = useCallback(async (offset: number, preferredFileName?: string | null) => {
     const requestId = historyRequestRef.current + 1;
@@ -776,7 +862,10 @@ export function SttComparisonResults({ recordings }: { recordings: AudioFixtureR
     setCurrentError("");
     try {
       const next = await getCurrentSttComparisonJob();
-      if (mountedRef.current && requestId === currentRequestRef.current) setActive(next.active);
+      if (mountedRef.current && requestId === currentRequestRef.current) {
+        registerDiscoveredLocalJob(next.active, locallyStartedJobIdsRef.current);
+        setActive(next.active);
+      }
     } catch (caught) {
       if (mountedRef.current && requestId === currentRequestRef.current) {
         setCurrentError(caught instanceof Error ? caught.message : "실행 중인 비교 작업을 확인하지 못했습니다.");
@@ -842,10 +931,23 @@ export function SttComparisonResults({ recordings }: { recordings: AudioFixtureR
   }, [localJobId, localJobIsTerminal]);
 
   useEffect(() => {
-    if (!localJob || !isTerminalSttComparisonJob(localJob) || handledTerminalJobsRef.current.has(localJob.id)) return;
-    handledTerminalJobsRef.current.add(localJob.id);
-    void loadHistory(0, localJob.resultFileName ?? null);
-  }, [loadHistory, localJob]);
+    handleLocalTerminalResultOnce({
+      job: localJob,
+      locallyStartedJobIds: locallyStartedJobIdsRef.current,
+      handledJobIds: handledTerminalJobsRef.current,
+      selectResult: (fileName) => {
+        selectedFileNameRef.current = fileName;
+        setSelectedFileName(fileName);
+        setReport(null);
+        setMobileDetailOpen(true);
+        setDetailFocusRequest((current) => current + 1);
+      },
+      refreshHistory: (fileName) => {
+        void loadHistory(0, fileName);
+      },
+      onResultReady
+    });
+  }, [loadHistory, localJob, onResultReady]);
 
   const startComparison = async () => {
     if (!selectedRecordingId || !consent || starting) return;
@@ -860,7 +962,10 @@ export function SttComparisonResults({ recordings }: { recordings: AudioFixtureR
           if (mountedRef.current) setConsent(false);
         }
       });
-      if (mountedRef.current) setActive({ kind: "local", job });
+      if (mountedRef.current) {
+        locallyStartedJobIdsRef.current.add(job.id);
+        setActive({ kind: "local", job });
+      }
     } catch (caught) {
       if (mountedRef.current) {
         setStartError(caught instanceof Error ? caught.message : "STT 비교 작업을 시작하지 못했습니다.");
@@ -875,37 +980,39 @@ export function SttComparisonResults({ recordings }: { recordings: AudioFixtureR
     void loadHistory(page.offset);
   };
 
-  return (
-    <>
-      <SttComparisonJobPanel
-        recordings={recordings}
-        selectedRecordingId={selectedRecordingId}
-        onSelectRecording={setSelectedRecordingId}
-        consent={consent}
-        onConsentChange={setConsent}
-        active={active}
-        checkingActive={checkingActive}
-        starting={starting}
-        startError={startError}
-        currentError={currentError}
-        pollingError={pollingError}
-        onStart={() => void startComparison()}
-      />
-      <SttComparisonResultsView
-        latest={report}
-        reportCount={reportCount}
-        loading={historyLoading}
-        error={historyError}
-        onRefresh={refresh}
-        history={history}
-        selectedFileName={selectedFileName}
-        page={page}
-        detailLoading={detailLoading}
-        detailError={detailError}
-        onSelectReport={selectReport}
-        onPreviousPage={() => void loadHistory(Math.max(0, page.offset - page.limit))}
-        onNextPage={() => void loadHistory(page.offset + page.limit)}
-      />
-    </>
+  return view === "run" ? (
+    <SttComparisonJobPanel
+      recordings={recordings}
+      selectedRecordingId={selectedRecordingId}
+      onSelectRecording={setSelectedRecordingId}
+      consent={consent}
+      onConsentChange={setConsent}
+      active={active}
+      checkingActive={checkingActive}
+      starting={starting}
+      startError={startError}
+      currentError={currentError}
+      pollingError={pollingError}
+      onStart={() => void startComparison()}
+    />
+  ) : (
+    <SttComparisonResultsView
+      latest={report}
+      reportCount={reportCount}
+      loading={historyLoading}
+      error={historyError}
+      onRefresh={refresh}
+      history={history}
+      selectedFileName={selectedFileName}
+      page={page}
+      detailLoading={detailLoading}
+      detailError={detailError}
+      onSelectReport={openReport}
+      onPreviousPage={() => void loadHistory(Math.max(0, page.offset - page.limit))}
+      onNextPage={() => void loadHistory(page.offset + page.limit)}
+      mobileDetailOpen={mobileDetailOpen}
+      detailFocusRequest={detailFocusRequest}
+      onBackToList={() => setMobileDetailOpen(false)}
+    />
   );
 }
