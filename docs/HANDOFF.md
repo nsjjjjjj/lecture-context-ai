@@ -41,14 +41,16 @@
 - 빈 PhraseSet + 0.25초 무음: 스트림 정상 수락·종료, 임시 0개·확정 0개
 - 인라인 PhraseSet 1개 + 0.25초 무음: 스트림 정상 수락·종료, 임시 0개·확정 1개
 - 빈 PhraseSet + 로컬 한국어 음성: 3,200바이트 단위 16kHz mono LINEAR16 전송, 임시 1개·확정 1개
+- 저장 WAV 106초 A/B 스모크: PhraseSet 없음과 영문 targetTerms 17개 적용 조건 모두 전체 음원 재생·확정 자막 12개·오류 0개
+- 같은 A/B 스모크에서 영문 정확 표기는 0개에서 1개(`PhraseSet`)로 증가했지만 `RAG`는 `레그`, `Transformer`는 `트랜스포머`, `Fine-tuning`은 `파인 튜닝`으로 남았습니다.
 
-무음 인라인 PhraseSet 호출의 확정 결과는 연결 성공 근거로만 사용하며 정확도 근거로 사용하지 않습니다. 실제 발표 마이크에서 PhraseSet 적용 전후 오인식과 무음 false positive를 함께 비교해야 합니다.
+무음 인라인 PhraseSet 호출의 확정 결과는 연결 성공 근거로만 사용하며 정확도 근거로 사용하지 않습니다. 저장 WAV A/B도 녹음 발화가 고정 기준 문장과 달라 정확도 분모로 사용하지 않고, 한국어식 영어 발음 별칭이 필요하다는 관찰 근거로만 사용합니다. 정확도 평가는 정답 대본과 실제 발화 용어를 고정한 다음 다시 수행해야 합니다.
 
 ## 아직 실제 자격증명·기기로 검증하지 않은 부분
 
 - Gemini 3.6 Flash 실제 PDF 호출
 - 실제 발표용 브라우저·마이크 권한과 음질
-- PhraseSet 적용 전후 전문용어 인식률 비교
+- 정답 대본과 실제 발화 용어를 고정한 PhraseSet 적용 전후 전문용어 인식률 비교
 - Cloud Run 배포 환경의 WebSocket 장시간 연결
 - Secret Manager와 Cloud Run 서비스 계정 연결
 
@@ -56,11 +58,11 @@
 
 1. 별도의 테스트용 Google Cloud 프로젝트와 결제 예산 한도를 설정합니다.
 2. Gemini 키를 연결하고 Google Application Default Credentials를 팀 실행 환경에 준비합니다.
-3. 개발용 고정 실험 문장을 발표용 브라우저·마이크로 한 번 녹음하고 저장 WAV의 음질을 확인합니다.
+3. 개발용 고정 실험 문장을 화면 그대로 다시 녹음하고 정답 대본·실제 발화 용어를 고정합니다.
 4. glossary 결과에 `contextExplanation`을 추가해 용어가 현재 문맥에서 등장한 이유를 표시합니다.
 5. Google STT 스트리밍 제한에 대비한 자동 재연결과 자막 연속성 처리를 구현합니다.
 6. Cloud Run에 배포하고 모바일·노트북 마이크 권한과 WebSocket을 재검증합니다.
-7. 같은 저장 WAV를 사용해 일반 STT와 PhraseSet 적용 STT의 전문용어 정확도를 비교합니다.
+7. 같은 저장 WAV를 사용해 일반 STT와 PhraseSet 적용 STT의 전문용어 정확도를 다시 측정합니다.
 
 ## 인수인계 시 전달해야 하는 외부 리소스
 
@@ -128,7 +130,7 @@ pnpm dev
 - capture는 wall-clock timer와 별개로 PCM 3,840,000바이트를 hard cap하고 limit 신호를 한 번만 냅니다. 화자·환경·실험문장은 녹음 시작 시 snapshot됩니다.
 - fixture 저장은 canonical WAV 검증, temp 파일, 최종 rename, atomic manifest 순서이며 manifest 실패 시 WAV를 rollback합니다. process-local queue와 `.writer.lock`이 같은 root를 쓰는 복수 프로세스를 직렬화하고 실패 뒤에도 다음 요청을 처리합니다.
 - same-user 로컬 개발 도구를 전제로 합니다. 직접 사용하는 fixture root·audio·파일 symlink와 경로 이탈은 거부하지만 모든 ancestor symlink/TOCTOU를 막는 sandbox라고 주장하지 않습니다.
-- offline replay는 PCM을 15,000바이트 이하 짝수 길이 청크로 바이트 손실 없이 제공하는 단계까지만 구현합니다. Google STT 정확도와 비용 검증은 후속입니다.
+- `pnpm stt:compare`는 저장 WAV를 3,200바이트 청크로 실시간 속도 재생해 PhraseSet 없음/적용 결과를 로컬 JSON으로 저장합니다. 실제 A/B 스모크 연결은 검증했지만 정답 대본 기반 정확도 평가는 후속입니다.
 - 현재의 `easyExplanation`은 쉬운 정의에 가깝습니다. 제품명을 유지하려면 실제 발화 문맥을 설명하는 `contextExplanation` 확장을 권장합니다.
 
 ## 주요 코드 위치
@@ -142,6 +144,7 @@ pnpm dev
 - HTTP 앱·개발 API: `server/src/app.ts`
 - WebSocket·listen: `server/src/index.ts`
 - WAV fixture 저장·offline load: `server/src/services/audio-fixtures.ts`
+- 저장 WAV Google STT A/B 실행기: `server/src/tools/compare-stt-fixture.ts`
 - Gemini·자동 용어집: `server/src/services/glossary.ts`
 - Google STT: `server/src/services/speech.ts`
 - 데모 데이터: `server/src/services/demo.ts`

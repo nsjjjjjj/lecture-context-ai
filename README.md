@@ -175,6 +175,15 @@ pnpm dev
 
 저장 시 `.writer.lock`을 짧게 획득해 같은 fixture root를 연 복수 개발 서버의 manifest 갱신을 직렬화합니다. 비정상 종료로 60초 이상 남은 lock은 다음 저장이 회수합니다. 저장 모듈은 PCM을 15,000바이트 이하의 짝수 길이 청크로 바이트 손실 없이 다시 읽을 수 있지만 실제 Google STT 호출과 정확도 평가는 이번 기능에 포함하지 않습니다.
 
+개발 서버를 실행한 상태에서 아래 명령을 사용하면 가장 최근 녹음을 실시간 속도로 두 번 재생합니다. 첫 번째 실행은 PhraseSet이 없고, 두 번째 실행은 `scripts.json`의 `targetTerms`를 인라인 PhraseSet으로 사용합니다. 특정 녹음을 비교하려면 명령 뒤에 manifest의 녹음 ID를 붙입니다.
+
+```bash
+pnpm stt:compare
+pnpm stt:compare -- <recording-id>
+```
+
+실행 결과는 `test-fixtures/stt/results/*.json`에 저장되며 Git·Docker에서 제외됩니다. 각 조건의 확정 자막, 영문 기준 표기와 일치한 용어, 실행 시간과 오류를 함께 기록합니다. 두 조건 모두 실제 Google STT 사용량이 발생합니다. `targetTerms`는 비교 후보이므로 발화자가 화면의 기준 문장을 그대로 읽었다고 확인된 경우에만 미일치 항목을 인식 실패로 계산합니다.
+
 이 경계는 동일 사용자가 제어하는 로컬 개발 환경을 대상으로 합니다. 서버가 직접 사용하는 fixture root·audio·파일의 symlink와 생성 경로 이탈은 거부하지만, 악의적인 동일 사용자 프로세스와 모든 ancestor symlink/TOCTOU를 격리하는 보안 sandbox는 아닙니다.
 
 ## 환경변수
@@ -250,7 +259,7 @@ gcloud run deploy lecture-context-ai \
 - Google STT API 연결과 한국어 음성 응답은 검증했지만, 실제 발표에 사용할 브라우저·마이크 조합의 권한과 음질은 별도 현장 확인이 필요합니다.
 - 긴 강연을 위한 STT 스트림 자동 재연결은 아직 구현하지 않았습니다.
 - 실제 발화 시작 시점을 신뢰성 있게 추적하지 않으므로 결과 화면에서 실시간 표시 지연을 추정해 보여주지 않습니다.
-- 개발용 고정음원은 capture와 offline replay 입력까지만 제공합니다. PhraseSet 적용 전후 Google STT 정확도 측정은 후속 실험입니다.
+- 개발용 고정음원은 `pnpm stt:compare`로 PhraseSet 적용 전후 실제 Google STT A/B 재생까지 지원합니다. 정답 대본 기반 정확도 평가는 후속 실험입니다.
 - 쉬운 용어 정의는 제공하지만 `이 용어가 지금 등장한 이유`를 설명하는 맥락 문장은 다음 버전 작업입니다.
 
 현재 상태와 후속 작업은 [인수인계 문서](docs/HANDOFF.md)를 참고하세요. 논문 연구문제, 평가 설계, 발표 흐름은 [논문·발표 구성안](docs/PAPER_PRESENTATION_PLAN.md)에 정리되어 있습니다.

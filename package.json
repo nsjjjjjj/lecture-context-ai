@@ -7,6 +7,7 @@
     "dev": "NODE_ENV=development concurrently -k -n api,web -c magenta,cyan \"tsx watch server/src/index.ts\" \"vite\"",
     "build": "vite build && tsc -p server/tsconfig.json",
     "start": "node dist/server/index.js",
+    "stt:compare": "tsx server/src/tools/compare-stt-fixture.ts",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p server/tsconfig.json --noEmit"
