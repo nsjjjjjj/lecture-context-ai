@@ -77,7 +77,7 @@ export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, on
   const [notice, setNotice] = useState("");
 
   const selectedScript = useMemo(
-    () => catalog?.scripts.find((script) => script.id === scriptId) ?? catalog?.scripts[0] ?? null,
+    () => catalog?.scripts.find((script) => script.id === scriptId) ?? catalog?.scripts.at(-1) ?? null,
     [catalog, scriptId]
   );
 
@@ -98,7 +98,7 @@ export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, on
   useEffect(() => {
     setScriptId((current) => catalog?.scripts.some((script) => script.id === current)
       ? current
-      : catalog?.scripts[0]?.id ?? "");
+      : catalog?.scripts.at(-1)?.id ?? "");
   }, [catalog]);
 
   const stopCapture = useCallback((reason: "manual" | "timer" | "limit", requestedSessionId?: number): Promise<void> => {
@@ -272,9 +272,14 @@ export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, on
               setScriptId(event.target.value);
               setSpeakerReadReferenceScriptVerbatim(false);
             }} disabled={busy || phase === "recording" || Boolean(prepared)} className="mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 outline-none focus:border-cyan-300">
-              {catalog?.scripts.map((script) => <option key={script.id} value={script.id}>{script.title}</option>)}
+              {catalog?.scripts.map((script) => <option key={script.id} value={script.id}>{script.experimentIdentity ? "[실험 케이스] " : "[고정] "}{script.title}</option>)}
             </select>
           </label>
+          {selectedScript.experimentIdentity ? <div className="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] p-3 text-[11px] leading-5 text-cyan-100">
+            <strong className="block">PDF 케이스 스냅샷</strong>
+            {selectedScript.experimentIdentity.glossaryName} · 채점 {selectedScript.targetTerms.length}개 · PDF 적응 {selectedScript.adaptationTerms?.length ?? 0}개
+            <span className="mt-1 block font-mono text-[10px] text-cyan-300/60">{selectedScript.experimentIdentity.caseSnapshotId}</span>
+          </div> : null}
           <div className="mt-3 max-h-44 overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#07111f]/70 p-4 text-xs leading-6 text-slate-300">
             {selectedScript.text}
           </div>

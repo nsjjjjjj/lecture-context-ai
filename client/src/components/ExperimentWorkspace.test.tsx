@@ -90,6 +90,7 @@ describe("experiment panel hierarchy", () => {
   });
 
   it.each([
+    ["setup", "실험 세트 설정"],
     ["record", "고정음원 녹음"],
     ["run", "A/B/C 비교 실행"],
     ["results", "비교 결과 확인"]
@@ -101,7 +102,10 @@ describe("experiment panel hierarchy", () => {
     expect(html.match(/data-testid="experiment-task-/g)).toHaveLength(1);
     expect(html).toMatch(new RegExp(`href="#/experiment/${panel}" aria-current="page"`));
 
-    if (panel === "record") {
+    if (panel === "setup") {
+      expect(html).toContain("PDF·대본 케이스 만들기");
+      expect(html).not.toContain('data-testid="audio-fixture-recorder"');
+    } else if (panel === "record") {
       expect(html).toContain('data-testid="audio-fixture-recorder"');
       expect(html).not.toContain("명시적 유료 호출 동의");
       expect(html).not.toContain('data-testid="stt-results-list-pane"');

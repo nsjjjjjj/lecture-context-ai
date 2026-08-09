@@ -22,6 +22,7 @@ Google API 자격증명이 없어도 내장된 샘플 강연으로 전체 발표
 - 이 브라우저의 저장 용어집 목록, 이름 변경, 삭제
 - 실시간 강연 음성과 PDF를 서버에 저장하지 않는 휘발성 처리
 - 저장 녹음을 선택하고 유료 Google STT 스트림 정확히 3회 호출에 동의한 뒤 A/B/C 진행률과 저장 결과 기록을 확인하는 localhost 전용 개발 도구
+- 저장된 브라우저 PDF 용어집과 정확한 대본을 5개 안팎의 실험 케이스로 스냅샷하고, 세트·케이스별 결과를 필터·집계·CSV/TSV/JSON으로 내보내는 STT 연구 흐름
 - API 없이 실행되는 발표용 데모와 자동 종료 리포트
 
 ## 시스템 작동 구조
@@ -121,6 +122,9 @@ API 키와 Google 인증정보는 브라우저에 전달하지 않고 서버 환
 | `POST` | `/api/analyze` | PDF 페이지 텍스트를 받아 자동 용어집 생성 |
 | `GET` | `/api/dev/audio-fixtures` | 개발용 고정 실험 문장과 로컬 녹음 목록 반환 |
 | `POST` | `/api/dev/audio-fixtures` | 검증된 16kHz mono PCM WAV를 로컬 fixture로 저장 |
+| `GET/POST` | `/api/dev/experiment-studies` | 로컬 실험 세트 목록 조회·생성 |
+| `POST` | `/api/dev/experiment-studies/:studyId/cases` | 저장된 브라우저 용어집과 정확한 대본으로 immutable 케이스 스냅샷 추가 |
+| `GET` | `/api/dev/stt-comparison-aggregates` | study/case별 완전한 accuracy 결과 A/B/C 평균 조회 |
 | `POST` | `/api/dev/stt-comparison-jobs` | `recordingId`와 유료 STT 스트림 3회 명시적 동의를 받아 A/B/C 작업 시작 |
 | `GET` | `/api/dev/stt-comparison-jobs/current` | 이 서버의 현재 작업 또는 CLI·다른 개발 서버가 보유한 공유 lock 상태 조회 |
 | `GET` | `/api/dev/stt-comparison-jobs/:jobId` | 이 서버 프로세스 메모리에 있는 작업의 A/B/C 진행 상태 조회 |
@@ -138,6 +142,7 @@ WebSocket은 `start` 메시지로 `live` 또는 `demo` 모드를 시작합니다
 client/
   src/App.tsx                 전체 화면과 사용자 흐름
   src/components/ExperimentWorkspace.tsx  DEV 전용 STT 실험실 탐색·라우트 셸
+  src/components/ExperimentSetup.tsx  PDF 용어집·대본 실험 세트와 케이스 설정 UI
   src/components/AudioFixtureRecorder.tsx  개발용 고정음원 녹음 UI
   src/components/SttComparisonResults.tsx  저장된 A/B/C 결과 차트·자막·표·TSV UI
   src/components/TransparentCaption.tsx  원문 확인이 가능한 자동 정정 자막 UI
@@ -149,7 +154,8 @@ server/
   src/app.ts                  주입 가능한 HTTP 앱·개발용 API 경계
   src/index.ts                HTTP listen·WebSocket 서버
   src/services/audio-fixtures.ts  WAV 검증·원자적 저장·오프라인 PCM 로드
-  src/services/stt-comparison.ts  고정 A/B/C 조건·출현 단위 점수·v3 결과 스키마
+  src/services/experiment-studies.ts  로컬 study/case 스냅샷·해시·원자적 저장
+  src/services/stt-comparison.ts  고정 A/B/C 조건·출현 단위 점수·v3/v4 결과 스키마
   src/services/stt-comparison-runner.ts  CLI·UI 공용 A/B/C 실행과 immutable 결과 저장
   src/services/stt-comparison-jobs.ts  UI 작업의 프로세스 메모리 상태·진행률
   src/services/stt-comparison-lock.ts  CLI·UI 공용 cross-process 비교 lock
@@ -184,17 +190,24 @@ pnpm dev
 | 영역 | 해시 경로 | 내용 |
 |---|---|---|
 | 강연 | `#/lecture` | PDF 분석, 샘플 데모, 저장 용어집 |
-| 1. 고정음원 녹음 | `#/experiment/record` | 고정 문장 녹음과 로컬 fixture 저장 |
-| 2. A/B/C 비교 실행 | `#/experiment/run` | 저장 녹음 선택, 유료 Google STT 스트림 정확히 3회 호출 동의, 비교 진행 상태 |
-| 3. 결과 기록 | `#/experiment/results` | immutable 비교 기록 목록과 상세 리포트 |
+| 1. 실험 설정 | `#/experiment/setup` | 저장된 PDF 용어집+대본으로 study/case 스냅샷 생성 |
+| 2. 고정음원 녹음 | `#/experiment/record` | 케이스 또는 기존 고정 문장 녹음과 로컬 fixture 저장 |
+| 3. A/B/C 비교 실행 | `#/experiment/run` | 저장 녹음 선택, 유료 Google STT 스트림 정확히 3회 호출 동의, 비교 진행 상태 |
+| 4. 결과 기록 | `#/experiment/results` | study/case 필터, immutable 상세, 케이스 평균과 CSV/TSV/JSON 내보내기 |
 
-강연 PDF를 분석하는 `analyzing` 상태이거나 실시간 강연이 진행 중인 `live` 상태에서는 `STT 실험실`로 이동할 수 없습니다. 실험실 안에서는 위 세 단계의 보조 탐색으로 이동합니다. 결과 기록은 데스크톱에서 history/detail 두 pane을 함께 표시하고, 좁은 화면에서는 목록 또는 상세 하나만 표시하며 상세의 `결과 목록으로`로 목록에 돌아갑니다.
+강연 PDF를 분석하는 `analyzing` 상태이거나 실시간 강연이 진행 중인 `live` 상태에서는 `STT 실험실`로 이동할 수 없습니다. 실험실 안에서는 위 네 단계의 보조 탐색으로 이동합니다. 결과 기록은 데스크톱에서 history/detail 두 pane을 함께 표시하고, 좁은 화면에서는 목록 또는 상세 하나만 표시하며 상세의 `결과 목록으로`로 목록에 돌아갑니다.
+
+### PDF·대본 실험 세트
+
+먼저 강연 화면에서 준비한 PDF 5종을 각각 분석해 브라우저 용어집으로 저장합니다. 이후 `#/experiment/setup`에서 실험 세트를 하나 만들고, 각 PDF 용어집과 실제로 읽을 정확한 대본을 케이스로 추가합니다. 저장 시 Gemini나 `/api/analyze`를 다시 호출하지 않고 브라우저 용어집을 서버의 `test-fixtures/stt/studies.local.json`에 복사합니다.
+
+케이스는 고유 study/case/snapshot ID와 glossary/script/case SHA-256을 가지며 생성 후 수정하지 않습니다. 바뀐 PDF·대본·채점 기준은 새 케이스로 추가합니다. 채점용 `targetTerms`와 PDF 적응용 `adaptationTerms`를 분리하므로 A는 PhraseSet 없음, B는 PDF canonical/English, C는 PDF 용어와 검토된 한국어 발음 별칭을 사용합니다. PDF에서 빠졌지만 대본에 있는 정답 용어는 수동 채점 용어로 추가할 수 있으나 B/C 힌트에는 들어가지 않아 PDF 추출 누락을 숨기지 않습니다.
 
 환경변수 없이도 `#/lecture`에서 `샘플 강연 바로 체험하기`를 선택해 데모를 실행할 수 있습니다.
 
 ### 개발용 고정음원 녹음
 
-`pnpm dev`로 `http://localhost:5173/#/experiment/record`를 열거나 `STT 실험실`의 `1. 고정음원 녹음`으로 이동합니다. 현재 기준 문장은 발화와 정답 표기가 어긋나지 않도록 `엘엘엠`, `래그`, `에이피아이`, `프레이즈셋`처럼 실제로 읽을 한국어 발음을 본문에 명시합니다. 문장을 처음부터 끝까지 그대로 읽은 경우에만 녹음 화면의 선언 **“기준 문장을 그대로 읽었습니다”**를 선택해 저장합니다.
+`pnpm dev`로 `http://localhost:5173/#/experiment/record`를 열거나 `STT 실험실`의 `2. 고정음원 녹음`으로 이동합니다. 현재 기준 문장은 발화와 정답 표기가 어긋나지 않도록 `엘엘엠`, `래그`, `에이피아이`, `프레이즈셋`처럼 실제로 읽을 한국어 발음을 본문에 명시합니다. 문장을 처음부터 끝까지 그대로 읽은 경우에만 녹음 화면의 선언 **“기준 문장을 그대로 읽었습니다”**를 선택해 저장합니다.
 
 고정 문장을 한 번 읽어 저장하면 다음 파일이 만들어집니다.
 
@@ -208,14 +221,14 @@ pnpm dev
 
 ### localhost UI에서 A/B/C 비교
 
-개발 서버와 Google ADC를 준비한 뒤 `http://localhost:5173/#/experiment/run` 또는 `STT 실험실`의 `2. A/B/C 비교 실행`에서 다음 순서로 실행합니다.
+개발 서버와 Google ADC를 준비한 뒤 `http://localhost:5173/#/experiment/run` 또는 `STT 실험실`의 `3. A/B/C 비교 실행`에서 다음 순서로 실행합니다.
 
 1. 저장된 녹음을 명시적으로 선택합니다.
 2. **유료 Google STT 스트림이 정확히 3회 호출됨**을 확인하는 동의란을 선택합니다.
 3. `유료 비교 시작`을 한 번 누릅니다. 서버는 선택한 WAV로 A, B, C를 각각 한 번 실행하고 화면은 job API를 폴링해 진행률과 조건별 상태를 표시합니다.
 4. 완료되면 결과 기록 첫 페이지가 갱신되고 방금 생성된 상세 리포트가 선택됩니다.
 
-실행 중인 조건을 자동 재시도하지 않으며 취소 API나 취소 버튼도 없습니다. 조건 하나가 오류로 끝나도 같은 job 안에서 나머지 조건을 각각 한 번만 실행하고, 오류를 포함한 완전한 v3 리포트를 저장합니다. 따라서 시작 전에 녹음, ADC, Google STT 설정을 확인해야 합니다. 테스트나 브라우저 QA에서는 `유료 비교 시작`을 누르거나 `POST /api/dev/stt-comparison-jobs`를 호출하지 않습니다.
+실행 중인 조건을 자동 재시도하지 않으며 취소 API나 취소 버튼도 없습니다. 조건 하나가 오류로 끝나도 같은 job 안에서 나머지 조건을 각각 한 번만 실행하고, 오류를 포함한 완전한 v4 리포트를 저장합니다. 따라서 시작 전에 녹음, ADC, Google STT 설정을 확인해야 합니다. 테스트나 브라우저 QA에서는 `유료 비교 시작`을 누르거나 `POST /api/dev/stt-comparison-jobs`를 호출하지 않습니다.
 
 동일한 실행기를 CLI에서도 사용할 수 있습니다. 가장 최근 녹음 또는 지정한 녹음을 실행합니다.
 
@@ -230,15 +243,17 @@ pnpm stt:compare -- <recording-id>
 | B · `canonical-phrase-set` | canonical 표기 + English 표기 | 없음 |
 | C · `spoken-alias-phrase-set` | canonical 표기 + English 표기 + 검토된 한국어 발음 | 검토된 별칭만 canonical 용어로 정정 |
 
+기존 고정 대본은 targetTerms를 적응 용어로도 사용합니다. 새 PDF 케이스는 위 B/C의 표기가 해당 케이스의 별도 `adaptationTerms`, 즉 PDF 용어집 스냅샷에서만 만들어집니다.
+
 UI 또는 CLI 실행 한 번은 A/B/C 각각에 대해 실제 Google STT 스트림을 열므로 **유료 API 실행이 정확히 세 번 발생합니다.** `pnpm test`는 저장 음원을 Google에 보내지 않고 스키마·조건 생성·점수 계산·파일 저장 경계만 검증하므로 유료 API를 호출하지 않습니다.
 
-실행 결과는 `test-fixtures/stt/results/comparison-<recordingId>-<jobId>.json`의 버전 3 리포트로 새 파일에 원자적으로 저장되며 Git·Docker에서 제외됩니다. job ID가 파일명에 포함되므로 같은 녹음을 반복해도 기존 결과를 덮어쓰지 않습니다. 이전의 `comparison-<recordingId>.json` 파일도 삭제하거나 이름을 바꾸지 않고 legacy/v3 검증 규칙에 따라 기록에 남깁니다. 리포트는 표시용 정정 자막, STT 원문 `rawText`, 정정 내역과 함께 정답 대본의 각 출현을 기준으로 직접 인식, 별칭 정정 성공, 누락, 잘못된 정정, 말하지 않은 용어 삽입, 제품 용어 연결률 `(직접 인식 + 별칭 정정 성공) / 기준 출현 수`를 기록합니다. A/B에서는 별칭 정정을 성공으로 인정하지 않습니다.
+실행 결과는 `test-fixtures/stt/results/comparison-<recordingId>-<jobId>.json`의 버전 4 리포트로 새 파일에 원자적으로 저장되며 Git·Docker에서 제외됩니다. v4는 녹음에 고정된 study/case/snapshot/glossary/script identity를 보존합니다. job ID가 파일명에 포함되므로 같은 녹음을 반복해도 기존 결과를 덮어쓰지 않습니다. 이전 `comparison-<recordingId>.json`과 v1~v3 결과도 삭제하거나 이름을 바꾸지 않고 기존 규칙에 따라 계속 조회합니다. 리포트는 표시용 정정 자막, STT 원문 `rawText`, 정정 내역과 함께 정답 대본의 각 출현을 기준으로 직접 인식, 별칭 정정 성공, 누락, 잘못된 정정, 말하지 않은 용어 삽입, 제품 용어 연결률 `(직접 인식 + 별칭 정정 성공) / 기준 출현 수`를 기록합니다. A/B에서는 별칭 정정을 성공으로 인정하지 않습니다.
 
-저장된 기록은 `http://localhost:5173/#/experiment/results` 또는 `STT 실험실`의 `3. 결과 기록`에서 확인합니다.
+저장된 기록은 `http://localhost:5173/#/experiment/results` 또는 `STT 실험실`의 `4. 결과 기록`에서 확인합니다.
 
 정확도 수치는 녹음 메타데이터에 **“기준 문장을 그대로 읽었습니다”**라는 명시적 선언이 있는 경우에만 유효합니다. 선언하지 않은 녹음과 기존 manifest v1 녹음은 자동으로 smoke 전용이며, 누락과 연결률이 계산되어도 논문 정확도로 해석하지 않습니다. 106초 legacy 녹음은 예전 소개 대본을 읽어 현재 기준 문장과 일치하지 않으므로 계속 smoke 전용입니다. 별도의 exact-script 녹음으로 완전한 accuracy 리포트 하나를 만들었지만, 논문 근거로 쓰려면 같은 WAV의 반복 실행이 더 필요합니다.
 
-localhost 개발 화면의 `저장된 STT 비교 결과`는 유효 파일을 수정 시각 최신순으로 5개씩 페이지 이동하고, 선택한 파일의 상세 리포트를 별도 API로 읽습니다. 새로고침·페이지 이동·상세 선택은 Google STT를 호출하지 않습니다. v3 상세는 조건 비교 차트, A/B/C별 STT 원문과 정정·표시 문장, 용어별 출현 표와 논문용 요약 표를 보여줍니다. TSV 복사는 정확도 모드이면서 세 조건이 모두 오류 없이 완료된 결과에서만 활성화되고, smoke 결과는 화면에서 관찰할 수 있어도 TSV 복사가 비활성화됩니다. 버전 1·2는 `레거시 스모크 결과` 안내만 표시하고 지표를 추정하거나 v3 차트·표·TSV로 승격하지 않습니다.
+localhost 개발 화면의 `저장된 STT 비교 결과`는 study/case로 필터한 유효 파일을 수정 시각 최신순으로 5개씩 페이지 이동하고, 선택한 파일의 상세 리포트를 별도 API로 읽습니다. 새로고침·페이지 이동·상세 선택은 Google STT를 호출하지 않습니다. v3/v4 상세는 조건 비교 차트, A/B/C별 STT 원문과 정정·표시 문장, 용어별 출현 표와 논문용 요약 표를 보여줍니다. 케이스 집계는 오류 없는 accuracy 결과만 평균 내고 CSV·TSV·JSON으로 내보냅니다. TSV 복사는 정확도 모드이면서 세 조건이 모두 오류 없이 완료된 결과에서만 활성화되고, smoke 결과는 화면에서 관찰할 수 있어도 TSV 복사가 비활성화됩니다. 버전 1·2는 `레거시 스모크 결과` 안내만 표시하고 지표를 추정하지 않습니다.
 
 UI job 상태는 서버 프로세스 메모리에만 있어 서버를 재시작하면 조회할 수 없습니다. 완료되어 `results/`에 저장된 파일은 서버 재시작 뒤에도 기록·상세 화면에서 다시 읽을 수 있습니다. 실행 중 재시작으로 파일 쓰기 전에 중단된 job은 결과가 없으며 자동 재개하거나 재시도하지 않습니다.
 

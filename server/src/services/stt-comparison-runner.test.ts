@@ -139,7 +139,7 @@ describe("reusable STT comparison runner", () => {
     ]);
     expect(maximumActive).toBe(1);
     expect(delays).toEqual([1_000, 1_000]);
-    expect(outcome.report.version).toBe(3);
+    expect(outcome.report.version).toBe(4);
     expect(outcome.report.runs.map((run) => run.status)).toEqual(["completed", "error", "completed"]);
     expect(outcome.report.runs[1]?.errors).toEqual(["synthetic B failure"]);
     expect(outcome.hasRunErrors).toBe(true);
@@ -185,7 +185,7 @@ describe("reusable STT comparison runner", () => {
   });
 });
 
-describe("strict v3 no-clobber report publication", () => {
+describe("strict v4 no-clobber report publication", () => {
   it("publishes a unique 0600 report atomically and never overwrites an existing result", async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "stt-comparison-result-"));
     roots.push(root);

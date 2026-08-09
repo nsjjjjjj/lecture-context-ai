@@ -8,12 +8,26 @@ export type AudioFixtureTargetTerm = {
   expectedOccurrences: number[];
 };
 
+export type AudioFixtureAdaptationTerm = Omit<AudioFixtureTargetTerm, "expectedOccurrences">;
+
+export type ExperimentIdentity = {
+  studyId: string;
+  caseId: string;
+  caseSnapshotId: string;
+  glossaryId: string;
+  glossaryName: string;
+  glossaryHash: string;
+  scriptHash: string;
+};
+
 export type AudioFixtureScript = {
   id: string;
   title: string;
   languageCode: "ko-KR";
   text: string;
   targetTerms: AudioFixtureTargetTerm[];
+  adaptationTerms?: AudioFixtureAdaptationTerm[];
+  experimentIdentity?: ExperimentIdentity;
 };
 
 export type AudioFixtureRecording = {
@@ -30,6 +44,40 @@ export type AudioFixtureRecording = {
   bitsPerSample: 16;
   dataBytes: number;
   speakerReadReferenceScriptVerbatim: boolean;
+  experimentIdentity?: ExperimentIdentity | null;
+};
+
+export type ExperimentCase = {
+  id: string;
+  studyId: string;
+  snapshotId: string;
+  title: string;
+  createdAt: string;
+  glossary: {
+    id: string;
+    name: string;
+    updatedAt: string;
+    hash: string;
+    terms: GlossaryTerm[];
+  };
+  scriptHash: string;
+  snapshotHash: string;
+  script: AudioFixtureScript;
+};
+
+export type ExperimentStudy = {
+  id: string;
+  title: string;
+  createdAt: string;
+  cases: ExperimentCase[];
+};
+
+export type ExperimentStudyCatalog = { version: 1; studies: ExperimentStudy[] };
+
+export type ExperimentTargetInput = {
+  canonicalTerm: string;
+  english: string;
+  spokenAliases: string[];
 };
 
 export type AudioFixtureCatalog = {
@@ -128,12 +176,18 @@ export type ComparisonReportV3 = {
   runs: ComparisonRunResult[];
 };
 
+export type ComparisonReportV4 = Omit<ComparisonReportV3, "version" | "recording"> & {
+  version: 4;
+  recording: ComparisonReportV3["recording"] & { experimentIdentity: ExperimentIdentity | null };
+};
+
 export type LegacyComparisonReport = {
   version: 1 | 2;
   [key: string]: unknown;
 };
 
-export type ComparisonReportFile = ComparisonReportV3 | LegacyComparisonReport;
+export type CurrentComparisonReport = ComparisonReportV3 | ComparisonReportV4;
+export type ComparisonReportFile = CurrentComparisonReport | LegacyComparisonReport;
 
 export type SttComparisonJobState =
   | "starting"
@@ -197,6 +251,21 @@ export type SttComparisonHistoryItem = {
   scriptTitle: string | null;
   evaluationMode: ComparisonEvaluationMode | null;
   runOutcome: "complete" | "has-errors" | "legacy";
+  studyId?: string | null;
+  caseId?: string | null;
+  caseSnapshotId?: string | null;
+  glossaryName?: string | null;
+};
+
+export type SttComparisonCaseAggregate = {
+  studyId: string;
+  caseId: string;
+  caseSnapshotId: string;
+  caseTitle: string;
+  glossaryName: string;
+  reportCount: number;
+  accuracyReportCount: number;
+  rates: Record<ComparisonRunLabel, number | null>;
 };
 
 export type SttComparisonPage = {
@@ -252,6 +321,34 @@ export async function getAudioFixtures(): Promise<AudioFixtureCatalog> {
   return readJson<AudioFixtureCatalog>(response);
 }
 
+export async function getExperimentStudies(): Promise<ExperimentStudyCatalog> {
+  const response = await fetch("/api/dev/experiment-studies", { cache: "no-store" });
+  return readJson<ExperimentStudyCatalog>(response);
+}
+
+export async function createExperimentStudy(title: string): Promise<{ study: ExperimentStudy }> {
+  const response = await fetch("/api/dev/experiment-studies", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title })
+  });
+  return readJson<{ study: ExperimentStudy }>(response);
+}
+
+export async function createExperimentCase(studyId: string, input: {
+  title: string;
+  scriptText: string;
+  glossary: Pick<import("./glossary-storage").StoredGlossary, "id" | "name" | "updatedAt" | "terms">;
+  targetTerms: ExperimentTargetInput[];
+}): Promise<{ experimentCase: ExperimentCase }> {
+  const response = await fetch(`/api/dev/experiment-studies/${encodeURIComponent(studyId)}/cases`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  return readJson<{ experimentCase: ExperimentCase }>(response);
+}
+
 export async function saveAudioFixture(input: {
   wav: Blob;
   scriptId: string;
@@ -292,10 +389,20 @@ export async function getSttComparisonJob(jobId: string): Promise<{ job: SttComp
   return readJson<{ job: SttComparisonJobStatus }>(response);
 }
 
-export async function getSttComparisons({ offset = 0, limit = 5 }: { offset?: number; limit?: number } = {}): Promise<SttComparisonCatalog> {
+export async function getSttComparisons({ offset = 0, limit = 5, studyId, caseId }: { offset?: number; limit?: number; studyId?: string; caseId?: string } = {}): Promise<SttComparisonCatalog> {
   const query = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+  if (studyId) query.set("studyId", studyId);
+  if (caseId) query.set("caseId", caseId);
   const response = await fetch(`/api/dev/stt-comparisons?${query.toString()}`, { cache: "no-store" });
   return readJson<SttComparisonCatalog>(response);
+}
+
+export async function getSttComparisonAggregates(filters: { studyId?: string; caseId?: string } = {}): Promise<{ cases: SttComparisonCaseAggregate[] }> {
+  const query = new URLSearchParams();
+  if (filters.studyId) query.set("studyId", filters.studyId);
+  if (filters.caseId) query.set("caseId", filters.caseId);
+  const response = await fetch(`/api/dev/stt-comparison-aggregates?${query.toString()}`, { cache: "no-store" });
+  return readJson<{ cases: SttComparisonCaseAggregate[] }>(response);
 }
 
 export async function getSttComparison(fileName: string): Promise<SttComparisonDetail> {

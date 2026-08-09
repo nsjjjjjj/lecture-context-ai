@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   buildComparisonRunDefinitions,
   comparisonReportV3Schema,
+  comparisonReportV4Schema,
   fixtureScriptSchema,
   isLegacyComparisonReport
 } from "./stt-comparison.js";
@@ -13,6 +14,7 @@ import {
   MAX_COMPARISON_REPORT_BYTES,
   MAX_STT_COMPARISON_RESULTS_LIMIT,
   isValidSttComparisonResultFileName,
+  readSttComparisonCaseAggregates,
   readSttComparisonResult,
   readSttComparisonResults
 } from "./stt-comparison-results.js";
@@ -96,11 +98,113 @@ function validV3Report(transcript: string) {
   });
 }
 
+function validV4Report() {
+  const identity = {
+    studyId: "study-11111111-1111-4111-8111-111111111111",
+    caseId: "case-22222222-2222-4222-8222-222222222222",
+    caseSnapshotId: "snapshot-1234567890abcdef12345678",
+    glossaryId: "browser-glossary-1",
+    glossaryName: "AI PDF",
+    glossaryHash: "a".repeat(64),
+    scriptHash: "b".repeat(64)
+  };
+  const script = fixtureScriptSchema.parse({
+    id: identity.caseId,
+    title: "PDF case",
+    languageCode: "ko-KR",
+    text: "래그",
+    targetTerms: [{ id: "rag", canonicalTerm: "RAG", english: "", spokenAliases: ["래그"], expectedOccurrences: [1] }],
+    adaptationTerms: [{ id: "pdf-01", canonicalTerm: "RAG", english: "", spokenAliases: ["래그"] }],
+    experimentIdentity: identity
+  });
+  const rates = [0, 1, 1];
+  const runs = buildComparisonRunDefinitions(script).map((definition, index) => ({
+    ...definition,
+    status: "completed" as const,
+    startedAt: "2026-08-09T00:00:00.000Z",
+    readyAfterMs: 0,
+    audioDurationMs: 1_000,
+    wallClockMs: 1_000,
+    interimCount: 0,
+    finalTranscripts: [],
+    transcript: "",
+    rawTranscript: "",
+    metrics: {
+      evaluationMode: "accuracy" as const,
+      accuracyValid: true,
+      directRecognitions: rates[index]!,
+      aliasCorrectionSuccesses: 0,
+      misses: 1 - rates[index]!,
+      falseCorrections: 0,
+      falseInsertions: 0,
+      expectedOccurrenceCount: 1,
+      productLinkRate: rates[index]!
+    },
+    occurrenceResults: [{
+      sequence: 1,
+      targetTermId: "rag",
+      canonicalTerm: "RAG",
+      outcome: rates[index] ? "direct-recognition" as const : "miss" as const,
+      finalTranscriptIndex: null,
+      rawText: null
+    }],
+    unexpectedObservations: [],
+    errors: []
+  }));
+  return comparisonReportV4Schema.parse({
+    version: 4,
+    createdAt: "2026-08-09T00:01:00.000Z",
+    recording: {
+      id: "11111111-1111-4111-8111-111111111111",
+      scriptId: script.id,
+      speakerReadReferenceScriptVerbatim: true,
+      evaluationMode: "accuracy",
+      experimentIdentity: identity
+    },
+    script,
+    websocketUrl: "ws://127.0.0.1:8787/ws",
+    measurementNote: "PDF experiment",
+    runs
+  });
+}
+
 afterEach(async () => {
   await Promise.all(temporaryRoots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
 describe("STT comparison result discovery", () => {
+  it("filters v4 case history and aggregates complete accuracy reports without mixing legacy data", async () => {
+    const { root, results } = await fixtureRootWithResults();
+    const report = validV4Report();
+    await writeFile(path.join(results, "comparison-study.json"), JSON.stringify(report));
+    await writeFile(path.join(results, "comparison-legacy.json"), JSON.stringify({ version: 2 }));
+
+    const filtered = await readSttComparisonResults(root, {
+      studyId: report.recording.experimentIdentity!.studyId,
+      caseId: report.recording.experimentIdentity!.caseId
+    });
+    const aggregate = await readSttComparisonCaseAggregates(root, {
+      studyId: report.recording.experimentIdentity!.studyId
+    });
+
+    expect(filtered.reportCount).toBe(1);
+    expect(filtered.history[0]).toMatchObject({
+      version: 4,
+      caseId: report.recording.experimentIdentity!.caseId,
+      glossaryName: "AI PDF"
+    });
+    expect(aggregate.cases).toEqual([expect.objectContaining({
+      caseTitle: "PDF case",
+      reportCount: 1,
+      accuracyReportCount: 1,
+      rates: {
+        "without-phrase-set": 0,
+        "canonical-phrase-set": 1,
+        "spoken-alias-phrase-set": 1
+      }
+    })]);
+  });
+
   it("returns the stable empty response with default pagination", async () => {
     const { root } = await fixtureRootWithResults();
 

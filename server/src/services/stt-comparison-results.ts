@@ -4,7 +4,7 @@ import path from "node:path";
 import {
   comparisonReportFileSchema,
   type ComparisonReportFile,
-  type ComparisonReportV3
+  type CurrentComparisonReport
 } from "./stt-comparison.js";
 
 export const MAX_COMPARISON_REPORT_BYTES = 5 * 1024 * 1024;
@@ -16,6 +16,8 @@ const comparisonReportFileNamePattern = /^comparison-[a-zA-Z0-9][a-zA-Z0-9_-]{0,
 export type SttComparisonResultsPagination = {
   offset?: number;
   limit?: number;
+  studyId?: string;
+  caseId?: string;
 };
 
 export type SttComparisonRunOutcome = "complete" | "has-errors" | "legacy";
@@ -29,6 +31,21 @@ export type SttComparisonResultSummary = {
   scriptTitle: string | null;
   evaluationMode: "accuracy" | "smoke" | null;
   runOutcome: SttComparisonRunOutcome;
+  studyId?: string | null;
+  caseId?: string | null;
+  caseSnapshotId?: string | null;
+  glossaryName?: string | null;
+};
+
+export type SttComparisonCaseAggregate = {
+  studyId: string;
+  caseId: string;
+  caseSnapshotId: string;
+  caseTitle: string;
+  glossaryName: string;
+  reportCount: number;
+  accuracyReportCount: number;
+  rates: Record<"without-phrase-set" | "canonical-phrase-set" | "spoken-alias-phrase-set", number | null>;
 };
 
 export type SttComparisonResultsPage = {
@@ -61,7 +78,7 @@ export function isValidSttComparisonResultFileName(fileName: string): boolean {
   return comparisonReportFileNamePattern.test(fileName);
 }
 
-function normalizePagination(pagination: SttComparisonResultsPagination): Required<SttComparisonResultsPagination> {
+function normalizePagination(pagination: SttComparisonResultsPagination): { offset: number; limit: number; studyId?: string; caseId?: string } {
   const offset = Number.isSafeInteger(pagination.offset) && pagination.offset! >= 0
     ? pagination.offset!
     : 0;
@@ -70,7 +87,9 @@ function normalizePagination(pagination: SttComparisonResultsPagination): Requir
     : DEFAULT_STT_COMPARISON_RESULTS_LIMIT;
   return {
     offset,
-    limit: Math.min(requestedLimit, MAX_STT_COMPARISON_RESULTS_LIMIT)
+    limit: Math.min(requestedLimit, MAX_STT_COMPARISON_RESULTS_LIMIT),
+    ...(pagination.studyId ? { studyId: pagination.studyId } : {}),
+    ...(pagination.caseId ? { caseId: pagination.caseId } : {})
   };
 }
 
@@ -152,7 +171,7 @@ async function readValidReport(resultsRoot: string, fileName: string): Promise<V
   }
 }
 
-function runOutcome(report: ComparisonReportV3): SttComparisonRunOutcome {
+function runOutcome(report: CurrentComparisonReport): SttComparisonRunOutcome {
   return report.runs.every((run) => run.status === "completed" && run.errors.length === 0)
     ? "complete"
     : "has-errors";
@@ -165,7 +184,7 @@ function summarizeReport(report: ValidReport): SttComparisonResultSummary {
     version: report.report.version
   };
 
-  if (report.report.version !== 3) {
+  if (report.report.version !== 3 && report.report.version !== 4) {
     return {
       ...base,
       createdAt: null,
@@ -176,14 +195,42 @@ function summarizeReport(report: ValidReport): SttComparisonResultSummary {
     };
   }
 
+  const identity = report.report.version === 4 ? report.report.recording.experimentIdentity : null;
+
   return {
     ...base,
     createdAt: report.report.createdAt,
     recordingId: report.report.recording.id,
     scriptTitle: report.report.script.title,
     evaluationMode: report.report.recording.evaluationMode,
-    runOutcome: runOutcome(report.report)
+    runOutcome: runOutcome(report.report),
+    ...(identity ? {
+      studyId: identity.studyId,
+      caseId: identity.caseId,
+      caseSnapshotId: identity.caseSnapshotId,
+      glossaryName: identity.glossaryName
+    } : {})
   };
+}
+
+async function readAllValidReports(fixtureRoot: string): Promise<ValidReport[]> {
+  const resultsRoot = await resolveResultsRoot(fixtureRoot);
+  if (!resultsRoot) return [];
+  let entries;
+  try {
+    entries = await readdir(resultsRoot, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  const reports: ValidReport[] = [];
+  for (const entry of entries) {
+    if (!entry.isFile() || entry.isSymbolicLink()) continue;
+    const report = await readValidReport(resultsRoot, entry.name);
+    if (report) reports.push(report);
+  }
+  reports.sort((left, right) => right.modifiedAtMs - left.modifiedAtMs || right.fileName.localeCompare(left.fileName));
+  return reports;
 }
 
 export async function readSttComparisonResult(
@@ -208,28 +255,15 @@ export async function readSttComparisonResults(
   fixtureRoot: string,
   pagination: SttComparisonResultsPagination = {}
 ): Promise<SttComparisonResultsResponse> {
-  const { offset, limit } = normalizePagination(pagination);
-  const resultsRoot = await resolveResultsRoot(fixtureRoot);
-  if (!resultsRoot) return emptyResponse(offset, limit);
-
-  let entries;
-  try {
-    entries = await readdir(resultsRoot, { withFileTypes: true });
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return emptyResponse(offset, limit);
-    throw error;
-  }
-
-  const reports: ValidReport[] = [];
-  for (const entry of entries) {
-    if (!entry.isFile() || entry.isSymbolicLink()) continue;
-    const report = await readValidReport(resultsRoot, entry.name);
-    if (report) reports.push(report);
-  }
-
-  // Filenames are UUID-based and legacy payload timestamps are not schema-guaranteed,
-  // so filesystem modification time is the stable ordering metadata for valid files.
-  reports.sort((left, right) => right.modifiedAtMs - left.modifiedAtMs || right.fileName.localeCompare(left.fileName));
+  const { offset, limit, studyId, caseId } = normalizePagination(pagination);
+  const allReports = await readAllValidReports(fixtureRoot);
+  const reports = allReports.filter(({ report }) => {
+    if (!studyId && !caseId) return true;
+    if (report.version !== 4 || !report.recording.experimentIdentity) return false;
+    if (studyId && report.recording.experimentIdentity.studyId !== studyId) return false;
+    return !caseId || report.recording.experimentIdentity.caseId === caseId;
+  });
+  if (reports.length === 0) return emptyResponse(offset, limit);
   const history = reports.slice(offset, offset + limit).map(summarizeReport);
   return {
     latest: reports[0]?.report ?? null,
@@ -241,5 +275,63 @@ export async function readSttComparisonResults(
       limit,
       hasMore: offset + history.length < reports.length
     }
+  };
+}
+
+export async function readSttComparisonCaseAggregates(
+  fixtureRoot: string,
+  filters: { studyId?: string; caseId?: string } = {}
+): Promise<{ cases: SttComparisonCaseAggregate[] }> {
+  const reports = await readAllValidReports(fixtureRoot);
+  const groups = new Map<string, {
+    identity: NonNullable<Extract<ComparisonReportFile, { version: 4 }>["recording"]["experimentIdentity"]>;
+    title: string;
+    reportCount: number;
+    accuracyReportCount: number;
+    rates: Record<string, number[]>;
+  }>();
+
+  for (const { report } of reports) {
+    if (report.version !== 4 || !report.recording.experimentIdentity) continue;
+    const identity = report.recording.experimentIdentity;
+    if (filters.studyId && identity.studyId !== filters.studyId) continue;
+    if (filters.caseId && identity.caseId !== filters.caseId) continue;
+    const group = groups.get(identity.caseSnapshotId) ?? {
+      identity,
+      title: report.script.title,
+      reportCount: 0,
+      accuracyReportCount: 0,
+      rates: {
+        "without-phrase-set": [],
+        "canonical-phrase-set": [],
+        "spoken-alias-phrase-set": []
+      }
+    };
+    group.reportCount += 1;
+    if (report.recording.evaluationMode === "accuracy" && report.runs.every((run) => run.status === "completed" && run.errors.length === 0)) {
+      group.accuracyReportCount += 1;
+      for (const run of report.runs) group.rates[run.label]!.push(run.metrics.productLinkRate);
+    }
+    groups.set(identity.caseSnapshotId, group);
+  }
+
+  const mean = (values: number[]): number | null => values.length
+    ? values.reduce((sum, value) => sum + value, 0) / values.length
+    : null;
+  return {
+    cases: [...groups.values()].map((group) => ({
+      studyId: group.identity.studyId,
+      caseId: group.identity.caseId,
+      caseSnapshotId: group.identity.caseSnapshotId,
+      caseTitle: group.title,
+      glossaryName: group.identity.glossaryName,
+      reportCount: group.reportCount,
+      accuracyReportCount: group.accuracyReportCount,
+      rates: {
+        "without-phrase-set": mean(group.rates["without-phrase-set"]!),
+        "canonical-phrase-set": mean(group.rates["canonical-phrase-set"]!),
+        "spoken-alias-phrase-set": mean(group.rates["spoken-alias-phrase-set"]!)
+      }
+    }))
   };
 }

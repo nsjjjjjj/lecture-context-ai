@@ -16,9 +16,14 @@ import {
   fixtureSpeakerLabelSchema
 } from "./services/audio-fixtures.js";
 import {
+  readSttComparisonCaseAggregates,
   readSttComparisonResult,
   readSttComparisonResults
 } from "./services/stt-comparison-results.js";
+import {
+  ExperimentStudyError,
+  ExperimentStudyStoreService
+} from "./services/experiment-studies.js";
 import {
   createSttComparisonJobManager,
   type StartSttComparisonJobInput,
@@ -214,13 +219,17 @@ function sendApiError(
 }
 
 const jsonErrorHandler: ErrorRequestHandler = (error, request, response, _next) => {
-  const status = error instanceof AudioFixtureError
+  const status = error instanceof AudioFixtureError || error instanceof ExperimentStudyError
     ? error.status
+    : error instanceof z.ZodError
+      ? 400
     : typeof error === "object" && error !== null && "status" in error && Number.isInteger(error.status)
       ? Number(error.status)
       : 500;
-  const message = error instanceof AudioFixtureError
+  const message = error instanceof AudioFixtureError || error instanceof ExperimentStudyError
     ? error.message
+    : error instanceof z.ZodError
+      ? "요청 데이터 형식이나 용어 구성이 올바르지 않습니다. 입력값을 확인해 주세요."
     : status === 413
       ? "녹음 본문이 최대 120초 크기를 초과했습니다."
       : "요청을 처리하지 못했습니다.";
@@ -284,6 +293,7 @@ export function createApp(options: AppOptions = {}) {
   if (nodeEnv === "development") {
     const fixtureRoot = options.fixtureRoot ?? defaultFixtureRoot;
     const store = new AudioFixtureStore(fixtureRoot);
+    const studyStore = new ExperimentStudyStoreService(fixtureRoot);
     const websocketUrl = options.websocketUrl ?? `ws://127.0.0.1:${process.env.PORT || 8787}/ws`;
     const jobManager = options.jobManager ?? createSttComparisonJobManager({ fixtureRoot, websocketUrl });
     const getSpeechConfigurationError = options.getGoogleSpeechConfigurationError
@@ -307,11 +317,50 @@ export function createApp(options: AppOptions = {}) {
       }
     });
 
+    app.get("/api/dev/experiment-studies", localOnly, async (_request, response, next) => {
+      try {
+        response.json(await studyStore.getCatalog());
+      } catch (error) {
+        next(error);
+      }
+    });
+
+    app.post("/api/dev/experiment-studies", localOnly, async (request, response, next) => {
+      try {
+        response.status(201).json({ study: await studyStore.createStudy(request.body) });
+      } catch (error) {
+        next(error);
+      }
+    });
+
+    app.post("/api/dev/experiment-studies/:studyId/cases", localOnly, async (request, response, next) => {
+      try {
+        response.status(201).json({
+          experimentCase: await studyStore.createCase(String(request.params.studyId), request.body)
+        });
+      } catch (error) {
+        next(error);
+      }
+    });
+
+    app.get("/api/dev/stt-comparison-aggregates", localOnly, async (request, response, next) => {
+      try {
+        response.json(await readSttComparisonCaseAggregates(fixtureRoot, {
+          ...(typeof request.query.studyId === "string" ? { studyId: request.query.studyId } : {}),
+          ...(typeof request.query.caseId === "string" ? { caseId: request.query.caseId } : {})
+        }));
+      } catch (error) {
+        next(error);
+      }
+    });
+
     app.get("/api/dev/stt-comparisons", localOnly, async (request, response, next) => {
       try {
         response.json(await readSttComparisonResults(fixtureRoot, {
           offset: paginationValue(request.query.offset),
-          limit: paginationValue(request.query.limit)
+          limit: paginationValue(request.query.limit),
+          ...(typeof request.query.studyId === "string" ? { studyId: request.query.studyId } : {}),
+          ...(typeof request.query.caseId === "string" ? { caseId: request.query.caseId } : {})
         }));
       } catch (error) {
         next(error);

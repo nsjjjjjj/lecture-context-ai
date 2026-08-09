@@ -61,6 +61,8 @@ const LECTURE_ROUTE: AppRoute = { page: "lecture" };
 
 export function parseAppHash(hash: string): AppRoute {
   switch (hash) {
+    case "#/experiment/setup":
+      return { page: "experiment", panel: "setup" };
     case "#/experiment/record":
       return { page: "experiment", panel: "record" };
     case "#/experiment/run":
@@ -119,7 +121,7 @@ export function Header({
   const compact = stage === "live";
   const lectureActive = route.page === "lecture";
   const experimentActive = route.page === "experiment";
-  const experimentRoute: AppRoute = experimentActive ? route : { page: "experiment", panel: "record" };
+  const experimentRoute: AppRoute = experimentActive ? route : { page: "experiment", panel: "setup" };
   const primaryLinkClass = "inline-flex min-h-10 items-center justify-center rounded-xl px-4 text-xs font-extrabold outline-none ring-cyan-300 transition focus-visible:ring-2";
 
   return (
@@ -1060,6 +1062,7 @@ export function App({ initialHash }: { initialHash?: string } = {}) {
       {route.page === "experiment" && development ? (
         <ExperimentWorkspace
           panel={route.panel}
+          glossaries={storedGlossaries}
           focusRequest={routeFocusRequest}
           onPanelChange={(panel) => navigateToRoute({ page: "experiment", panel })}
           onResultReady={handleExperimentResultReady}

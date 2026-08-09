@@ -23,6 +23,7 @@ describe("upload screen interaction layers", () => {
 describe("app hash routes", () => {
   it.each([
     ["#/lecture", { page: "lecture" }],
+    ["#/experiment/setup", { page: "experiment", panel: "setup" }],
     ["#/experiment/record", { page: "experiment", panel: "record" }],
     ["#/experiment/run", { page: "experiment", panel: "run" }],
     ["#/experiment/results", { page: "experiment", panel: "results" }]

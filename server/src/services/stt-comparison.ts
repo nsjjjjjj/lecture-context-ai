@@ -7,8 +7,38 @@ import {
   spokenFormKey
 } from "./spoken-aliases.js";
 
-const fixtureIdSchema = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/);
+export const fixtureIdSchema = z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/);
 const fixtureFormSchema = z.string().min(1).max(120);
+
+export const fixtureAdaptationTermSchema = z.object({
+  id: fixtureIdSchema,
+  canonicalTerm: fixtureFormSchema,
+  english: z.string().max(120).optional().default(""),
+  spokenAliases: z.array(z.string().min(1).max(40)).max(6).optional().default([])
+}).strict().superRefine((term, context) => {
+  const normalizedAliases = term.spokenAliases.map(canonicalizeSpokenForm);
+  const reviewedAliases = sanitizeSpokenAliases(term.canonicalTerm, term.english, normalizedAliases);
+  if (
+    reviewedAliases.length !== normalizedAliases.length ||
+    reviewedAliases.some((alias, index) => alias !== normalizedAliases[index])
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["spokenAliases"],
+      message: "spokenAliases에는 정규화된 검토 완료 별칭만 사용할 수 있습니다."
+    });
+  }
+});
+
+export const experimentIdentitySchema = z.object({
+  studyId: fixtureIdSchema,
+  caseId: fixtureIdSchema,
+  caseSnapshotId: fixtureIdSchema,
+  glossaryId: z.string().min(1).max(120),
+  glossaryName: z.string().min(1).max(160),
+  glossaryHash: z.string().regex(/^[0-9a-f]{64}$/),
+  scriptHash: z.string().regex(/^[0-9a-f]{64}$/)
+}).strict();
 
 export const fixtureTargetTermSchema = z.object({
   id: fixtureIdSchema,
@@ -43,7 +73,9 @@ export const fixtureScriptSchema = z.object({
   title: z.string().min(1).max(120),
   languageCode: z.literal("ko-KR"),
   text: z.string().min(1).max(5_000),
-  targetTerms: z.array(fixtureTargetTermSchema).min(1).max(50)
+  targetTerms: z.array(fixtureTargetTermSchema).min(1).max(50),
+  adaptationTerms: z.array(fixtureAdaptationTermSchema).min(1).max(50).optional(),
+  experimentIdentity: experimentIdentitySchema.optional()
 }).strict().superRefine((script, context) => {
   const ids = new Set<string>();
   const expectedSequences = new Set<number>();
@@ -121,8 +153,9 @@ export const fixtureScriptSchema = z.object({
     }
   }
 
-  const canonicalCount = phraseSetFor(script.targetTerms, false).length;
-  const aliasCount = phraseSetFor(script.targetTerms, true).length;
+  const adaptationTerms = script.adaptationTerms ?? script.targetTerms;
+  const canonicalCount = phraseSetFor(adaptationTerms, false).length;
+  const aliasCount = phraseSetFor(adaptationTerms, true).length;
   if (canonicalCount > 50 || aliasCount > 50) {
     context.addIssue({
       code: "custom",
@@ -149,6 +182,8 @@ const legacyFixtureScriptsSchema = z.object({
 }).strict();
 
 export type FixtureTargetTerm = z.infer<typeof fixtureTargetTermSchema>;
+export type FixtureAdaptationTerm = z.infer<typeof fixtureAdaptationTermSchema>;
+export type ExperimentIdentity = z.infer<typeof experimentIdentitySchema>;
 export type FixtureScript = z.infer<typeof fixtureScriptSchema>;
 export type FixtureScripts = z.infer<typeof fixtureScriptsSchema>;
 
@@ -185,7 +220,7 @@ function uniqueForms(forms: string[]): string[] {
   });
 }
 
-function phraseSetFor(targetTerms: FixtureTargetTerm[], includeAliases: boolean): string[] {
+function phraseSetFor(targetTerms: FixtureAdaptationTerm[], includeAliases: boolean): string[] {
   return uniqueForms(targetTerms.flatMap((term) => [
     term.canonicalTerm,
     term.english,
@@ -203,7 +238,7 @@ export function buildExpectedOccurrences(script: FixtureScript): ExpectedTermOcc
     .sort((left, right) => left.sequence - right.sequence);
 }
 
-export function buildFixtureTerms(targetTerms: FixtureTargetTerm[], includeAliases: boolean): GlossaryTerm[] {
+export function buildFixtureTerms(targetTerms: FixtureAdaptationTerm[], includeAliases: boolean): GlossaryTerm[] {
   return targetTerms.map((term) => ({
     id: term.id,
     term: term.canonicalTerm,
@@ -211,7 +246,7 @@ export function buildFixtureTerms(targetTerms: FixtureTargetTerm[], includeAlias
     spokenAliases: includeAliases ? [...term.spokenAliases] : [],
     easyExplanation: "고정음원 STT 비교용 전문용어",
     pageNumber: 1,
-    occurrences: term.expectedOccurrences.length,
+    occurrences: "expectedOccurrences" in term && Array.isArray(term.expectedOccurrences) ? term.expectedOccurrences.length : 0,
     source: "demo"
   }));
 }
@@ -234,10 +269,11 @@ export const comparisonRunDefinitionSchema = z.object({
 export type ComparisonRunDefinition = z.infer<typeof comparisonRunDefinitionSchema>;
 
 export function buildComparisonRunDefinitions(script: FixtureScript): ComparisonRunDefinition[] {
-  const canonicalPhraseSet = phraseSetFor(script.targetTerms, false);
-  const aliasPhraseSet = phraseSetFor(script.targetTerms, true);
-  const withoutAliases = buildFixtureTerms(script.targetTerms, false);
-  const withAliases = buildFixtureTerms(script.targetTerms, true);
+  const adaptationTerms = script.adaptationTerms ?? script.targetTerms;
+  const canonicalPhraseSet = phraseSetFor(adaptationTerms, false);
+  const aliasPhraseSet = phraseSetFor(adaptationTerms, true);
+  const withoutAliases = buildFixtureTerms(adaptationTerms, false);
+  const withAliases = buildFixtureTerms(adaptationTerms, true);
   return [
     comparisonRunDefinitionSchema.parse({
       label: "without-phrase-set",
@@ -382,6 +418,14 @@ export function scoreComparisonRun(options: {
   const finalTranscripts = options.finalTranscripts.map((transcript) => comparisonFinalTranscriptSchema.parse(transcript));
   const terms = buildFixtureTerms(options.script.targetTerms, true);
   const targetById = new Map(options.script.targetTerms.map((term) => [term.id, term]));
+  const adaptationTargetById = new Map<string, FixtureTargetTerm>();
+  for (const adaptationTerm of options.script.adaptationTerms ?? []) {
+    const adaptationLabels = new Set([adaptationTerm.canonicalTerm, adaptationTerm.english].map(spokenFormKey).filter(Boolean));
+    const candidates = options.script.targetTerms.filter((target) =>
+      [target.canonicalTerm, target.english].map(spokenFormKey).filter(Boolean).some((label) => adaptationLabels.has(label))
+    );
+    if (candidates.length === 1) adaptationTargetById.set(adaptationTerm.id, candidates[0]!);
+  }
   const observed: ObservedOccurrence[] = [];
   const unexpectedObservations: UnexpectedObservation[] = [];
 
@@ -404,7 +448,7 @@ export function scoreComparisonRun(options: {
       .map((correction, correctionIndex) => ({ correction, correctionIndex }))
       .sort((left, right) => left.correction.displayStart - right.correction.displayStart || left.correctionIndex - right.correctionIndex)
       .forEach(({ correction }) => {
-        const target = targetById.get(correction.termId);
+        const target = targetById.get(correction.termId) ?? adaptationTargetById.get(correction.termId);
         const correctedCanonical = target && spokenFormKey(correction.correctedText) === spokenFormKey(target.canonicalTerm);
         const reviewedOriginal = target?.spokenAliases.some((alias) => spokenFormKey(alias) === spokenFormKey(correction.originalText)) ?? false;
         const aliasMatchIndex = target && correctedCanonical && reviewedOriginal
@@ -567,11 +611,63 @@ export const comparisonReportV3Schema = z.object({
 
 export type ComparisonReportV3 = z.infer<typeof comparisonReportV3Schema>;
 
+export const comparisonReportV4Schema = z.object({
+  version: z.literal(4),
+  createdAt: z.string().datetime({ offset: true }),
+  recording: z.object({
+    id: z.string().uuid(),
+    scriptId: fixtureIdSchema,
+    speakerReadReferenceScriptVerbatim: z.boolean(),
+    evaluationMode: z.enum(["accuracy", "smoke"]),
+    experimentIdentity: experimentIdentitySchema.nullable()
+  }).strict(),
+  script: fixtureScriptSchema,
+  websocketUrl: z.string().url(),
+  measurementNote: z.string().min(1),
+  runs: z.array(comparisonRunResultSchema).length(3)
+}).strict().superRefine((report, context) => {
+  if (report.recording.scriptId !== report.script.id) {
+    context.addIssue({ code: "custom", path: ["recording", "scriptId"], message: "recording과 script id가 일치하지 않습니다." });
+  }
+  const expectedMode = report.recording.speakerReadReferenceScriptVerbatim ? "accuracy" : "smoke";
+  if (report.recording.evaluationMode !== expectedMode) {
+    context.addIssue({ code: "custom", path: ["recording", "evaluationMode"], message: "녹음 검증 상태와 evaluationMode가 일치하지 않습니다." });
+  }
+  if (JSON.stringify(report.recording.experimentIdentity) !== JSON.stringify(report.script.experimentIdentity ?? null)) {
+    context.addIssue({ code: "custom", path: ["recording", "experimentIdentity"], message: "녹음과 대본의 실험 스냅샷 ID가 일치하지 않습니다." });
+  }
+  if (report.script.experimentIdentity && !report.script.adaptationTerms) {
+    context.addIssue({ code: "custom", path: ["script", "adaptationTerms"], message: "실험 케이스에는 PDF 용어집 적응 용어가 필요합니다." });
+  }
+
+  const expectedDefinitions = buildComparisonRunDefinitions(report.script);
+  report.runs.forEach((run, index) => {
+    const definition = expectedDefinitions[index];
+    if (!definition || run.label !== comparisonRunLabels[index]) {
+      context.addIssue({ code: "custom", path: ["runs", index, "label"], message: "A/B/C run은 고정 순서로 정확히 한 번씩 있어야 합니다." });
+      return;
+    }
+    if (JSON.stringify(run.phraseSet) !== JSON.stringify(definition.phraseSet)) {
+      context.addIssue({ code: "custom", path: ["runs", index, "phraseSet"], message: "run PhraseSet이 고정 조건과 일치하지 않습니다." });
+    }
+    if (JSON.stringify(run.terms) !== JSON.stringify(definition.terms)) {
+      context.addIssue({ code: "custom", path: ["runs", index, "terms"], message: "run term alias 구성이 고정 조건과 일치하지 않습니다." });
+    }
+    if (run.metrics.evaluationMode !== expectedMode || run.metrics.accuracyValid !== report.recording.speakerReadReferenceScriptVerbatim) {
+      context.addIssue({ code: "custom", path: ["runs", index, "metrics"], message: "run 평가 상태가 녹음 검증 선언과 일치하지 않습니다." });
+    }
+  });
+});
+
+export type ComparisonReportV4 = z.infer<typeof comparisonReportV4Schema>;
+export type CurrentComparisonReport = ComparisonReportV3 | ComparisonReportV4;
+
 export const legacyComparisonReportSchema = z.object({
   version: z.union([z.literal(1), z.literal(2)])
 }).passthrough();
 
 export const comparisonReportFileSchema = z.union([
+  comparisonReportV4Schema,
   comparisonReportV3Schema,
   legacyComparisonReportSchema
 ]);

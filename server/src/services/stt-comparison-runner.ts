@@ -12,11 +12,11 @@ import {
 import {
   buildComparisonRunDefinitions,
   comparisonFinalTranscriptSchema,
-  comparisonReportV3Schema,
+  comparisonReportV4Schema,
   comparisonRunResultSchema,
   scoreComparisonRun,
   type ComparisonFinalTranscript,
-  type ComparisonReportV3,
+  type ComparisonReportV4,
   type ComparisonRunDefinition,
   type ComparisonRunLabel,
   type ComparisonRunResult,
@@ -90,7 +90,7 @@ export type SttComparisonRunnerOutcome = {
   jobId: string;
   recordingId: string;
   outputPath: string;
-  report: ComparisonReportV3;
+  report: ComparisonReportV4;
   hasRunErrors: boolean;
 };
 
@@ -102,7 +102,7 @@ export type SttComparisonRunnerDependencies = {
   loadFixture?: (fixtureRoot: string, recordingId?: string) => Promise<LoadedSttComparisonFixture>;
   executeRun?: SttComparisonRunExecutor;
   acquireLock?: (options: AcquireSttComparisonLockOptions) => Promise<SttComparisonLock>;
-  publishReport?: (outputPath: string, report: ComparisonReportV3) => Promise<void>;
+  publishReport?: (outputPath: string, report: ComparisonReportV4) => Promise<void>;
   delayBetweenRuns?: (durationMs: number) => Promise<void>;
   now?: () => Date;
   randomJobId?: () => string;
@@ -255,20 +255,21 @@ export async function executeSttComparisonRun(
 
 export function createComparisonReport(options: {
   createdAt: string;
-  recording: Pick<FixtureRecording, "id" | "scriptId" | "speakerReadReferenceScriptVerbatim">;
+  recording: Pick<FixtureRecording, "id" | "scriptId" | "speakerReadReferenceScriptVerbatim" | "experimentIdentity">;
   script: FixtureScript;
   websocketUrl: string;
   runs: ComparisonRunResult[];
-}): ComparisonReportV3 {
+}): ComparisonReportV4 {
   const evaluationMode = options.recording.speakerReadReferenceScriptVerbatim ? "accuracy" : "smoke";
-  return comparisonReportV3Schema.parse({
-    version: 3,
+  return comparisonReportV4Schema.parse({
+    version: 4,
     createdAt: options.createdAt,
     recording: {
       id: options.recording.id,
       scriptId: options.recording.scriptId,
       speakerReadReferenceScriptVerbatim: options.recording.speakerReadReferenceScriptVerbatim,
-      evaluationMode
+      evaluationMode,
+      experimentIdentity: options.recording.experimentIdentity ?? null
     },
     script: options.script,
     websocketUrl: options.websocketUrl,
@@ -289,9 +290,9 @@ async function assertSafeResultsDirectory(directory: string): Promise<void> {
 
 export async function writeComparisonReportAtomically(
   outputPath: string,
-  report: ComparisonReportV3
+  report: ComparisonReportV4
 ): Promise<void> {
-  const validated = comparisonReportV3Schema.parse(report);
+  const validated = comparisonReportV4Schema.parse(report);
   const serialized = `${JSON.stringify(validated, null, 2)}\n`;
   const outputDirectory = path.dirname(outputPath);
   await assertSafeResultsDirectory(outputDirectory);

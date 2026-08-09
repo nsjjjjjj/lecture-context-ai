@@ -7,8 +7,11 @@
 ### 구현 완료
 
 - React 기반 반응형 발표 화면
-- `강연`과 DEV 전용 `STT 실험실`을 분리한 기본 탐색과 `#/lecture`, `#/experiment/record`, `#/experiment/run`, `#/experiment/results` 해시 라우트
-- 강연 페이지를 PDF 분석·샘플 데모·저장 용어집으로 한정하고, 실험실에 `1. 고정음원 녹음`, `2. A/B/C 비교 실행`, `3. 결과 기록` 보조 탐색 제공
+- `강연`과 DEV 전용 `STT 실험실`을 분리한 기본 탐색과 `#/lecture`, `#/experiment/setup`, `#/experiment/record`, `#/experiment/run`, `#/experiment/results` 해시 라우트
+- 실험실에 `1. 실험 설정`, `2. 고정음원 녹음`, `3. A/B/C 비교 실행`, `4. 결과 기록` 보조 탐색 제공
+- 브라우저 저장 용어집과 정확한 대본을 Gemini 재호출 없이 로컬 study/case 스냅샷으로 저장하고 glossary·script·case 해시와 고유 identity로 중복·덮어쓰기를 방지하는 실험 설정 UI
+- 채점용 targetTerms와 PDF adaptationTerms를 분리해 A=없음, B=PDF canonical/English, C=PDF+검토된 발음 별칭으로 실행하고 PDF에 없는 수동 정답 용어를 힌트에는 넣지 않는 v4 비교 계약
+- 녹음과 v4 결과에 study/case/snapshot/glossary/script identity를 고정하고, 결과의 세트·케이스 필터·완전한 accuracy 평균·CSV/TSV/JSON 내보내기 제공
 - 강연 `analyzing`·`live` 상태의 실험실 이동 차단과, 결과 기록의 데스크톱 history/detail pane 및 좁은 화면 목록/상세·`결과 목록으로` 전환
 - PDF.js 페이지별 텍스트 추출
 - Gemini 구조화 JSON 기반 자동 용어집 생성
@@ -29,7 +32,7 @@
 - UI와 CLI가 함께 사용하는 `.stt-comparison.lock` 기반 cross-process 단일 실행과 stale PID의 검증 후 회수·unsafe lock 차단
 - 직접 인식·별칭 정정 성공·누락·잘못된 정정·잘못된 삽입·제품 용어 연결률을 출현 단위로 계산하는 비교 결과 v3
 - `comparison-<recordingId>-<jobId>.json` immutable 결과 저장과 기존 파일 보존, 수정 시각 최신순 페이지 목록·파일별 상세 조회
-- 저장된 v3 결과의 조건 차트·A/B/C 원문/표시 자막·용어별 표와, 정확도·세 run 정상 완료 조건에서만 활성화되는 TSV 복사를 제공하고 v1/v2를 안내-only legacy로 격리하는 localhost 개발 결과 화면
+- 저장된 v3/v4 결과의 조건 차트·A/B/C 원문/표시 자막·용어별 표와, 정확도·세 run 정상 완료 조건에서만 활성화되는 TSV 복사를 제공하고 v1/v2를 안내-only legacy로 격리하는 localhost 개발 결과 화면
 - 임시·확정 자막, 용어 강조, 반복 언급마다 생성되는 최신순 쉬운 설명 피드
 - `spokenAliases` 후보 중 코드에서 검토된 용어-발음 쌍만 채택하는 검증과 새 분석의 알려진 기술용어 발음 보완, 별칭을 포함할 수 있는 50개 제한 PhraseSet
 - 임시 자막 원문 유지, 확정 자막의 위치 기반 canonical 정정, `rawText`·정정 내역 보존
@@ -127,17 +130,18 @@ pnpm dev
 12. `실시간 강연 시작` 시 저장된 전체 용어와 PhraseSet이 WebSocket `start` 메시지에 포함되고, 자막 강조와 쉬운 설명이 동작하는지 확인합니다.
 13. 저장 용어집 세션에서도 관련 자료 영역 없이 오른쪽 전체를 용어 설명 피드로 사용하고, 같은 용어의 반복 카드가 각각 유지되는지 확인합니다.
 14. `#/lecture`에서 용어집 이름 변경과 삭제를 확인합니다.
-15. `#/experiment/record`로 이동해 실험실 보조 탐색의 `1. 고정음원 녹음`이 선택되는지 확인한 뒤, 가명 화자와 환경을 선택하고 고정 문장을 녹음합니다.
-16. 정확도용 녹음이라면 화면의 문장을 그대로 읽고 **“기준 문장을 그대로 읽었습니다”**를 선택합니다. 일부를 바꾸거나 빼고 읽었다면 선택하지 않습니다.
-17. 녹음 종료와 최대 120초 timer/PCM hard cap 종료가 한 번만 처리되는지, 미리 듣기와 재녹음이 동작하는지 확인합니다.
-18. 저장 뒤 `test-fixtures/stt/audio/*.wav`와 `manifest.local.json`이 생성되고 Git 상태에 나타나지 않는지 확인합니다.
-19. `#/experiment/run`에서 `2. A/B/C 비교 실행`과 저장 녹음 selector, 3회 유료 호출 동의 문구, 동의 전 비활성 Start 상태까지만 확인합니다.
-20. 테스트·브라우저 QA에서는 `A/B/C 비교 시작`을 누르거나 `POST /api/dev/stt-comparison-jobs`를 호출하지 않습니다. 저장 녹음 selector, 3회 유료 호출 동의 문구와 동의 전 비활성 Start 상태까지만 확인합니다. `pnpm test`도 Google STT를 호출하지 않습니다.
-21. `#/experiment/results`에서 `3. 결과 기록`이 선택되고, 데스크톱에서 기존 저장 결과의 history 목록과 선택한 detail이 두 pane으로 함께 보이는지 확인합니다.
-22. 기존 저장 결과만 사용해 새로고침, 이전/다음 페이지와 파일 선택이 해당 상세 리포트를 여는지 확인합니다. 이 목록·상세 동작은 유료 호출을 만들지 않습니다.
-23. 좁은 화면에서 `#/experiment/results`가 목록을 먼저 표시하고, 파일을 선택하면 상세만 표시되며 `결과 목록으로`가 목록으로 돌아가는지 확인합니다.
-24. 정확도 모드이고 세 run이 모두 오류 없이 완료된 기존 v3에서만 TSV 복사가 활성화되는지 확인합니다. smoke v3는 차트·자막·표를 표시하되 TSV 복사가 비활성화되어야 합니다.
-25. v1/v2가 `레거시 스모크 결과` 안내만 표시하고 지표·자막·v3 차트·표·TSV를 추정하지 않는지 확인합니다.
+15. `#/experiment/setup`에서 실험 세트를 만들고 저장된 브라우저 용어집·정확한 대본·채점 용어로 케이스를 저장합니다. 이때 `/api/analyze`나 Gemini 호출이 발생하지 않는지 확인합니다.
+16. `#/experiment/record`로 이동해 `2. 고정음원 녹음`에서 방금 만든 `[실험 케이스]` 대본을 선택하고 가명 화자와 환경을 선택해 녹음합니다.
+17. 정확도용 녹음이라면 화면의 문장을 그대로 읽고 **“기준 문장을 그대로 읽었습니다”**를 선택합니다. 일부를 바꾸거나 빼고 읽었다면 선택하지 않습니다.
+18. 녹음 종료와 최대 120초 timer/PCM hard cap 종료가 한 번만 처리되는지, 미리 듣기와 재녹음이 동작하는지 확인합니다.
+19. 저장 뒤 `test-fixtures/stt/audio/*.wav`와 `manifest.local.json`이 생성되고 Git 상태에 나타나지 않는지 확인합니다.
+20. `#/experiment/run`에서 `3. A/B/C 비교 실행`과 저장 녹음 selector, 3회 유료 호출 동의 문구, 동의 전 비활성 Start 상태까지만 확인합니다.
+21. 테스트·브라우저 QA에서는 `A/B/C 비교 시작`을 누르거나 `POST /api/dev/stt-comparison-jobs`를 호출하지 않습니다. 저장 녹음 selector, 3회 유료 호출 동의 문구와 동의 전 비활성 Start 상태까지만 확인합니다. `pnpm test`도 Google STT를 호출하지 않습니다.
+22. `#/experiment/results`에서 `4. 결과 기록`이 선택되고, 세트·케이스 필터와 집계 표·CSV/TSV/JSON 내보내기, 데스크톱 history/detail pane을 확인합니다.
+23. 기존 저장 결과만 사용해 새로고침, 이전/다음 페이지와 파일 선택이 해당 상세 리포트를 여는지 확인합니다. 이 목록·상세 동작은 유료 호출을 만들지 않습니다.
+24. 좁은 화면에서 `#/experiment/results`가 목록을 먼저 표시하고, 파일을 선택하면 상세만 표시되며 `결과 목록으로`가 목록으로 돌아가는지 확인합니다.
+25. 정확도 모드이고 세 run이 모두 오류 없이 완료된 v3/v4에서만 TSV 복사가 활성화되는지 확인합니다. smoke는 차트·자막·표를 표시하되 TSV 복사가 비활성화되어야 합니다.
+26. v1/v2가 `레거시 스모크 결과` 안내만 표시하고 지표·자막·v3/v4 차트·표·TSV를 추정하지 않는지 확인합니다.
 
 실제 유료 측정은 브라우저 QA와 분리해 [STT PhraseSet 파일럿 실험 기록](STT_PHRASESET_PILOT.md)의 프로토콜로만 수행합니다. 이때 저장 녹음 선택과 정확히 3회 호출 동의 후 Start를 한 번 누르며, 자동 재시도·취소가 없고 공유 lock이 중복 UI/CLI 시작을 막는다는 점을 전제로 합니다.
 
@@ -147,7 +151,7 @@ pnpm dev
 - PDF는 브라우저에서 추출하며 Python 런타임을 사용하지 않습니다.
 - 강연자 검수 단계 없이 PDF 원문 대조 결과를 자동 채택합니다.
 - PDF와 실시간 강연 음성은 서버에 저장하지 않으며 데이터베이스가 없습니다. localhost 개발 녹음 카드에서 사용자가 명시적으로 만든 fixture만 프로젝트 로컬에 보존합니다.
-- 용어집은 `lecture-context-ai.glossaries` 키의 버전 3 브라우저 저장소에만 저장합니다. 유효한 버전 1 데이터는 용어 ID와 기존 PhraseSet을 유지하고 각 용어에 빈 `spokenAliases`를 넣어 버전 3으로 이전합니다. WebSocket 경계에서도 이 빈 배열을 그대로 유지하며 알려진 별칭을 숨겨서 보완하지 않습니다. 버전 2 데이터는 검토된 별칭만 보존하고 제거한 별칭에만 대응하던 PhraseSet 항목도 함께 제거해 버전 3으로 이전합니다. 서버 저장소는 추가하지 않았습니다.
+- 강연용 용어집 원본은 `lecture-context-ai.glossaries` 키의 버전 3 브라우저 저장소에만 저장합니다. 실험 설정에서 사용자가 명시적으로 선택한 용어집은 재현 가능한 케이스 스냅샷으로 `test-fixtures/stt/studies.local.json`에 복사되며 Git·Docker에서 제외됩니다. PDF 바이너리와 추출 페이지 본문은 이 스냅샷에 저장하지 않습니다.
 - 저장 필드는 용어집 메타데이터(`id`, `name`, `createdAt`, `updatedAt`), `spokenAliases`를 포함한 완전한 `GlossaryTerm[]`, `phraseSet`으로 제한합니다. PDF, 추출 페이지 텍스트, `pdfUrl`, 음성, 경고, API 키는 제외합니다.
 - 저장 데이터는 정확한 필드 집합과 타입·길이·개수·타임스탬프·PhraseSet/용어 대응 관계를 검증합니다. 정규화 중복은 제거하되 채택한 용어의 기존 ID는 유지합니다.
 - 전문용어가 비어 있는 분석·저장 항목은 거부해 데모 서버 fallback과 클라이언트 설명 상태가 어긋나지 않게 합니다.
@@ -178,7 +182,7 @@ pnpm dev
 - UI job 상태는 서버 프로세스 메모리에만 있으므로 재시작 뒤 `GET /api/dev/stt-comparison-jobs/:jobId`로 복구되지 않습니다. 원자적 쓰기까지 완료된 결과 파일은 남아 기록·상세 API에서 계속 조회됩니다.
 - v3 지표는 기준 출현마다 직접 인식, 별칭 정정 성공, 누락을 하나로 결정하고 예상 밖 정정을 false correction, 예상 밖 canonical 출현을 false insertion으로 셉니다. 제품 용어 연결률은 `(직접 인식 + 별칭 정정 성공) / 기준 출현 수`입니다. 선언이 없는 녹음에서는 같은 숫자가 계산돼도 `accuracyValid=false`, `evaluationMode=smoke`입니다.
 - 기존 manifest v1 녹음은 선언이 없는 것으로 이전하고, 비교 결과 v1/v2도 legacy로만 읽습니다. legacy 결과에 v3 occurrence-level 정확도 의미를 소급하지 않습니다.
-- 새 v3 결과 파일명은 `comparison-<recordingId>-<jobId>.json`이며 반복 실행마다 immutable 파일을 추가합니다. 기존 `comparison-<recordingId>.json`도 그대로 남깁니다. 결과 API는 파일명·크기·symlink·스키마를 검증하고 수정 시각 최신순 history를 offset/limit으로 페이지화하며, 파일명 상세 route를 제공합니다. UI는 v1/v2에 legacy 안내만 표시하며, v3 TSV 복사는 accuracy 모드와 세 run 정상 완료·오류 없음이 모두 충족될 때만 허용합니다. 결과 조회 자체는 Google STT를 호출하지 않습니다.
+- 새 결과 파일명은 `comparison-<recordingId>-<jobId>.json`이며 현재 runner는 identity를 포함한 v4를 반복 실행마다 immutable 파일로 추가합니다. 기존 `comparison-<recordingId>.json`과 v1~v3 결과도 그대로 남겨 읽습니다. 결과 API는 파일명·크기·symlink·스키마를 검증하고 수정 시각 최신순 history를 study/case 필터와 함께 페이지화하며, 파일명 상세 route를 제공합니다. UI는 v1/v2에 legacy 안내만 표시하며, v3/v4 TSV 복사는 accuracy 모드와 세 run 정상 완료·오류 없음이 모두 충족될 때만 허용합니다. 결과 조회 자체는 Google STT를 호출하지 않습니다.
 - 현재 106초 녹음은 현재 기준 문장과 맞지 않아 smoke 전용입니다. 별도의 exact-script 단일 accuracy 리포트에서 A/B/C 제품 용어 연결률 17.6% / 17.6% / 94.1%가 관찰됐지만, publication-grade 수치에는 같은 WAV의 사전 계획된 반복 실행이 필요합니다.
 - 현재의 `easyExplanation`은 쉬운 정의에 가깝습니다. 제품명을 유지하려면 실제 발화 문맥을 설명하는 `contextExplanation` 확장을 권장합니다.
 

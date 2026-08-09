@@ -1,14 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { BarChart3, FlaskConical, LoaderCircle, Mic2, Play } from "lucide-react";
+import { BarChart3, FileSliders, FlaskConical, LoaderCircle, Mic2, Play } from "lucide-react";
 import {
   getAudioFixtures,
+  getExperimentStudies,
   type AudioFixtureCatalog,
-  type AudioFixtureRecording
+  type AudioFixtureRecording,
+  type ExperimentStudy
 } from "../lib/api";
+import type { StoredGlossary } from "../lib/glossary-storage";
 import { AudioFixtureRecorder } from "./AudioFixtureRecorder";
+import { ExperimentSetup } from "./ExperimentSetup";
 import { SttComparisonResults } from "./SttComparisonResults";
 
-export type ExperimentPanel = "record" | "run" | "results";
+export type ExperimentPanel = "setup" | "record" | "run" | "results";
 
 const PANEL_DETAILS: Record<ExperimentPanel, {
   number: number;
@@ -17,22 +21,29 @@ const PANEL_DETAILS: Record<ExperimentPanel, {
   description: string;
   icon: typeof Mic2;
 }> = {
-  record: {
+  setup: {
     number: 1,
+    label: "설정",
+    title: "실험 세트 설정",
+    description: "저장된 PDF 용어집과 정확한 대본을 재현 가능한 케이스 스냅샷으로 묶습니다.",
+    icon: FileSliders
+  },
+  record: {
+    number: 2,
     label: "녹음",
     title: "고정음원 녹음",
     description: "기준 문장을 읽어 반복 가능한 로컬 WAV 실험 음원을 준비합니다.",
     icon: Mic2
   },
   run: {
-    number: 2,
+    number: 3,
     label: "실행",
     title: "A/B/C 비교 실행",
     description: "저장 음원 하나를 동일한 조건에서 세 가지 STT 설정으로 비교합니다.",
     icon: Play
   },
   results: {
-    number: 3,
+    number: 4,
     label: "결과",
     title: "비교 결과 확인",
     description: "저장된 실행 기록과 조건별 인식 결과를 확인합니다.",
@@ -55,19 +66,29 @@ export function ExperimentWorkspaceView({
   catalog,
   catalogLoading,
   catalogError,
+  glossaries = [],
+  studies = [],
+  studiesLoading = false,
+  studiesError = "",
   focusRequest = 0,
   onPanelChange,
   onRecordingSaved,
-  onResultReady
+  onResultReady,
+  onCatalogChanged = async () => undefined
 }: {
   panel: ExperimentPanel;
   catalog: AudioFixtureCatalog | null;
   catalogLoading: boolean;
   catalogError: string;
+  glossaries?: StoredGlossary[];
+  studies?: ExperimentStudy[];
+  studiesLoading?: boolean;
+  studiesError?: string;
   focusRequest?: number;
   onPanelChange: (panel: ExperimentPanel) => void;
   onRecordingSaved: (recording: AudioFixtureRecording) => void;
   onResultReady: (fileName: string) => void;
+  onCatalogChanged?: () => Promise<void>;
 }) {
   const headingRef = useRef<HTMLHeadingElement | null>(null);
   const previousPanelRef = useRef(panel);
@@ -122,7 +143,7 @@ export function ExperimentWorkspaceView({
       </div>
 
       <nav aria-label="STT 실험 단계" className="mt-8">
-        <ol className="grid gap-2 rounded-[1.4rem] border border-white/[0.07] bg-white/[0.025] p-2 sm:grid-cols-3">
+        <ol className="grid gap-2 rounded-[1.4rem] border border-white/[0.07] bg-white/[0.025] p-2 sm:grid-cols-4">
           {PANELS.map((item) => {
             const itemDetails = PANEL_DETAILS[item];
             const active = item === panel;
@@ -152,7 +173,16 @@ export function ExperimentWorkspaceView({
       </nav>
 
       <section data-testid={`experiment-task-${panel}`} aria-label={`${details.label} 작업`} className="mt-6">
-        {panel === "record" ? (
+        {panel === "setup" ? (
+          <ExperimentSetup
+            glossaries={glossaries}
+            studies={studies}
+            loading={studiesLoading}
+            error={studiesError}
+            onChanged={onCatalogChanged}
+            onContinue={() => onPanelChange("record")}
+          />
+        ) : panel === "record" ? (
           <AudioFixtureRecorder
             catalog={catalog}
             catalogLoading={catalogLoading}
@@ -162,6 +192,7 @@ export function ExperimentWorkspaceView({
         ) : (
           <SttComparisonResults
             recordings={catalog?.recordings ?? []}
+            studies={studies}
             view={panel}
             onResultReady={onResultReady}
           />
@@ -173,41 +204,42 @@ export function ExperimentWorkspaceView({
 
 export function ExperimentWorkspace({
   panel,
+  glossaries,
   focusRequest = 0,
   onPanelChange,
   onResultReady
 }: {
   panel: ExperimentPanel;
+  glossaries: StoredGlossary[];
   focusRequest?: number;
   onPanelChange: (panel: ExperimentPanel) => void;
   onResultReady: (fileName: string) => void;
 }) {
-  const catalogRequestRef = useRef<Promise<AudioFixtureCatalog> | null>(null);
   const [catalog, setCatalog] = useState<AudioFixtureCatalog | null>(null);
+  const [studies, setStudies] = useState<ExperimentStudy[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
+  const [studiesError, setStudiesError] = useState("");
 
-  useEffect(() => {
-    let active = true;
-    const request = catalogRequestRef.current ?? getAudioFixtures();
-    catalogRequestRef.current = request;
-    void request
-      .then((nextCatalog) => {
-        if (!active) return;
-        setCatalog(nextCatalog);
-        setCatalogError("");
-      })
-      .catch((caught: unknown) => {
-        if (!active) return;
-        setCatalogError(caught instanceof Error ? caught.message : "개발용 녹음 설정을 불러오지 못했습니다.");
-      })
-      .finally(() => {
-        if (active) setCatalogLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const loadCatalogs = async (): Promise<void> => {
+    setCatalogLoading(true);
+    const [fixtureResult, studyResult] = await Promise.allSettled([getAudioFixtures(), getExperimentStudies()]);
+    if (fixtureResult.status === "fulfilled") {
+      setCatalog(fixtureResult.value);
+      setCatalogError("");
+    } else {
+      setCatalogError(fixtureResult.reason instanceof Error ? fixtureResult.reason.message : "개발용 녹음 설정을 불러오지 못했습니다.");
+    }
+    if (studyResult.status === "fulfilled") {
+      setStudies(studyResult.value.studies);
+      setStudiesError("");
+    } else {
+      setStudiesError(studyResult.reason instanceof Error ? studyResult.reason.message : "실험 세트를 불러오지 못했습니다.");
+    }
+    setCatalogLoading(false);
+  };
+
+  useEffect(() => { void loadCatalogs(); }, []);
 
   return (
     <ExperimentWorkspaceView
@@ -215,10 +247,15 @@ export function ExperimentWorkspace({
       catalog={catalog}
       catalogLoading={catalogLoading}
       catalogError={catalogError}
+      glossaries={glossaries}
+      studies={studies}
+      studiesLoading={catalogLoading}
+      studiesError={studiesError}
       focusRequest={focusRequest}
       onPanelChange={onPanelChange}
       onRecordingSaved={(recording) => setCatalog((current) => appendRecordingToCatalog(current, recording))}
       onResultReady={onResultReady}
+      onCatalogChanged={loadCatalogs}
     />
   );
 }

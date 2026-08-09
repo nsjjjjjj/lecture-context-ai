@@ -1,22 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Clipboard, LoaderCircle, Play, RefreshCw } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Clipboard, Download, LoaderCircle, Play, RefreshCw } from "lucide-react";
 import {
   comparisonRunLabels,
   getCurrentSttComparisonJob,
   getSttComparison,
+  getSttComparisonAggregates,
   getSttComparisonJob,
   getSttComparisons,
   startSttComparisonJob,
   type AudioFixtureRecording,
   type ComparisonReportFile,
-  type ComparisonReportV3,
+  type CurrentComparisonReport,
   type ComparisonRunLabel,
   type ComparisonRunResult,
   type CurrentSttComparisonJob,
   type SttComparisonHistoryItem,
+  type SttComparisonCaseAggregate,
   type SttComparisonJobRunState,
   type SttComparisonJobStatus,
-  type SttComparisonPage
+  type SttComparisonPage,
+  type ExperimentStudy
 } from "../lib/api";
 
 const HISTORY_PAGE_SIZE = 5;
@@ -25,6 +28,7 @@ const JOB_POLL_INTERVAL_MS = 1_000;
 export type SttComparisonView = "run" | "results";
 export type SttComparisonResultsProps = {
   recordings: AudioFixtureRecording[];
+  studies?: ExperimentStudy[];
   view: SttComparisonView;
   onResultReady: (fileName: string) => void;
 };
@@ -79,7 +83,7 @@ function createRunRecord<T>(factory: () => T): Record<ComparisonRunLabel, T> {
   };
 }
 
-export function aggregateComparisonReport(report: ComparisonReportV3): ComparisonAggregation {
+export function aggregateComparisonReport(report: CurrentComparisonReport): ComparisonAggregation {
   const terms = report.script.targetTerms.map((term): ComparisonTermAggregate => ({
     targetTermId: term.id,
     canonicalTerm: term.canonicalTerm,
@@ -110,7 +114,7 @@ export function aggregateComparisonReport(report: ComparisonReportV3): Compariso
   return { terms, unassignedByRun };
 }
 
-export function isPaperReadyComparison(report: ComparisonReportV3): boolean {
+export function isPaperReadyComparison(report: CurrentComparisonReport): boolean {
   return report.recording.evaluationMode === "accuracy"
     && report.runs.length === comparisonRunLabels.length
     && report.runs.every((run) => run.status === "completed" && run.errors.length === 0);
@@ -125,7 +129,7 @@ function escapeTsvCell(value: string | number): string {
   return /[\t\r\n"]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
-export function comparisonReportToTsv(report: ComparisonReportV3): string {
+export function comparisonReportToTsv(report: CurrentComparisonReport): string {
   const rows: Array<Array<string | number>> = [
     ["조건", "PhraseSet", "직접 인식", "별칭 정정", "누락", "오정정", "오삽입", "기대 출현", "제품 연결률"]
   ];
@@ -146,8 +150,8 @@ export function comparisonReportToTsv(report: ComparisonReportV3): string {
   return rows.map((row) => row.map(escapeTsvCell).join("\t")).join("\n");
 }
 
-function isV3ComparisonReport(report: ComparisonReportFile): report is ComparisonReportV3 {
-  return report.version === 3;
+function isCurrentComparisonReport(report: ComparisonReportFile): report is CurrentComparisonReport {
+  return report.version === 3 || report.version === 4;
 }
 
 const TERMINAL_JOB_STATES = new Set<SttComparisonJobStatus["state"]>(["completed", "completed-with-errors", "failed"]);
@@ -283,7 +287,7 @@ function runStateLabel(state: SttComparisonJobRunState): string {
   }[state];
 }
 
-function publicationStatusMessage(report: ComparisonReportV3): string {
+function publicationStatusMessage(report: CurrentComparisonReport): string {
   if (report.recording.evaluationMode !== "accuracy") {
     return "스모크 모드 결과는 출판용 정확도 수치가 아닙니다. 기준 문장을 그대로 읽은 녹음으로 다시 비교해 주세요.";
   }
@@ -371,7 +375,7 @@ function TermResultCell({ aggregate }: { aggregate: TermConditionAggregate }) {
   );
 }
 
-function V3ComparisonReport({ report }: { report: ComparisonReportV3 }) {
+function CurrentComparisonReportView({ report }: { report: CurrentComparisonReport }) {
   const aggregation = aggregateComparisonReport(report);
   const paperReady = isPaperReadyComparison(report);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">("idle");
@@ -401,6 +405,11 @@ function V3ComparisonReport({ report }: { report: ComparisonReportV3 }) {
           {paperReady ? "TSV READY" : "TSV LOCKED"}
         </span>
       </div>
+
+      {report.version === 4 && report.recording.experimentIdentity ? <div className="rounded-xl border border-cyan-300/15 bg-cyan-300/[0.05] p-3 text-[11px] leading-5 text-cyan-100">
+        <strong className="block">PDF 실험 케이스 · {report.recording.experimentIdentity.glossaryName}</strong>
+        <span className="font-mono text-[10px] text-cyan-300/60">{report.recording.experimentIdentity.caseSnapshotId} · glossary {report.recording.experimentIdentity.glossaryHash.slice(0, 12)}</span>
+      </div> : null}
 
       <div role={paperReady ? "status" : "alert"} className={`rounded-xl border p-3 text-xs leading-5 ${paperReady ? "border-emerald-300/15 bg-emerald-300/[0.06] text-emerald-100" : "border-amber-300/20 bg-amber-300/[0.08] text-amber-100"}`}>
         {publicationStatusMessage(report)}
@@ -571,7 +580,7 @@ export function SttComparisonJobPanel({
             className="mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 outline-none focus:border-cyan-300 disabled:opacity-50"
           >
             {recordings.length === 0 ? <option value="">저장된 녹음 없음</option> : recordings.map((recording) => (
-              <option key={recording.id} value={recording.id}>{recording.fileName} · {recording.speakerLabel}</option>
+              <option key={recording.id} value={recording.id}>{recording.experimentIdentity ? `[${recording.experimentIdentity.glossaryName}] ` : ""}{recording.fileName} · {recording.speakerLabel}</option>
             ))}
           </select>
         </label>
@@ -586,7 +595,7 @@ export function SttComparisonJobPanel({
         </button>
       </div>
 
-      {selectedRecording ? <p className="mt-2 truncate text-[10px] text-slate-600">{selectedRecording.fileName} · {selectedRecording.environment} · {(selectedRecording.durationMs / 1_000).toFixed(1)}초</p> : null}
+      {selectedRecording ? <p className="mt-2 truncate text-[10px] text-slate-600">{selectedRecording.fileName} · {selectedRecording.environment} · {(selectedRecording.durationMs / 1_000).toFixed(1)}초{selectedRecording.experimentIdentity ? ` · ${selectedRecording.experimentIdentity.caseSnapshotId}` : ""}</p> : null}
 
       <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] p-3 text-xs leading-5 text-rose-100">
         <input
@@ -717,7 +726,9 @@ export function SttComparisonResultsView({
                     aria-current={selectedFileName === item.fileName ? "true" : undefined}
                     className={`flex min-h-10 w-full flex-col items-start gap-2 rounded-xl px-3 py-2 text-left text-[11px] transition ${selectedFileName === item.fileName ? "bg-cyan-300/10 text-cyan-100" : "bg-white/[0.025] text-slate-400 hover:bg-white/[0.05]"}`}
                   >
-                    <span className="w-full truncate font-bold">{item.fileName}</span>
+                    <span className="w-full truncate font-bold">{item.scriptTitle ?? item.fileName}</span>
+                    {item.scriptTitle ? <span className="w-full truncate font-mono text-[9px] text-slate-600">{item.fileName}</span> : null}
+                    {item.glossaryName ? <span className="w-full truncate text-[10px] text-cyan-300/70">PDF: {item.glossaryName} · {item.caseSnapshotId}</span> : null}
                     <span className="flex w-full flex-wrap items-center gap-1" aria-label="결과 메타데이터">
                       {historyBadgeLabels(item).map((label) => (
                         <span key={label} className="rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[9px] font-black text-slate-300">{label}</span>
@@ -756,13 +767,13 @@ export function SttComparisonResultsView({
             <div className="mt-4 rounded-2xl border border-dashed border-white/[0.09] px-4 py-6 text-center text-xs leading-6 text-slate-500">
               {history.length > 0 ? "목록에서 확인할 결과를 선택해 주세요." : "저장된 비교 결과가 없습니다. 실행 화면에서 저장 녹음과 유료 호출 동의를 확인한 뒤 비교를 시작할 수 있습니다."}
             </div>
-          ) : !isV3ComparisonReport(latest) ? (
+          ) : !isCurrentComparisonReport(latest) ? (
             <div className="mt-4 rounded-2xl border border-amber-300/15 bg-amber-300/[0.06] p-4">
               <h5 className="text-sm font-black text-amber-100">레거시 스모크 결과</h5>
               <p className="mt-1 text-xs leading-5 text-amber-100/70">버전 {latest.version} 결과에는 정확도 평가 계약이 없습니다. 지표를 추정하거나 TSV를 만들지 않습니다.</p>
             </div>
           ) : (
-            <V3ComparisonReport report={latest} />
+            <CurrentComparisonReportView report={latest} />
           )}
         </section>
       </div>
@@ -770,7 +781,73 @@ export function SttComparisonResultsView({
   );
 }
 
-export function SttComparisonResults({ recordings, view, onResultReady }: SttComparisonResultsProps) {
+function downloadAggregate(cases: SttComparisonCaseAggregate[], format: "json" | "csv" | "tsv"): void {
+  const delimiter = format === "tsv" ? "\t" : ",";
+  const content = format === "json"
+    ? `${JSON.stringify({ exportedAt: new Date().toISOString(), cases }, null, 2)}\n`
+    : [
+        ["studyId", "caseId", "snapshotId", "caseTitle", "glossaryName", "allReports", "accuracyReports", "A", "B", "C"],
+        ...cases.map((item) => [
+          item.studyId,
+          item.caseId,
+          item.caseSnapshotId,
+          item.caseTitle,
+          item.glossaryName,
+          item.reportCount,
+          item.accuracyReportCount,
+          item.rates["without-phrase-set"] ?? "",
+          item.rates["canonical-phrase-set"] ?? "",
+          item.rates["spoken-alias-phrase-set"] ?? ""
+        ])
+      ].map((row) => row.map((cell) => {
+        const value = String(cell);
+        return /[\r\n,"\t]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+      }).join(delimiter)).join("\n");
+  const blob = new Blob([content], { type: format === "json" ? "application/json" : "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `stt-case-aggregate.${format}`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function StudyAggregatePanel({
+  studies,
+  studyId,
+  caseId,
+  aggregates,
+  loading,
+  error,
+  onStudyChange,
+  onCaseChange
+}: {
+  studies: ExperimentStudy[];
+  studyId: string;
+  caseId: string;
+  aggregates: SttComparisonCaseAggregate[];
+  loading: boolean;
+  error: string;
+  onStudyChange: (value: string) => void;
+  onCaseChange: (value: string) => void;
+}) {
+  const caseOptions = studies.filter((study) => !studyId || study.id === studyId).flatMap((study) => study.cases);
+  const rate = (value: number | null) => value === null ? "–" : percentage(value);
+  return <section className="rounded-[1.6rem] border border-cyan-300/15 bg-[#0b1727]/95 p-5 sm:p-6">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div><h3 className="text-sm font-extrabold text-white">논문용 케이스 집계</h3><p className="mt-1 text-xs leading-5 text-slate-500">선택한 세트·케이스의 완전한 정확도 결과만 A/B/C 평균에 포함합니다.</p></div>
+      <div className="flex gap-2">{(["csv", "tsv", "json"] as const).map((format) => <button key={format} type="button" onClick={() => downloadAggregate(aggregates, format)} disabled={aggregates.length === 0} className="secondary-button !min-h-9 text-[10px] uppercase disabled:opacity-35"><Download className="size-3.5" /> {format}</button>)}</div>
+    </div>
+    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <label className="text-[11px] font-bold text-slate-500">실험 세트<select value={studyId} onChange={(event) => onStudyChange(event.target.value)} className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-white"><option value="">전체 세트</option>{studies.map((study) => <option key={study.id} value={study.id}>{study.title}</option>)}</select></label>
+      <label className="text-[11px] font-bold text-slate-500">케이스<select value={caseId} onChange={(event) => onCaseChange(event.target.value)} className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-white"><option value="">전체 케이스</option>{caseOptions.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+    </div>
+    {error ? <div className="mt-3 rounded-xl bg-rose-400/10 p-3 text-xs text-rose-100">집계를 불러오지 못했습니다: {error}</div> : null}
+    {loading ? <div className="mt-3 flex items-center gap-2 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin" /> 집계 중</div> : aggregates.length ? <div className="mt-4 overflow-x-auto rounded-xl border border-white/[0.07]"><table className="w-full min-w-[680px] text-left text-xs"><thead className="bg-white/[0.04] text-[10px] text-slate-500"><tr><th className="p-3">케이스</th><th className="p-3">정확도 반복</th><th className="p-3">A</th><th className="p-3">B · PDF</th><th className="p-3">C · PDF+발음</th><th className="p-3">PDF 효과</th></tr></thead><tbody className="divide-y divide-white/[0.06]">{aggregates.map((item) => <tr key={item.caseSnapshotId}><td className="p-3"><strong className="block text-white">{item.caseTitle}</strong><span className="text-[10px] text-slate-500">{item.glossaryName}</span></td><td className="p-3 text-slate-300">{item.accuracyReportCount} / {item.reportCount}</td><td className="p-3 text-slate-300">{rate(item.rates["without-phrase-set"])}</td><td className="p-3 text-cyan-200">{rate(item.rates["canonical-phrase-set"])}</td><td className="p-3 text-violet-200">{rate(item.rates["spoken-alias-phrase-set"])}</td><td className="p-3 text-emerald-200">{item.rates["without-phrase-set"] === null || item.rates["canonical-phrase-set"] === null ? "–" : `${((item.rates["canonical-phrase-set"] - item.rates["without-phrase-set"]) * 100).toFixed(1)}%p`}</td></tr>)}</tbody></table></div> : <div className="mt-3 rounded-xl border border-dashed border-white/[0.08] p-4 text-center text-xs text-slate-500">선택 조건에 저장된 PDF 케이스 결과가 없습니다.</div>}
+  </section>;
+}
+
+export function SttComparisonResults({ recordings, studies = [], view, onResultReady }: SttComparisonResultsProps) {
   const mountedRef = useRef(true);
   const historyRequestRef = useRef(0);
   const currentRequestRef = useRef(0);
@@ -798,6 +875,11 @@ export function SttComparisonResults({ recordings, view, onResultReady }: SttCom
   const [detailError, setDetailError] = useState("");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [detailFocusRequest, setDetailFocusRequest] = useState(0);
+  const [studyFilter, setStudyFilter] = useState("");
+  const [caseFilter, setCaseFilter] = useState("");
+  const [aggregates, setAggregates] = useState<SttComparisonCaseAggregate[]>([]);
+  const [aggregateLoading, setAggregateLoading] = useState(false);
+  const [aggregateError, setAggregateError] = useState("");
 
   useEffect(() => {
     mountedRef.current = true;
@@ -831,7 +913,7 @@ export function SttComparisonResults({ recordings, view, onResultReady }: SttCom
     setHistoryLoading(true);
     setHistoryError("");
     try {
-      const next = await getSttComparisons({ offset, limit: HISTORY_PAGE_SIZE });
+      const next = await getSttComparisons({ offset, limit: HISTORY_PAGE_SIZE, studyId: studyFilter || undefined, caseId: caseFilter || undefined });
       if (!mountedRef.current || requestId !== historyRequestRef.current) return;
       const nextHistory = next.history ?? [];
       const nextPage = next.page ?? { offset, limit: HISTORY_PAGE_SIZE, hasMore: offset + nextHistory.length < next.reportCount };
@@ -853,7 +935,20 @@ export function SttComparisonResults({ recordings, view, onResultReady }: SttCom
     } finally {
       if (mountedRef.current && requestId === historyRequestRef.current) setHistoryLoading(false);
     }
-  }, [selectReport]);
+  }, [caseFilter, selectReport, studyFilter]);
+
+  const loadAggregates = useCallback(async () => {
+    setAggregateLoading(true);
+    setAggregateError("");
+    try {
+      const next = await getSttComparisonAggregates({ studyId: studyFilter || undefined, caseId: caseFilter || undefined });
+      if (mountedRef.current) setAggregates(next.cases);
+    } catch (caught) {
+      if (mountedRef.current) setAggregateError(caught instanceof Error ? caught.message : "케이스 집계를 불러오지 못했습니다.");
+    } finally {
+      if (mountedRef.current) setAggregateLoading(false);
+    }
+  }, [caseFilter, studyFilter]);
 
   const loadCurrent = useCallback(async () => {
     const requestId = currentRequestRef.current + 1;
@@ -878,7 +973,8 @@ export function SttComparisonResults({ recordings, view, onResultReady }: SttCom
   useEffect(() => {
     void loadHistory(0);
     void loadCurrent();
-  }, [loadCurrent, loadHistory]);
+    void loadAggregates();
+  }, [loadAggregates, loadCurrent, loadHistory]);
 
   useEffect(() => {
     if (!selectedFileName) return;
@@ -978,6 +1074,7 @@ export function SttComparisonResults({ recordings, view, onResultReady }: SttCom
   const refresh = () => {
     void loadCurrent();
     void loadHistory(page.offset);
+    void loadAggregates();
   };
 
   return view === "run" ? (
@@ -996,7 +1093,18 @@ export function SttComparisonResults({ recordings, view, onResultReady }: SttCom
       onStart={() => void startComparison()}
     />
   ) : (
-    <SttComparisonResultsView
+    <div className="space-y-6">
+      <StudyAggregatePanel
+        studies={studies}
+        studyId={studyFilter}
+        caseId={caseFilter}
+        aggregates={aggregates}
+        loading={aggregateLoading}
+        error={aggregateError}
+        onStudyChange={(value) => { setStudyFilter(value); setCaseFilter(""); selectedFileNameRef.current = null; setSelectedFileName(null); setReport(null); }}
+        onCaseChange={(value) => { setCaseFilter(value); selectedFileNameRef.current = null; setSelectedFileName(null); setReport(null); }}
+      />
+      <SttComparisonResultsView
       latest={report}
       reportCount={reportCount}
       loading={historyLoading}
@@ -1013,6 +1121,7 @@ export function SttComparisonResults({ recordings, view, onResultReady }: SttCom
       mobileDetailOpen={mobileDetailOpen}
       detailFocusRequest={detailFocusRequest}
       onBackToList={() => setMobileDetailOpen(false)}
-    />
+      />
+    </div>
   );
 }
