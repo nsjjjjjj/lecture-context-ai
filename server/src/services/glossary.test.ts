@@ -100,7 +100,7 @@ describe("analyzeGlossary", () => {
           term: "BERT",
           english: "",
           spokenAliases: ["버트"],
-          easyExplanation: "문맥을 양방향으로 이해하는 언어 모델"
+          easyExplanation: "문맥을 양방향으로 이해하는 언어 모델입니다."
         }]
       }) }] } }]
     }), { status: 200, headers: { "Content-Type": "application/json" } })));
@@ -108,7 +108,12 @@ describe("analyzeGlossary", () => {
     const result = await analyzeGlossary("소규모 PDF", [{ pageNumber: 1, text: "BERT와 Transformer를 비교합니다." }]);
 
     expect(result.terms).toEqual(expect.arrayContaining([
-      expect.objectContaining({ term: "BERT", spokenAliases: ["버트"], source: "gemini" }),
+      expect.objectContaining({
+        term: "BERT",
+        spokenAliases: ["버트"],
+        easyExplanation: "문맥을 양방향으로 이해하는 언어 모델",
+        source: "gemini"
+      }),
       expect.objectContaining({ term: "Transformer", spokenAliases: ["트랜스포머"], source: "heuristic" })
     ]));
     expect(result.phraseSet).toEqual(expect.arrayContaining(["BERT", "버트", "Transformer", "트랜스포머"]));

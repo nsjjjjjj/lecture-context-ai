@@ -83,27 +83,31 @@ describe("fixed STT A/B/C definitions", () => {
     expect(() => fixtureScriptSchema.parse(value)).toThrow("안전한 한글 발음");
   });
 
-  it("rejects an alias that collides with a later canonical term regardless of declaration order", () => {
-    expect(() => fixtureScriptSchema.parse({
+  it("allows target form and alias collisions for MVP scoring", () => {
+    const parsed = fixtureScriptSchema.parse({
       id: "reverse-collision-v2",
       title: "역순 충돌",
       languageCode: "ko-KR",
-      text: "래그와 RAG를 비교합니다.",
+      text: "래그를 비교합니다.",
       targetTerms: [
         { id: "rag", canonicalTerm: "RAG", spokenAliases: ["래그"], expectedOccurrences: [1] },
-        { id: "rag-pronunciation", canonicalTerm: "래그", spokenAliases: [], expectedOccurrences: [2] }
+        { id: "rag-pronunciation", canonicalTerm: "래그", spokenAliases: [], expectedOccurrences: [1] }
       ]
-    })).toThrow("충돌");
+    });
+
+    expect(parsed.targetTerms.map((term) => term.expectedOccurrences)).toEqual([[1], [1]]);
   });
 
-  it("rejects collisions inside PDF adaptation terms", () => {
+  it("allows PDF adaptation collisions and deduplicates only PhraseSet strings", () => {
     const value = comparisonScript();
     value.adaptationTerms = [
-      { id: "pdf-bert", canonicalTerm: "BERT", english: "", spokenAliases: ["버트"] },
-      { id: "pdf-other", canonicalTerm: "버트", english: "", spokenAliases: [] }
+      { id: "pdf-las", canonicalTerm: "LAS", english: "Listen, Attend and Spell", spokenAliases: ["라스"] },
+      { id: "pdf-full-las", canonicalTerm: "Listen, Attend and Spell", english: "", spokenAliases: ["라스"] }
     ];
 
-    expect(() => fixtureScriptSchema.parse(value)).toThrow("PDF adaptation");
+    const definitions = buildComparisonRunDefinitions(fixtureScriptSchema.parse(value));
+    expect(definitions[1]?.phraseSet).toEqual(["LAS", "Listen, Attend and Spell"]);
+    expect(definitions[2]?.phraseSet).toEqual(["LAS", "Listen, Attend and Spell", "라스"]);
   });
 });
 
@@ -146,6 +150,46 @@ describe("occurrence-level comparison scoring", () => {
       [2, "phrase-set", "direct-recognition"],
       [3, "rag", "alias-correction"]
     ]);
+  });
+
+  it("counts one direct recognition for every overlapping target term", () => {
+    const script = fixtureScriptSchema.parse({
+      id: "overlap-scoring-v2",
+      title: "중복 채점",
+      languageCode: "ko-KR",
+      text: "Listen, Attend and Spell을 설명합니다.",
+      targetTerms: [
+        {
+          id: "las",
+          canonicalTerm: "LAS",
+          english: "Listen, Attend and Spell",
+          spokenAliases: [],
+          expectedOccurrences: [1]
+        },
+        {
+          id: "full-las",
+          canonicalTerm: "Listen, Attend and Spell",
+          english: "",
+          spokenAliases: [],
+          expectedOccurrences: [1]
+        }
+      ]
+    });
+
+    const result = scoreComparisonRun({
+      runLabel: "canonical-phrase-set",
+      script,
+      finalTranscripts: [{
+        text: "Listen, Attend and Spell을 설명합니다.",
+        rawText: "Listen, Attend and Spell을 설명합니다.",
+        detectedTermIds: [],
+        corrections: []
+      }],
+      speakerReadReferenceScriptVerbatim: true
+    });
+
+    expect(result.metrics).toMatchObject({ directRecognitions: 2, misses: 0, expectedOccurrenceCount: 2 });
+    expect(result.occurrenceResults.map((occurrence) => occurrence.targetTermId)).toEqual(["las", "full-las"]);
   });
 
   it("never credits alias corrections in A/B and records them as false corrections", () => {

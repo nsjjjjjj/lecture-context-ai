@@ -60,6 +60,17 @@ function isUsefulTerm(term: string): boolean {
   return true;
 }
 
+function nounPhraseExplanation(term: string, value: unknown): string {
+  const fallback = `${term}와 관련된 강연 핵심 개념`;
+  if (typeof value !== "string") return fallback;
+
+  const explanation = value.trim().slice(0, 240).replace(/[.!?。！？]+$/u, "").trim();
+  if (explanation.length < 2) return fallback;
+
+  const withoutCopula = explanation.replace(/(?:입니다|이다)$/u, "").trim();
+  return withoutCopula.length >= 2 ? withoutCopula : fallback;
+}
+
 function validateCandidates(
   pages: PageText[],
   candidates: GeminiTerm[],
@@ -78,10 +89,7 @@ function validateCandidates(
     if (!location) continue;
 
     const english = typeof candidate.english === "string" ? candidate.english.trim() : "";
-    const explanation =
-      typeof candidate.easyExplanation === "string" && candidate.easyExplanation.trim().length >= 2
-        ? candidate.easyExplanation.trim().slice(0, 240)
-        : `${term}에 관한 강연 핵심 용어입니다.`;
+    const explanation = nounPhraseExplanation(term, candidate.easyExplanation);
 
     seen.add(key);
     terms.push({
@@ -127,12 +135,12 @@ function extractHeuristicCandidates(pages: PageText[]): GeminiTerm[] {
 
   const acronyms = fullText.match(/\b[A-Z][A-Z0-9-]{1,11}\b/g) ?? [];
   for (const term of acronyms) {
-    candidates.push({ term, english: "", easyExplanation: `${term}에 관한 강연 전문용어입니다.` });
+    candidates.push({ term, english: "", easyExplanation: `${term}와 관련된 강연 전문용어` });
   }
 
   const namedTerms = fullText.match(/\b[A-Z][a-z]+(?:[A-Z][a-z0-9]+)+\b/g) ?? [];
   for (const term of namedTerms) {
-    candidates.push({ term, english: term, easyExplanation: `${term}에 관한 강연 전문용어입니다.` });
+    candidates.push({ term, english: term, easyExplanation: `${term}와 관련된 강연 전문용어` });
   }
 
   return candidates;
@@ -154,7 +162,9 @@ async function extractWithGemini(pages: PageText[]): Promise<GeminiTerm[]> {
 규칙:
 - term은 반드시 제공된 PDF에 그대로 존재하는 표기를 복사한다.
 - 일상적인 단어와 너무 긴 문장은 제외한다.
-- easyExplanation은 비전공자가 이해할 수 있는 한국어 한 문장으로 60자 이내로 작성한다.
+- easyExplanation은 비전공자가 이해할 수 있는 60자 이내의 한국어 명사구로 작성한다.
+- 반드시 '~하는 기술', '~하는 방식', '~을 위한 모델', '~하는 과정', '~인 현상'처럼 명사로 끝낸다.
+- '이다', '입니다', '한다', '합니다' 같은 서술형 종결과 문장 끝 마침표를 사용하지 않는다.
 - english는 PDF에 명시된 경우에만 넣고, 없으면 빈 문자열로 둔다.
 - term 또는 english에 영문 알파벳이 하나라도 있으면 spokenAliases에 한국인이 실제로 읽을 때 STT가 만들 수 있는 한글 발음을 반드시 1개 이상, 최대 3개 넣는다. 예: BERT는 ["버트"], ResNet은 ["레즈넷"], RAG는 ["래그", "레그", "알에이지"].
 - spokenAliases는 완성형 한글과 단어 사이 공백 또는 하이픈만 사용한다. 일반 단어, 번역어, 설명 문구는 넣지 않는다. 영문 알파벳이 전혀 없는 용어는 빈 배열로 둔다.

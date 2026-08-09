@@ -123,13 +123,29 @@ export function buildExperimentTargetTerms(
     english: target.english,
     spokenAliases: target.spokenAliases
   }));
-  const matches = findTranscriptTermMatches(scriptText, targetGlossaryTerms(candidates));
+  const matches = candidates.flatMap((candidate, candidateIndex) =>
+    findTranscriptTermMatches(scriptText, targetGlossaryTerms([candidate]))
+      .map((match) => ({ ...match, candidateIndex }))
+  ).sort((left, right) =>
+    left.sourceStart - right.sourceStart ||
+    left.sourceEnd - right.sourceEnd ||
+    left.candidateIndex - right.candidateIndex
+  );
   if (matches.length === 0) {
     throw new ExperimentStudyError("채점 용어가 정확한 대본에서 발견되지 않았습니다. 대본 표기 또는 발음 별칭을 확인해 주세요.");
   }
 
   const sequences = new Map(candidates.map((term) => [term.id, [] as number[]]));
-  matches.forEach((match, index) => sequences.get(match.term.id)?.push(index + 1));
+  const sequenceBySpan = new Map<string, number>();
+  matches.forEach((match) => {
+    const spanKey = `${match.sourceStart}:${match.sourceEnd}`;
+    let sequence = sequenceBySpan.get(spanKey);
+    if (sequence === undefined) {
+      sequence = sequenceBySpan.size + 1;
+      sequenceBySpan.set(spanKey, sequence);
+    }
+    sequences.get(match.term.id)?.push(sequence);
+  });
   const missing = candidates.filter((term) => sequences.get(term.id)?.length === 0);
   if (missing.length > 0) {
     throw new ExperimentStudyError(`대본에서 찾지 못한 채점 용어가 있습니다: ${missing.map((term) => term.canonicalTerm).join(", ")}`);

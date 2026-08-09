@@ -80,112 +80,32 @@ export const fixtureScriptSchema = z.object({
 }).strict().superRefine((script, context) => {
   const ids = new Set<string>();
   const expectedSequences = new Set<number>();
-  const formOwners = new Map<string, Set<string>>();
-  const aliasOwners = new Map<string, Set<string>>();
-  let expectedCount = 0;
+  let maxExpectedSequence = 0;
 
-  const addOwner = (owners: Map<string, Set<string>>, key: string, ownerId: string): void => {
-    const current = owners.get(key) ?? new Set<string>();
-    current.add(ownerId);
-    owners.set(key, current);
-  };
-
-  // Collect all ownership first so collision checks do not depend on targetTerms order.
   script.targetTerms.forEach((term, termIndex) => {
     if (ids.has(term.id)) {
       context.addIssue({ code: "custom", path: ["targetTerms", termIndex, "id"], message: "target term id가 중복되었습니다." });
     }
     ids.add(term.id);
 
-    for (const form of [term.canonicalTerm, term.english]) {
-      const key = spokenFormKey(form);
-      if (!key) continue;
-      addOwner(formOwners, key, term.id);
-    }
-
-    term.spokenAliases.forEach((alias) => addOwner(aliasOwners, spokenFormKey(alias), term.id));
-
     for (const sequence of term.expectedOccurrences) {
-      expectedCount += 1;
-      if (expectedSequences.has(sequence)) {
-        context.addIssue({
-          code: "custom",
-          path: ["targetTerms", termIndex, "expectedOccurrences"],
-          message: "expected occurrence 순서 번호가 다른 target term과 중복되었습니다."
-        });
-      }
       expectedSequences.add(sequence);
+      maxExpectedSequence = Math.max(maxExpectedSequence, sequence);
     }
-  });
-
-  script.targetTerms.forEach((term, termIndex) => {
-    for (const form of [term.canonicalTerm, term.english]) {
-      const key = spokenFormKey(form);
-      if (!key) continue;
-      if ((formOwners.get(key)?.size ?? 0) > 1 || [...(aliasOwners.get(key) ?? [])].some((owner) => owner !== term.id)) {
-        context.addIssue({
-          code: "custom",
-          path: ["targetTerms", termIndex],
-          message: "canonical/English 표기가 다른 target term과 충돌합니다."
-        });
-      }
-    }
-
-    term.spokenAliases.forEach((alias, aliasIndex) => {
-      const key = spokenFormKey(alias);
-      if ((aliasOwners.get(key)?.size ?? 0) > 1 || [...(formOwners.get(key) ?? [])].some((owner) => owner !== term.id)) {
-        context.addIssue({
-          code: "custom",
-          path: ["targetTerms", termIndex, "spokenAliases", aliasIndex],
-          message: "spoken alias가 다른 target term의 표기와 충돌합니다."
-        });
-      }
-    });
   });
 
   if (script.adaptationTerms) {
     const adaptationIds = new Set<string>();
-    const adaptationFormOwners = new Map<string, Set<string>>();
-    const adaptationAliasOwners = new Map<string, Set<string>>();
 
     script.adaptationTerms.forEach((term, termIndex) => {
       if (adaptationIds.has(term.id)) {
         context.addIssue({ code: "custom", path: ["adaptationTerms", termIndex, "id"], message: "adaptation term id가 중복되었습니다." });
       }
       adaptationIds.add(term.id);
-      [term.canonicalTerm, term.english].forEach((form) => {
-        const key = spokenFormKey(form);
-        if (key) addOwner(adaptationFormOwners, key, term.id);
-      });
-      term.spokenAliases.forEach((alias) => addOwner(adaptationAliasOwners, spokenFormKey(alias), term.id));
-    });
-
-    script.adaptationTerms.forEach((term, termIndex) => {
-      [term.canonicalTerm, term.english].forEach((form) => {
-        const key = spokenFormKey(form);
-        if (!key) return;
-        if ((adaptationFormOwners.get(key)?.size ?? 0) > 1 || [...(adaptationAliasOwners.get(key) ?? [])].some((owner) => owner !== term.id)) {
-          context.addIssue({
-            code: "custom",
-            path: ["adaptationTerms", termIndex],
-            message: "PDF adaptation canonical/English 표기가 다른 용어와 충돌합니다."
-          });
-        }
-      });
-      term.spokenAliases.forEach((alias, aliasIndex) => {
-        const key = spokenFormKey(alias);
-        if ((adaptationAliasOwners.get(key)?.size ?? 0) > 1 || [...(adaptationFormOwners.get(key) ?? [])].some((owner) => owner !== term.id)) {
-          context.addIssue({
-            code: "custom",
-            path: ["adaptationTerms", termIndex, "spokenAliases", aliasIndex],
-            message: "PDF adaptation spoken alias가 다른 용어 표기와 충돌합니다."
-          });
-        }
-      });
     });
   }
 
-  for (let sequence = 1; sequence <= expectedCount; sequence += 1) {
+  for (let sequence = 1; sequence <= maxExpectedSequence; sequence += 1) {
     if (!expectedSequences.has(sequence)) {
       context.addIssue({
         code: "custom",
@@ -406,6 +326,16 @@ type ObservedOccurrence = {
   rawText: string;
 };
 
+function findScoringTermMatches(text: string, terms: GlossaryTerm[]) {
+  return terms.flatMap((term, termIndex) =>
+    findTranscriptTermMatches(text, [term]).map((match) => ({ ...match, termIndex }))
+  ).sort((left, right) =>
+    left.sourceStart - right.sourceStart ||
+    left.sourceEnd - right.sourceEnd ||
+    left.termIndex - right.termIndex
+  );
+}
+
 function alignOccurrenceIds(expected: ExpectedTermOccurrence[], observed: ObservedOccurrence[]): Array<[number, number]> {
   const table = Array.from({ length: expected.length + 1 }, () => Array<number>(observed.length + 1).fill(0));
   for (let expectedIndex = expected.length - 1; expectedIndex >= 0; expectedIndex -= 1) {
@@ -463,7 +393,9 @@ export function scoreComparisonRun(options: {
   const unexpectedObservations: UnexpectedObservation[] = [];
 
   finalTranscripts.forEach((transcript, finalTranscriptIndex) => {
-    const matches = findTranscriptTermMatches(transcript.rawText, terms);
+    // Score each target independently so one recognized span may count for
+    // multiple intentionally overlapping target terms in MVP experiments.
+    const matches = findScoringTermMatches(transcript.rawText, terms);
     const aliasMatches = matches.filter((match) => match.kind === "spokenAlias");
     const usedAliasMatches = new Set<number>();
 
@@ -528,7 +460,7 @@ export function scoreComparisonRun(options: {
   observed.sort((left, right) =>
     left.finalTranscriptIndex - right.finalTranscriptIndex ||
     left.sourceStart - right.sourceStart ||
-    (left.kind === "direct" ? -1 : 1)
+    (left.kind === right.kind ? 0 : left.kind === "direct" ? -1 : 1)
   );
 
   const expected = buildExpectedOccurrences(options.script);

@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { buildComparisonRunDefinitions, scoreComparisonRun } from "./stt-comparison.js";
-import { ExperimentStudyStoreService } from "./experiment-studies.js";
+import { buildExperimentTargetTerms, ExperimentStudyStoreService } from "./experiment-studies.js";
 
 const roots: string[] = [];
 
@@ -56,6 +56,18 @@ const glossary = {
 };
 
 describe("experiment study snapshots", () => {
+  it("assigns the same script occurrence to overlapping scoring terms", () => {
+    const targets = buildExperimentTargetTerms("Listen, Attend and Spell을 설명합니다.", [
+      { canonicalTerm: "LAS", english: "Listen, Attend and Spell", spokenAliases: [] },
+      { canonicalTerm: "Listen, Attend and Spell", english: "", spokenAliases: [] }
+    ]);
+
+    expect(targets.map((term) => [term.canonicalTerm, term.expectedOccurrences])).toEqual([
+      ["LAS", [1]],
+      ["Listen, Attend and Spell", [1]]
+    ]);
+  });
+
   it("keeps PDF adaptation terms separate from script gold targets and persists immutable hashes", async () => {
     const root = await temporaryRoot();
     const ids = [
