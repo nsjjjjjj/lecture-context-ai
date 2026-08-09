@@ -4,6 +4,16 @@
 
 Google API 자격증명이 없어도 내장된 샘플 강연으로 전체 발표 흐름을 시연할 수 있습니다.
 
+> **포트폴리오 요약**
+>
+> - **핵심 역량:** TypeScript 기반 실시간 WebSocket 처리, PDF 문맥 추출, Gemini·Google STT 연동, 입력·출력 검증
+> - **문제 해결:** 전문용어를 STT 힌트와 설명에 함께 재사용하고, 자동 정정 뒤에도 원래 인식 문장을 남겨 사용자가 결과를 검증할 수 있게 설계
+> - **검증:** 2026-08-09 기준 타입 검사, 123개 테스트와 프로덕션 빌드 통과
+
+## 협업과 기여 범위
+
+이 저장소는 두 명의 작성자 이력이 확인되는 팀 프로젝트입니다. Git 기록상 `nsjjjjjj`가 초기 해커톤 MVP 커밋을 작성했고, 이후 다른 기여자가 스트리밍 안정화, 고정 음원 실험, 발음 별칭 정정과 관련 문서를 이어서 개선했습니다. 아래 기능 목록은 현재 팀 결과물을 설명하며, 개인 기여를 확인할 때는 [커밋 이력](https://github.com/nsjjjjjj/lecture-context-ai/commits/main)과 파일별 변경 기록을 함께 참고해 주세요.
+
 ## 해결하려는 문제
 
 일반적인 실시간 자막은 강연자의 말을 글자로 바꾸지만, 청중이 모르는 전문용어의 의미까지 설명하지는 않습니다. Lecture Context AI는 강연 자료를 먼저 읽어 자동 용어집을 만들고, 이 용어집을 음성인식 힌트와 청중용 해설에 동시에 사용합니다.
@@ -229,11 +239,12 @@ docker build -t lecture-context-ai:mvp .
 
 프론트엔드와 백엔드는 하나의 컨테이너로 실행됩니다. Gemini 키는 소스에 기록하지 않고 Secret Manager 또는 Cloud Run secret 환경변수로 연결합니다.
 
+> 현재 MVP에는 `/api/analyze`와 실시간 STT WebSocket의 사용자 인증, 요청 속도 제한, 동시 세션 상한이 없습니다. 실제 키를 연결한 서비스를 공개 접속으로 배포하면 외부 요청으로 비용이 발생할 수 있으므로, 접근 제어와 사용량 제한을 먼저 구현한 뒤 공개해야 합니다. 아래 명령은 의도적으로 공개 접속 허용 flag를 넣지 않았으며, Cloud Run IAM과 접근 정책은 별도로 확인해야 합니다.
+
 ```bash
 gcloud run deploy lecture-context-ai \
   --source . \
   --region asia-northeast3 \
-  --allow-unauthenticated \
   --min 0 \
   --max 1 \
   --memory 512Mi \
