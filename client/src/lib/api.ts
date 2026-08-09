@@ -341,10 +341,14 @@ export async function createExperimentCase(studyId: string, input: {
   glossary: Pick<import("./glossary-storage").StoredGlossary, "id" | "name" | "updatedAt" | "terms">;
   targetTerms: ExperimentTargetInput[];
 }): Promise<{ experimentCase: ExperimentCase }> {
+  const { id, name, updatedAt, terms } = input.glossary;
   const response = await fetch(`/api/dev/experiment-studies/${encodeURIComponent(studyId)}/cases`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input)
+    body: JSON.stringify({
+      ...input,
+      glossary: { id, name, updatedAt, terms }
+    })
   });
   return readJson<{ experimentCase: ExperimentCase }>(response);
 }
