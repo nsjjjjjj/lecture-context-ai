@@ -262,4 +262,4 @@ gcloud run deploy lecture-context-ai \
 - 개발용 고정음원은 `pnpm stt:compare`로 PhraseSet 적용 전후 실제 Google STT A/B 재생까지 지원합니다. 정답 대본 기반 정확도 평가는 후속 실험입니다.
 - 쉬운 용어 정의는 제공하지만 `이 용어가 지금 등장한 이유`를 설명하는 맥락 문장은 다음 버전 작업입니다.
 
-현재 상태와 후속 작업은 [인수인계 문서](docs/HANDOFF.md)를 참고하세요. 논문 연구문제, 평가 설계, 발표 흐름은 [논문·발표 구성안](docs/PAPER_PRESENTATION_PLAN.md)에 정리되어 있습니다.
+현재 상태와 후속 작업은 [인수인계 문서](docs/HANDOFF.md)를 참고하세요. 실제 고정음원 A/B 관찰과 발음 별칭 기반 A/B/C 후속 계획은 [STT PhraseSet 파일럿 실험 기록](docs/STT_PHRASESET_PILOT.md), 논문 연구문제·평가 설계·발표 흐름은 [논문·발표 구성안](docs/PAPER_PRESENTATION_PLAN.md)에 정리되어 있습니다.
