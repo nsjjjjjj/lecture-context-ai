@@ -18,6 +18,8 @@
 
 채점 정답인 `targetTerms`와 PDF에서 얻은 `adaptationTerms`는 분리됩니다. A는 PhraseSet 없음, B는 PDF canonical/English, C는 PDF canonical/English와 안전 규칙을 통과해 자동 승인된 한국어 발음 별칭을 사용합니다. PDF에 없는 용어도 채점 정답으로 수동 등록할 수 있지만 B/C PhraseSet에는 들어가지 않습니다. 정확한 대본에서 발견되지 않는 채점 용어는 케이스 저장 전에 거부합니다.
 
+PDF 적응의 50개 제한은 원본 `adaptationTerms` 개수에만 적용합니다. 각 원본에 딸린 English와 `spokenAliases`는 별도 용어로 세지 않으며 B/C PhraseSet에 그대로 포함됩니다.
+
 녹음 manifest와 v4 결과에는 study/case/snapshot/glossary/script identity가 이어집니다. 결과 화면은 세트·케이스 필터, 완전한 accuracy 실행만 사용한 케이스별 A/B/C 평균, CSV·TSV·JSON 내보내기를 제공합니다. 기존 고정 대본, manifest v1/v2, 결과 v1~v3 읽기는 유지됩니다.
 
 최신 기준 문장은 `엘엘엠`, `래그`, `에이피아이`, `프레이즈셋`처럼 실제로 읽을 한국어 발음을 명시합니다. 화면 문장을 처음부터 끝까지 그대로 읽은 경우에만 **“기준 문장을 그대로 읽었습니다”**를 선택합니다. 화자·환경·실험문장·선언은 녹음 시작 시 고정되며 PCM은 3,840,000바이트에서 hard cap됩니다. 저장은 cross-process lock 안에서 실행되고 60초 이상 남은 비정상 lock은 다음 저장에서 회수합니다.

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { glossaryTermSchema, type GlossaryTerm } from "../types.js";
 import { findTranscriptTermMatches } from "./caption.js";
+import { MAX_PHRASE_SET_FORMS } from "./phrase-set-limits.js";
 import {
   canonicalizeSpokenForm,
   sanitizeSpokenAliases,
@@ -195,16 +196,6 @@ export const fixtureScriptSchema = z.object({
     }
   }
 
-  const adaptationTerms = script.adaptationTerms ?? script.targetTerms;
-  const canonicalCount = phraseSetFor(adaptationTerms, false).length;
-  const aliasCount = phraseSetFor(adaptationTerms, true).length;
-  if (canonicalCount > 50 || aliasCount > 50) {
-    context.addIssue({
-      code: "custom",
-      path: ["targetTerms"],
-      message: "비교용 PhraseSet은 각 조건에서 50개를 넘을 수 없습니다."
-    });
-  }
 });
 
 export const fixtureScriptsSchema = z.object({
@@ -304,7 +295,7 @@ export type ComparisonRunLabel = z.infer<typeof comparisonRunLabelSchema>;
 
 export const comparisonRunDefinitionSchema = z.object({
   label: comparisonRunLabelSchema,
-  phraseSet: z.array(z.string().min(1).max(120)).max(50),
+  phraseSet: z.array(z.string().min(1).max(120)).max(MAX_PHRASE_SET_FORMS),
   terms: z.array(glossaryTermSchema).min(1).max(50)
 }).strict();
 
@@ -592,7 +583,7 @@ export function scoreComparisonRun(options: {
 export const comparisonRunResultSchema = z.object({
   label: comparisonRunLabelSchema,
   status: z.enum(["completed", "error"]),
-  phraseSet: z.array(z.string().min(1).max(120)).max(50),
+  phraseSet: z.array(z.string().min(1).max(120)).max(MAX_PHRASE_SET_FORMS),
   terms: z.array(glossaryTermSchema).min(1).max(50),
   startedAt: z.string().datetime({ offset: true }),
   readyAfterMs: z.number().int().nonnegative().nullable(),

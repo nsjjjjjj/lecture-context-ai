@@ -4,6 +4,7 @@ import express, { type ErrorRequestHandler, type Request } from "express";
 import { z } from "zod";
 import { analyzeGlossary } from "./services/glossary.js";
 import { demoPages, demoTerms } from "./services/demo.js";
+import { MAX_PHRASE_SET_FORMS } from "./services/phrase-set-limits.js";
 import {
   getGoogleSpeechConfigurationError as defaultGetGoogleSpeechConfigurationError,
   isGoogleSpeechConfigured
@@ -272,7 +273,7 @@ export function createApp(options: AppOptions = {}) {
       title: "생성형 AI 입문 강연",
       pages: demoPages,
       terms: demoTerms,
-      phraseSet: demoTerms.flatMap((term) => [term.term, ...term.spokenAliases]).slice(0, 50),
+      phraseSet: demoTerms.flatMap((term) => [term.term, ...term.spokenAliases]).slice(0, MAX_PHRASE_SET_FORMS),
       mode: "demo"
     });
   });

@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import type { AnalysisResult, GlossaryTerm, PageText } from "../types.js";
 import { findTranscriptTermMatches } from "./caption.js";
+import { MAX_GLOSSARY_TERMS, MAX_PHRASE_SET_FORMS } from "./phrase-set-limits.js";
 import { withSanitizedSpokenAliases, withValidatedSpokenAliases } from "./spoken-aliases.js";
 
-const MAX_TERMS = 50;
 const MAX_GEMINI_CHARACTERS = 120_000;
 
 const DOMAIN_HINTS: Array<[string, string, string]> = [
@@ -102,7 +102,7 @@ function validateCandidates(
       const acronymB = /^[A-Z][A-Z0-9-]{1,12}$/.test(b.term) ? 1 : 0;
       return acronymB - acronymA || b.occurrences - a.occurrences || a.pageNumber - b.pageNumber;
     })
-      .slice(0, MAX_TERMS)
+      .slice(0, MAX_GLOSSARY_TERMS)
   );
 }
 
@@ -114,7 +114,7 @@ function mergeValidatedTerms(primary: GlossaryTerm[], supplements: GlossaryTerm[
     seen.add(key);
     return true;
   });
-  return withValidatedSpokenAliases(merged).slice(0, MAX_TERMS);
+  return withValidatedSpokenAliases(merged).slice(0, MAX_GLOSSARY_TERMS);
 }
 
 function extractHeuristicCandidates(pages: PageText[]): GeminiTerm[] {
@@ -213,7 +213,7 @@ ${documentText}`;
 
 export function buildPhraseSet(terms: GlossaryTerm[], pages: PageText[]): string[] {
   const phrases = new Map<string, string>();
-  for (const term of withSanitizedSpokenAliases(terms)) {
+  for (const term of withSanitizedSpokenAliases(terms).slice(0, MAX_GLOSSARY_TERMS)) {
     const hasCanonicalEvidence = Boolean(locateTerm(pages, term.term));
     const hasEnglishEvidence = Boolean(term.english && locateTerm(pages, term.english));
     if (!hasCanonicalEvidence && !hasEnglishEvidence) continue;
@@ -221,7 +221,7 @@ export function buildPhraseSet(terms: GlossaryTerm[], pages: PageText[]): string
     for (const alias of term.spokenAliases) phrases.set(normalize(alias), alias);
     if (hasEnglishEvidence) phrases.set(normalize(term.english), term.english);
   }
-  return [...phrases.values()].slice(0, MAX_TERMS);
+  return [...phrases.values()].slice(0, MAX_PHRASE_SET_FORMS);
 }
 
 export async function analyzeGlossary(title: string, pages: PageText[]): Promise<AnalysisResult> {

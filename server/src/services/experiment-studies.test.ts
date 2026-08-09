@@ -138,4 +138,47 @@ describe("experiment study snapshots", () => {
     await expect(service.createCase(study.id, input)).rejects.toMatchObject({ status: 409 });
     expect((await service.getCatalog()).studies[0]?.cases).toHaveLength(1);
   });
+
+  it("원본 50개에 영문·한글 발음이 모두 있어도 케이스와 A/B/C 조건을 만든다", async () => {
+    const root = await temporaryRoot();
+    const service = new ExperimentStudyStoreService(
+      root,
+      () => new Date("2026-08-09T00:00:00.000Z"),
+      (() => {
+        const ids = [
+          "11111111-1111-4111-8111-111111111111",
+          "22222222-2222-4222-8222-222222222222"
+        ];
+        return () => ids.shift()!;
+      })()
+    );
+    const study = await service.createStudy({ title: "50개 원본 용어 연구" });
+    const terms = Array.from({ length: 50 }, (_, index) => ({
+      id: `term-${index}`,
+      term: `Term ${index}`,
+      english: `English ${index}`,
+      spokenAliases: [`${String.fromCharCode(0xac00 + index)}음`],
+      easyExplanation: `용어 ${index} 설명`,
+      pageNumber: 1,
+      occurrences: 1,
+      source: "gemini" as const
+    }));
+
+    const experimentCase = await service.createCase(study.id, {
+      title: "50개 용어 케이스",
+      scriptText: `${terms[0]!.spokenAliases[0]}을 설명합니다.`,
+      glossary: { ...glossary, id: "glossary-50", name: "50개 용어 PDF", terms },
+      targetTerms: [{
+        canonicalTerm: terms[0]!.term,
+        english: terms[0]!.english,
+        spokenAliases: terms[0]!.spokenAliases
+      }]
+    });
+    const definitions = buildComparisonRunDefinitions(experimentCase.script);
+
+    expect(experimentCase.script.adaptationTerms).toHaveLength(50);
+    expect(definitions[1]?.phraseSet).toHaveLength(100);
+    expect(definitions[2]?.phraseSet).toHaveLength(150);
+    expect(definitions[2]?.phraseSet).toContain(terms[49]!.spokenAliases[0]);
+  });
 });

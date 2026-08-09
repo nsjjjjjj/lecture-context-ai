@@ -65,6 +65,30 @@ describe("buildPhraseSet", () => {
 
     expect(buildPhraseSet([bert, api], apiPages)).toEqual(["BERT", "버트", "API"]);
   });
+
+  it("원본 용어 50개 제한과 별개로 영문·한글 발음 표기를 모두 보존한다", () => {
+    const manyTerms = Array.from({ length: 20 }, (_, index): GlossaryTerm => ({
+      id: `term-${index}`,
+      term: `Term${index}`,
+      english: `English${index}`,
+      spokenAliases: [`${String.fromCharCode(0xac00 + index)}음`],
+      easyExplanation: `용어 ${index} 설명`,
+      pageNumber: 1,
+      occurrences: 1,
+      source: "gemini"
+    }));
+    const manyPages = [{
+      pageNumber: 1,
+      text: manyTerms.flatMap((term) => [term.term, term.english]).join(" ")
+    }];
+
+    const phraseSet = buildPhraseSet(manyTerms, manyPages);
+
+    expect(phraseSet).toHaveLength(60);
+    expect(phraseSet).toContain("Term19");
+    expect(phraseSet).toContain("English19");
+    expect(phraseSet).toContain(`${String.fromCharCode(0xac00 + 19)}음`);
+  });
 });
 
 describe("analyzeGlossary", () => {

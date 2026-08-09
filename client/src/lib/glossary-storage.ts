@@ -5,10 +5,11 @@ export const GLOSSARY_STORAGE_VERSION = 3 as const;
 
 const MAX_GLOSSARIES = 50;
 const MAX_TERMS = 50;
-const MAX_PHRASES = 50;
 const MAX_RAW_ITEMS = 200;
 const MAX_SPOKEN_ALIASES = 6;
 const MAX_SPOKEN_ALIAS_LENGTH = 40;
+const MAX_PHRASES = MAX_TERMS * (2 + MAX_SPOKEN_ALIASES);
+const LEGACY_MAX_PHRASES = 50;
 const UNSAFE_ALIASES = new Set([
   "강연", "검색", "결과", "경우", "관련", "그래서", "기능", "다시", "다음", "데이터", "모델", "문서",
   "방식", "생성", "서비스", "사용자", "설명", "그리고", "이것", "입니다", "인식", "오늘", "외부", "이유",
@@ -214,7 +215,7 @@ function validateTerms(value: unknown, version: StoredGlossaryVersion = GLOSSARY
 }
 
 function validatePhraseSet(value: unknown, terms: GlossaryTerm[], discardUnknown = false): string[] {
-  if (!Array.isArray(value) || value.length > MAX_RAW_ITEMS) {
+  if (!Array.isArray(value) || value.length > MAX_PHRASES) {
     fail("invalid", "저장된 PhraseSet 형식이 올바르지 않습니다.");
   }
 
@@ -238,7 +239,7 @@ function validatePhraseSet(value: unknown, terms: GlossaryTerm[], discardUnknown
     if (seen.has(key)) continue;
     seen.add(key);
     phraseSet.push(canonical);
-    if (phraseSet.length > MAX_PHRASES) fail("invalid", "저장 가능한 PhraseSet 표기는 최대 50개입니다.");
+    if (phraseSet.length > MAX_PHRASES) fail("invalid", "PhraseSet 표기 수가 전문용어 50개의 허용 범위를 넘었습니다.");
   }
   return phraseSet;
 }
@@ -258,6 +259,13 @@ function validateStoredGlossary(
   const createdAt = validatedTimestamp(value.createdAt, "생성 시각");
   const updatedAt = validatedTimestamp(value.updatedAt, "수정 시각");
   if (updatedAt < createdAt) fail("invalid", "용어집 수정 시각이 생성 시각보다 빠릅니다.");
+  const validatedPhraseSet = validatePhraseSet(value.phraseSet, terms, version === 2);
+  const phraseSet = version === GLOSSARY_STORAGE_VERSION && validatedPhraseSet.length === LEGACY_MAX_PHRASES
+    ? validatePhraseSet([
+        ...validatedPhraseSet,
+        ...terms.flatMap((term) => [term.term, ...term.spokenAliases])
+      ], terms)
+    : validatedPhraseSet;
 
   return {
     id: value.id,
@@ -265,7 +273,7 @@ function validateStoredGlossary(
     createdAt,
     updatedAt,
     terms,
-    phraseSet: validatePhraseSet(value.phraseSet, terms, version === 2)
+    phraseSet
   };
 }
 

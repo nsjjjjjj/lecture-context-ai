@@ -89,6 +89,16 @@ describe("buildStreamingRecognizeRequest", () => {
     ]);
   });
 
+  it("50개 원본 용어에 추가된 발음 표기를 50번째 이후에도 전달한다", () => {
+    const phraseSet = Array.from({ length: 100 }, (_, index) => `Phrase ${index}`);
+
+    const request = buildStreamingRecognizeRequest("project", "us", "chirp_3", phraseSet);
+    const phrases = request.streamingConfig.config.adaptation?.phraseSets[0]?.inlinePhraseSet.phrases;
+
+    expect(phrases).toHaveLength(100);
+    expect(phrases?.[99]).toEqual({ value: "Phrase 99" });
+  });
+
   it("PhraseSet이 비어 있으면 adaptation 설정을 보내지 않는다", () => {
     const request = buildStreamingRecognizeRequest("project", "us", "chirp_3", []);
 
