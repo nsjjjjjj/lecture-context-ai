@@ -113,6 +113,23 @@ function targetGlossaryTerms(targets: FixtureAdaptationTerm[]): GlossaryTerm[] {
   }));
 }
 
+function missingTargetMessage(term: FixtureAdaptationTerm, index: number): string {
+  const labels = [
+    `정식 표기: ${term.canonicalTerm}`,
+    ...(term.english ? [`영문 표기: ${term.english}`] : []),
+    ...(term.spokenAliases.length ? [`발음 별칭: ${term.spokenAliases.join(", ")}`] : [])
+  ];
+  return `${index + 1}. ${labels.join(" · ")}`;
+}
+
+function missingTargetsError(terms: FixtureAdaptationTerm[]): ExperimentStudyError {
+  return new ExperimentStudyError([
+    "대본에서 찾지 못한 채점 용어가 있습니다.",
+    ...terms.map(missingTargetMessage),
+    "대본에 위 표기·영문 표기·발음 별칭 중 하나를 넣거나, 해당 채점 용어 선택을 해제해 주세요."
+  ].join("\n"));
+}
+
 export function buildExperimentTargetTerms(
   scriptText: string,
   requestedTargets: z.infer<typeof experimentTargetInputSchema>[]
@@ -132,7 +149,7 @@ export function buildExperimentTargetTerms(
     left.candidateIndex - right.candidateIndex
   );
   if (matches.length === 0) {
-    throw new ExperimentStudyError("채점 용어가 정확한 대본에서 발견되지 않았습니다. 대본 표기 또는 발음 별칭을 확인해 주세요.");
+    throw missingTargetsError(candidates);
   }
 
   const sequences = new Map(candidates.map((term) => [term.id, [] as number[]]));
@@ -148,7 +165,7 @@ export function buildExperimentTargetTerms(
   });
   const missing = candidates.filter((term) => sequences.get(term.id)?.length === 0);
   if (missing.length > 0) {
-    throw new ExperimentStudyError(`대본에서 찾지 못한 채점 용어가 있습니다: ${missing.map((term) => term.canonicalTerm).join(", ")}`);
+    throw missingTargetsError(missing);
   }
 
   return candidates.map((term) => fixtureTargetTermSchema.parse({

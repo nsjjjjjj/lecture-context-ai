@@ -237,6 +237,7 @@ function jobProgressPercent(job: SttComparisonJobStatus): number {
 type NormalizedJobRun = {
   label: ComparisonRunLabel;
   state: SttComparisonJobRunState;
+  progress: number;
   message: string;
   error: string;
 };
@@ -245,6 +246,7 @@ function normalizedJobRuns(job: SttComparisonJobStatus): NormalizedJobRun[] {
   return job.runs.map((run) => ({
     label: run.label,
     state: run.state,
+    progress: Math.min(100, Math.max(0, run.progress ?? (run.state === "completed" || run.state === "error" ? 100 : 0))),
     message: run.message ?? "",
     error: run.error ?? ""
   }));
@@ -605,7 +607,7 @@ export function SttComparisonJobPanel({
           disabled={blocksStart}
           className="mt-0.5 size-4 shrink-0 accent-rose-300"
         />
-        <span><strong className="block">명시적 유료 호출 동의</strong>이 실행은 정확히 3개의 유료 Google STT 스트림을 호출합니다.</span>
+        <span><strong className="block">명시적 유료 호출 동의</strong>이 실행은 정확히 3개의 유료 Google STT 스트림을 동시에 호출합니다.</span>
       </label>
 
       {active?.kind === "external" ? (
@@ -631,6 +633,7 @@ export function SttComparisonJobPanel({
                 <li key={run.label} className={`rounded-xl border p-3 text-[11px] leading-4 ${failed ? "border-rose-400/20 bg-rose-400/[0.07] text-rose-100" : "border-white/[0.06] bg-white/[0.025] text-slate-400"}`}>
                   <div className="flex items-center justify-between gap-2"><strong className="text-slate-200">{RUN_DETAILS[run.label].shortLabel}. {RUN_DETAILS[run.label].title}</strong><span>{runStateLabel(run.state)}</span></div>
                   {run.message ? <p className="mt-1">{run.message}</p> : null}
+                  {run.state === "running" ? <progress className="mt-2 h-1.5 w-full accent-cyan-300" value={run.progress} max={100} aria-label={`${RUN_DETAILS[run.label].shortLabel} 조건 진행률 ${Math.round(run.progress)}%`} /> : null}
                   {run.error ? <p role="alert" className="mt-1 text-rose-200">오류: {run.error}</p> : null}
                 </li>
               );

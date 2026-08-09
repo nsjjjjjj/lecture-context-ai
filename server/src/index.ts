@@ -136,5 +136,5 @@ wss.on("connection", (websocket) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`강연맥락 AI 서버가 http://${host}:${port} 에서 실행 중입니다.`);
+  console.log(`강연 용어 AI 서버가 http://${host}:${port} 에서 실행 중입니다.`);
 });

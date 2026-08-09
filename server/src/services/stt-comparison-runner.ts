@@ -33,7 +33,6 @@ import type { StartMessage, TranscriptEvent } from "../types.js";
 
 export const STT_COMPARISON_REPLAY_CHUNK_BYTES = 3_200;
 export const STT_COMPARISON_RUN_GRACE_MS = 30_000;
-export const STT_COMPARISON_INTER_RUN_DELAY_MS = 1_000;
 export const STT_COMPARISON_RUN_COUNT = 3;
 
 export type SttComparisonActiveRun = {
@@ -48,6 +47,11 @@ export type SttComparisonReplayProgress = {
   fraction: number;
 };
 
+export type SttComparisonRunProgress = SttComparisonActiveRun & {
+  state: "pending" | "running" | "completed" | "error";
+  replayProgress: SttComparisonReplayProgress | null;
+};
+
 export type SttComparisonProgress = {
   phase: "starting" | "running" | "writing-result" | "completed";
   jobId: string;
@@ -56,6 +60,7 @@ export type SttComparisonProgress = {
   totalRuns: typeof STT_COMPARISON_RUN_COUNT;
   activeRun: SttComparisonActiveRun | null;
   replayProgress: SttComparisonReplayProgress | null;
+  runProgress: SttComparisonRunProgress[];
 };
 
 export type LoadedSttComparisonFixture = {
@@ -103,7 +108,6 @@ export type SttComparisonRunnerDependencies = {
   executeRun?: SttComparisonRunExecutor;
   acquireLock?: (options: AcquireSttComparisonLockOptions) => Promise<SttComparisonLock>;
   publishReport?: (outputPath: string, report: ComparisonReportV4) => Promise<void>;
-  delayBetweenRuns?: (durationMs: number) => Promise<void>;
   now?: () => Date;
   randomJobId?: () => string;
 };
@@ -379,7 +383,6 @@ export function createSttComparisonRunner(
   const executeRun = dependencies.executeRun ?? executeSttComparisonRun;
   const acquireLock = dependencies.acquireLock ?? acquireSttComparisonLock;
   const publishReport = dependencies.publishReport ?? writeComparisonReportAtomically;
-  const delayBetweenRuns = dependencies.delayBetweenRuns ?? wait;
   const now = dependencies.now ?? (() => new Date());
   const randomJobId = dependencies.randomJobId ?? randomUUID;
 
@@ -396,33 +399,40 @@ export function createSttComparisonRunner(
     });
 
     try {
-      notifyProgress(request.onProgress, {
-        phase: "starting",
-        jobId,
-        recordingId: fixture.recording.id,
-        completedRuns: 0,
-        totalRuns: STT_COMPARISON_RUN_COUNT,
-        activeRun: null,
-        replayProgress: null
-      });
       const definitions = buildComparisonRunDefinitions(fixture.script);
-      const runs: ComparisonRunResult[] = [];
-
-      for (const [index, definition] of definitions.entries()) {
-        const activeRun: SttComparisonActiveRun = {
-          label: definition.label,
-          index,
-          total: STT_COMPARISON_RUN_COUNT
-        };
+      const runProgress: SttComparisonRunProgress[] = definitions.map((definition, index) => ({
+        label: definition.label,
+        index,
+        total: STT_COMPARISON_RUN_COUNT,
+        state: "pending",
+        replayProgress: null
+      }));
+      const emitProgress = (phase: SttComparisonProgress["phase"]): void => {
+        const active = runProgress.filter((run) => run.state === "running");
+        const representative = active.length === 1 ? active[0]! : null;
         notifyProgress(request.onProgress, {
-          phase: "running",
+          phase,
           jobId,
           recordingId: fixture.recording.id,
-          completedRuns: index,
+          completedRuns: runProgress.filter((run) => run.state === "completed" || run.state === "error").length,
           totalRuns: STT_COMPARISON_RUN_COUNT,
-          activeRun,
-          replayProgress: { sentBytes: 0, totalBytes: fixture.pcm.length, fraction: 0 }
+          activeRun: representative
+            ? { label: representative.label, index: representative.index, total: representative.total }
+            : null,
+          replayProgress: representative?.replayProgress ? { ...representative.replayProgress } : null,
+          runProgress: runProgress.map((run) => ({
+            ...run,
+            replayProgress: run.replayProgress ? { ...run.replayProgress } : null
+          }))
         });
+      };
+
+      emitProgress("starting");
+      const runs = await Promise.all(definitions.map(async (definition, index): Promise<ComparisonRunResult> => {
+        const progress = runProgress[index]!;
+        progress.state = "running";
+        progress.replayProgress = { sentBytes: 0, totalBytes: fixture.pcm.length, fraction: 0 };
+        emitProgress("running");
 
         const runStartedAt = now();
         let result: ComparisonRunResult;
@@ -433,15 +443,10 @@ export function createSttComparisonRunner(
             pcm: fixture.pcm,
             script: fixture.script,
             speakerReadReferenceScriptVerbatim: fixture.recording.speakerReadReferenceScriptVerbatim,
-            onReplayProgress: (replayProgress) => notifyProgress(request.onProgress, {
-              phase: "running",
-              jobId,
-              recordingId: fixture.recording.id,
-              completedRuns: index,
-              totalRuns: STT_COMPARISON_RUN_COUNT,
-              activeRun,
-              replayProgress
-            })
+            onReplayProgress: (replayProgress) => {
+              progress.replayProgress = { ...replayProgress };
+              emitProgress("running");
+            }
           }));
         } catch (error) {
           result = failedRunResult({
@@ -452,28 +457,13 @@ export function createSttComparisonRunner(
             error
           });
         }
-        runs.push(result);
-        notifyProgress(request.onProgress, {
-          phase: "running",
-          jobId,
-          recordingId: fixture.recording.id,
-          completedRuns: index + 1,
-          totalRuns: STT_COMPARISON_RUN_COUNT,
-          activeRun: null,
-          replayProgress: null
-        });
-        if (index < definitions.length - 1) await delayBetweenRuns(STT_COMPARISON_INTER_RUN_DELAY_MS);
-      }
+        progress.state = result.status === "error" ? "error" : "completed";
+        progress.replayProgress = null;
+        emitProgress("running");
+        return result;
+      }));
 
-      notifyProgress(request.onProgress, {
-        phase: "writing-result",
-        jobId,
-        recordingId: fixture.recording.id,
-        completedRuns: STT_COMPARISON_RUN_COUNT,
-        totalRuns: STT_COMPARISON_RUN_COUNT,
-        activeRun: null,
-        replayProgress: null
-      });
+      emitProgress("writing-result");
       const report = createComparisonReport({
         createdAt: now().toISOString(),
         recording: fixture.recording,
@@ -484,15 +474,7 @@ export function createSttComparisonRunner(
       const outputPath = buildSttComparisonResultPath(fixtureRoot, fixture.recording.id, jobId);
       await publishReport(outputPath, report);
       const hasRunErrors = runs.some((run) => run.status === "error");
-      notifyProgress(request.onProgress, {
-        phase: "completed",
-        jobId,
-        recordingId: fixture.recording.id,
-        completedRuns: STT_COMPARISON_RUN_COUNT,
-        totalRuns: STT_COMPARISON_RUN_COUNT,
-        activeRun: null,
-        replayProgress: null
-      });
+      emitProgress("completed");
       return { jobId, recordingId: fixture.recording.id, outputPath, report, hasRunErrors };
     } finally {
       await lock.release();

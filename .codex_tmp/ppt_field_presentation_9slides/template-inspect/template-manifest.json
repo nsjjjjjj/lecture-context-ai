@@ -1,0 +1,92 @@
+{
+  "sourcePptx": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/deliverables/ABC_해커톤_시연영상_PPT_5장.pptx",
+  "workspace": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides",
+  "outDir": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect",
+  "generatedAt": "2026-08-09T15:16:26.110Z",
+  "slideCount": 5,
+  "slideArtifacts": [
+    {
+      "slide": 1,
+      "previewPath": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/source-slides/source-slide-01.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-01.png",
+      "layoutPath": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/layouts/source-slide-01.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-01.layout.json"
+    },
+    {
+      "slide": 2,
+      "previewPath": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/source-slides/source-slide-02.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-02.png",
+      "layoutPath": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/layouts/source-slide-02.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-02.layout.json"
+    },
+    {
+      "slide": 3,
+      "previewPath": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/source-slides/source-slide-03.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-03.png",
+      "layoutPath": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/layouts/source-slide-03.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-03.layout.json"
+    },
+    {
+      "slide": 4,
+      "previewPath": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/source-slides/source-slide-04.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-04.png",
+      "layoutPath": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/layouts/source-slide-04.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-04.layout.json"
+    },
+    {
+      "slide": 5,
+      "previewPath": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/source-slides/source-slide-05.png",
+      "previewRelativePath": "template-inspect/source-slides/source-slide-05.png",
+      "layoutPath": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/layouts/source-slide-05.layout.json",
+      "layoutRelativePath": "template-inspect/layouts/source-slide-05.layout.json"
+    }
+  ],
+  "inspectPath": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/template-inspect.ndjson",
+  "inspectRelativePath": "template-inspect/template-inspect.ndjson",
+  "inspectTruncated": true,
+  "inspectMetadata": {
+    "revision": "739qmx",
+    "target": {
+      "id": "pr/yv4paw"
+    },
+    "kind": {
+      "requested": "slide,textbox,shape,image,table,chart",
+      "tokens": [
+        "slide",
+        "textbox",
+        "shape",
+        "image",
+        "table",
+        "chart"
+      ]
+    },
+    "include": {
+      "tokens": []
+    },
+    "exclude": {
+      "tokens": []
+    },
+    "notices": []
+  },
+  "extractedMedia": [
+    {
+      "entry": "ppt/media/image1.jpeg",
+      "path": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/ppt_field_presentation_9slides/template-inspect/assets/ppt/media/image1.jpeg",
+      "relativePath": "template-inspect/assets/ppt/media/image1.jpeg",
+      "bytes": 61754
+    }
+  ],
+  "fonts": [
+    "+mj-lt",
+    "+mn-lt",
+    "Apple SD Gothic Neo",
+    "Calibri",
+    "Calibri Light"
+  ],
+  "packageParts": {
+    "mediaCount": 1,
+    "slideXmlCount": 5,
+    "chartCount": 0,
+    "tableSlideCount": 0
+  }
+}

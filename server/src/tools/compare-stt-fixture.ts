@@ -26,11 +26,14 @@ function printProgress(
   output: ComparisonCliOutput,
   announcedRuns: Set<number>
 ): void {
-  if (progress.phase === "running" && progress.activeRun && !announcedRuns.has(progress.activeRun.index)) {
-    announcedRuns.add(progress.activeRun.index);
-    output.log(`\n[${progress.activeRun.label}] 고정 음원을 Google STT에 재생합니다.`);
+  if (progress.phase === "running") {
+    for (const run of progress.runProgress) {
+      if (run.state !== "running" || announcedRuns.has(run.index)) continue;
+      announcedRuns.add(run.index);
+      output.log(`\n[${run.label}] 고정 음원을 Google STT에 병렬 재생합니다.`);
+    }
   } else if (progress.phase === "writing-result") {
-    output.log("\nA/B/C 실행이 끝났습니다. v3 결과를 저장합니다.");
+    output.log("\nA/B/C 병렬 실행이 끝났습니다. v4 결과를 저장합니다.");
   }
 }
 

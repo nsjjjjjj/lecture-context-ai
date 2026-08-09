@@ -1,0 +1,2089 @@
+{
+  "version": 4,
+  "createdAt": "2026-08-09T10:43:25.938Z",
+  "recording": {
+    "id": "7b494f29-d2b9-48b7-bda2-24a4ca0dc360",
+    "scriptId": "case-9cdb0a8a-2a35-4482-852a-63629852e7aa",
+    "speakerReadReferenceScriptVerbatim": true,
+    "evaluationMode": "accuracy",
+    "experimentIdentity": {
+      "studyId": "study-8ed16b23-04c4-4e9f-8843-5ca0eb4d0428",
+      "caseId": "case-9cdb0a8a-2a35-4482-852a-63629852e7aa",
+      "caseSnapshotId": "snapshot-04cb3a1a48d73b374d431dbd",
+      "glossaryId": "ae9fcac8-d32a-4369-91be-049d6e2eb641",
+      "glossaryName": "2",
+      "glossaryHash": "2e952cb556abc890b4f67d01f0b19f9db243bff5e9b3cce6a166b1a35055cb78",
+      "scriptHash": "cc0fc70377fd99976282fac99d2641eeaa365639ce9baeff0626b762039e8ff1"
+    }
+  },
+  "script": {
+    "id": "case-9cdb0a8a-2a35-4482-852a-63629852e7aa",
+    "title": "test 02",
+    "languageCode": "ko-KR",
+    "text": "오늘 공유할 실험은 스펙어그먼트를 이용한 자동 음성 인식 데이터 증강입니다. 스펙어그먼트는 신경망의 입력인 필터 뱅크 코이피션츠에 직접 적용되며, 별도의 합성 음성을 만들지 않고 로그 멜 스펙트로그램을 변형합니다. 핵심 정책은 타임 워핑, 프리퀀시 마스킹, 타임 마스킹의 세 단계로 구성됩니다.\n\n타임 워핑은 시간축의 특징을 변형하고, 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며, 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 리슨 어텐드 앤드 스펠 네트워크, 줄여서 엘에이에스에 적용됩니다.\n\n평가는 리브리스피치 구백육십 아워와 스위치보드 삼백 아워 태스크에서 수행하고, 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 셸로 퓨전을 적용한 결과의 더블유이알을 구분해야 합니다. 스펙어그먼트, 엘에이에스, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+    "targetTerms": [
+      {
+        "id": "gold-01",
+        "canonicalTerm": "LAS",
+        "english": "Listen, Attend and Spell",
+        "spokenAliases": [
+          "엘에이에스",
+          "라스"
+        ],
+        "expectedOccurrences": [
+          9,
+          14
+        ]
+      },
+      {
+        "id": "gold-02",
+        "canonicalTerm": "WER",
+        "english": "Word Error Rate",
+        "spokenAliases": [
+          "더블유이알",
+          "웨어"
+        ],
+        "expectedOccurrences": [
+          13
+        ]
+      },
+      {
+        "id": "gold-03",
+        "canonicalTerm": "Switchboard",
+        "english": "Switchboard",
+        "spokenAliases": [
+          "스위치보드"
+        ],
+        "expectedOccurrences": [
+          11
+        ]
+      },
+      {
+        "id": "gold-04",
+        "canonicalTerm": "LibriSpeech",
+        "english": "LibriSpeech",
+        "spokenAliases": [
+          "리브리스피치"
+        ],
+        "expectedOccurrences": [
+          10
+        ]
+      },
+      {
+        "id": "gold-05",
+        "canonicalTerm": "log mel spectrogram",
+        "english": "log mel spectrogram",
+        "spokenAliases": [
+          "로그 멜 스펙트로그램"
+        ],
+        "expectedOccurrences": [
+          1
+        ]
+      },
+      {
+        "id": "gold-06",
+        "canonicalTerm": "Time warping",
+        "english": "Time warping",
+        "spokenAliases": [
+          "타임 워핑"
+        ],
+        "expectedOccurrences": [
+          2,
+          5,
+          15
+        ]
+      },
+      {
+        "id": "gold-07",
+        "canonicalTerm": "CallHome",
+        "english": "CallHome",
+        "spokenAliases": [
+          "콜홈"
+        ],
+        "expectedOccurrences": [
+          12
+        ]
+      },
+      {
+        "id": "gold-08",
+        "canonicalTerm": "Frequency masking",
+        "english": "Frequency masking",
+        "spokenAliases": [
+          "프리퀀시 마스킹"
+        ],
+        "expectedOccurrences": [
+          3,
+          6,
+          16
+        ]
+      },
+      {
+        "id": "gold-09",
+        "canonicalTerm": "Time masking",
+        "english": "Time masking",
+        "spokenAliases": [
+          "타임 마스킹"
+        ],
+        "expectedOccurrences": [
+          4,
+          7,
+          17
+        ]
+      },
+      {
+        "id": "gold-10",
+        "canonicalTerm": "Cutout",
+        "english": "Cutout",
+        "spokenAliases": [
+          "컷아웃"
+        ],
+        "expectedOccurrences": [
+          8
+        ]
+      }
+    ],
+    "adaptationTerms": [
+      {
+        "id": "pdf-01",
+        "canonicalTerm": "LAS",
+        "english": "Listen, Attend and Spell",
+        "spokenAliases": [
+          "엘에이에스",
+          "라스"
+        ]
+      },
+      {
+        "id": "pdf-02",
+        "canonicalTerm": "WER",
+        "english": "Word Error Rate",
+        "spokenAliases": [
+          "더블유이알",
+          "웨어"
+        ]
+      },
+      {
+        "id": "pdf-03",
+        "canonicalTerm": "ASR",
+        "english": "Automatic Speech Recognition",
+        "spokenAliases": [
+          "에이에스알"
+        ]
+      },
+      {
+        "id": "pdf-04",
+        "canonicalTerm": "RNN",
+        "english": "Recurrent Neural Network",
+        "spokenAliases": [
+          "알엔엔"
+        ]
+      },
+      {
+        "id": "pdf-05",
+        "canonicalTerm": "WPM",
+        "english": "Word Piece Model",
+        "spokenAliases": [
+          "더블유피엠"
+        ]
+      },
+      {
+        "id": "pdf-06",
+        "canonicalTerm": "TPU",
+        "english": "Tensor Processing Unit",
+        "spokenAliases": [
+          "티피유"
+        ]
+      },
+      {
+        "id": "pdf-07",
+        "canonicalTerm": "CNN",
+        "english": "Convolutional Neural Network",
+        "spokenAliases": [
+          "씨엔엔"
+        ]
+      },
+      {
+        "id": "pdf-08",
+        "canonicalTerm": "Switchboard",
+        "english": "Switchboard",
+        "spokenAliases": [
+          "스위치보드"
+        ]
+      },
+      {
+        "id": "pdf-09",
+        "canonicalTerm": "LibriSpeech",
+        "english": "LibriSpeech",
+        "spokenAliases": [
+          "리브리스피치"
+        ]
+      },
+      {
+        "id": "pdf-10",
+        "canonicalTerm": "SpecAugment",
+        "english": "SpecAugment",
+        "spokenAliases": [
+          "스펙오그먼트"
+        ]
+      },
+      {
+        "id": "pdf-11",
+        "canonicalTerm": "Shallow fusion",
+        "english": "Shallow fusion",
+        "spokenAliases": [
+          "셜로우 퓨전"
+        ]
+      },
+      {
+        "id": "pdf-12",
+        "canonicalTerm": "log mel spectrogram",
+        "english": "log mel spectrogram",
+        "spokenAliases": [
+          "로그 멜 스펙트로그램"
+        ]
+      },
+      {
+        "id": "pdf-13",
+        "canonicalTerm": "Time warping",
+        "english": "Time warping",
+        "spokenAliases": [
+          "타임 워핑"
+        ]
+      },
+      {
+        "id": "pdf-14",
+        "canonicalTerm": "Fisher",
+        "english": "Fisher",
+        "spokenAliases": [
+          "피셔"
+        ]
+      },
+      {
+        "id": "pdf-15",
+        "canonicalTerm": "Listen, Attend and Spell",
+        "english": "Listen, Attend and Spell",
+        "spokenAliases": [
+          "리슨 어텐드 앤 스펠"
+        ]
+      },
+      {
+        "id": "pdf-16",
+        "canonicalTerm": "CallHome",
+        "english": "CallHome",
+        "spokenAliases": [
+          "콜홈"
+        ]
+      },
+      {
+        "id": "pdf-17",
+        "canonicalTerm": "Frequency masking",
+        "english": "Frequency masking",
+        "spokenAliases": [
+          "프리퀀시 마스킹"
+        ]
+      },
+      {
+        "id": "pdf-18",
+        "canonicalTerm": "Time masking",
+        "english": "Time masking",
+        "spokenAliases": [
+          "타임 마스킹"
+        ]
+      },
+      {
+        "id": "pdf-19",
+        "canonicalTerm": "Cutout",
+        "english": "Cutout",
+        "spokenAliases": [
+          "컷아웃"
+        ]
+      },
+      {
+        "id": "pdf-20",
+        "canonicalTerm": "Hub5’00",
+        "english": "Hub5’00",
+        "spokenAliases": [
+          "허브 파이브"
+        ]
+      },
+      {
+        "id": "pdf-21",
+        "canonicalTerm": "Kaldi",
+        "english": "Kaldi",
+        "spokenAliases": [
+          "칼디"
+        ]
+      },
+      {
+        "id": "pdf-22",
+        "canonicalTerm": "tensorflow",
+        "english": "tensorflow",
+        "spokenAliases": [
+          "텐서플로우",
+          "텐서플로"
+        ]
+      },
+      {
+        "id": "pdf-23",
+        "canonicalTerm": "Daniel S. Park",
+        "english": "Daniel S. Park",
+        "spokenAliases": [
+          "대니얼 박"
+        ]
+      },
+      {
+        "id": "pdf-24",
+        "canonicalTerm": "Quoc V. Le",
+        "english": "Quoc V. Le",
+        "spokenAliases": [
+          "쿠옥 레"
+        ]
+      },
+      {
+        "id": "pdf-25",
+        "canonicalTerm": "LSTMs",
+        "english": "Long Short-Term Memory",
+        "spokenAliases": [
+          "엘에스티엠"
+        ]
+      }
+    ],
+    "experimentIdentity": {
+      "studyId": "study-8ed16b23-04c4-4e9f-8843-5ca0eb4d0428",
+      "caseId": "case-9cdb0a8a-2a35-4482-852a-63629852e7aa",
+      "caseSnapshotId": "snapshot-04cb3a1a48d73b374d431dbd",
+      "glossaryId": "ae9fcac8-d32a-4369-91be-049d6e2eb641",
+      "glossaryName": "2",
+      "glossaryHash": "2e952cb556abc890b4f67d01f0b19f9db243bff5e9b3cce6a166b1a35055cb78",
+      "scriptHash": "cc0fc70377fd99976282fac99d2641eeaa365639ce9baeff0626b762039e8ff1"
+    }
+  },
+  "websocketUrl": "ws://127.0.0.1:8787/ws",
+  "measurementNote": "화자가 기준 문장을 그대로 읽었다고 명시적으로 선언한 녹음입니다. occurrence-level 지표를 정확도 비교에 사용할 수 있습니다.",
+  "runs": [
+    {
+      "label": "without-phrase-set",
+      "status": "completed",
+      "phraseSet": [],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "LAS",
+          "english": "Listen, Attend and Spell",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "WER",
+          "english": "Word Error Rate",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "ASR",
+          "english": "Automatic Speech Recognition",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "RNN",
+          "english": "Recurrent Neural Network",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "WPM",
+          "english": "Word Piece Model",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "TPU",
+          "english": "Tensor Processing Unit",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "CNN",
+          "english": "Convolutional Neural Network",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "Switchboard",
+          "english": "Switchboard",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "LibriSpeech",
+          "english": "LibriSpeech",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "SpecAugment",
+          "english": "SpecAugment",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "Shallow fusion",
+          "english": "Shallow fusion",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "log mel spectrogram",
+          "english": "log mel spectrogram",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "Time warping",
+          "english": "Time warping",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "Fisher",
+          "english": "Fisher",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Listen, Attend and Spell",
+          "english": "Listen, Attend and Spell",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "CallHome",
+          "english": "CallHome",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "Frequency masking",
+          "english": "Frequency masking",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "Time masking",
+          "english": "Time masking",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Cutout",
+          "english": "Cutout",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "Hub5’00",
+          "english": "Hub5’00",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "Kaldi",
+          "english": "Kaldi",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "tensorflow",
+          "english": "tensorflow",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "Daniel S. Park",
+          "english": "Daniel S. Park",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "Quoc V. Le",
+          "english": "Quoc V. Le",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "LSTMs",
+          "english": "Long Short-Term Memory",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T10:38:46.037Z",
+      "readyAfterMs": 63,
+      "audioDurationMs": 89996,
+      "wallClockMs": 92845,
+      "interimCount": 15,
+      "finalTranscripts": [
+        {
+          "text": "오늘 공유할 실험은 스펙 어그먼트를 이용한 자동 음성 인식 데이터 증강입니다.",
+          "rawText": "오늘 공유할 실험은 스펙 어그먼트를 이용한 자동 음성 인식 데이터 증강입니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "어그먼트는 신경망의 입력인 필터뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 로그멜 스펙트로그램을 변형합니다.",
+          "rawText": "어그먼트는 신경망의 입력인 필터뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 로그멜 스펙트로그램을 변형합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "핵심 정책은 타임 워핑, 프리퀀시 마스킹, 타임 마스킹의 세 단계로 구성됩니다.",
+          "rawText": "핵심 정책은 타임 워핑, 프리퀀시 마스킹, 타임 마스킹의 세 단계로 구성됩니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "타임 워핑은 시간 축의 특징을 변형하고, 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며, 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 리슨, 어텐드, 앤드, 스펠 네트워크, 줄여서 LAS에 적용됩니다. 평가는 리브리 스피치",
+          "rawText": "타임 워핑은 시간 축의 특징을 변형하고, 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며, 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 리슨, 어텐드, 앤드, 스펠 네트워크, 줄여서 LAS에 적용됩니다. 평가는 리브리 스피치",
+          "detectedTermIds": [
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "260 아워와",
+          "rawText": "260 아워와",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "스위치보드 300아워 태스크에서 수행하고 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 셜로 퓨전을 적용한 결과의 WER을 구분해야 합니다. 스펙 어그먼트",
+          "rawText": "스위치보드 300아워 태스크에서 수행하고 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 셜로 퓨전을 적용한 결과의 WER을 구분해야 합니다. 스펙 어그먼트",
+          "detectedTermIds": [
+            "pdf-02"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "LAS, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+          "rawText": "LAS, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+          "detectedTermIds": [
+            "pdf-01"
+          ],
+          "corrections": []
+        }
+      ],
+      "transcript": "오늘 공유할 실험은 스펙 어그먼트를 이용한 자동 음성 인식 데이터 증강입니다. 어그먼트는 신경망의 입력인 필터뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 로그멜 스펙트로그램을 변형합니다. 핵심 정책은 타임 워핑, 프리퀀시 마스킹, 타임 마스킹의 세 단계로 구성됩니다. 타임 워핑은 시간 축의 특징을 변형하고, 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며, 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 리슨, 어텐드, 앤드, 스펠 네트워크, 줄여서 LAS에 적용됩니다. 평가는 리브리 스피치 260 아워와 스위치보드 300아워 태스크에서 수행하고 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 셜로 퓨전을 적용한 결과의 WER을 구분해야 합니다. 스펙 어그먼트 LAS, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+      "rawTranscript": "오늘 공유할 실험은 스펙 어그먼트를 이용한 자동 음성 인식 데이터 증강입니다. 어그먼트는 신경망의 입력인 필터뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 로그멜 스펙트로그램을 변형합니다. 핵심 정책은 타임 워핑, 프리퀀시 마스킹, 타임 마스킹의 세 단계로 구성됩니다. 타임 워핑은 시간 축의 특징을 변형하고, 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며, 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 리슨, 어텐드, 앤드, 스펠 네트워크, 줄여서 LAS에 적용됩니다. 평가는 리브리 스피치 260 아워와 스위치보드 300아워 태스크에서 수행하고 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 셜로 퓨전을 적용한 결과의 WER을 구분해야 합니다. 스펙 어그먼트 LAS, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 3,
+        "aliasCorrectionSuccesses": 0,
+        "misses": 14,
+        "falseCorrections": 0,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 17,
+        "productLinkRate": 0.17647058823529413
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "log mel spectrogram",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Time warping",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "Frequency masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Time masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Time warping",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "Frequency masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Time masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-10",
+          "canonicalTerm": "Cutout",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "LAS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 3,
+          "rawText": "LAS"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "LibriSpeech",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "Switchboard",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "CallHome",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "WER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 5,
+          "rawText": "WER"
+        },
+        {
+          "sequence": 14,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "LAS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "LAS"
+        },
+        {
+          "sequence": 15,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Time warping",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 16,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "Frequency masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 17,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Time masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        }
+      ],
+      "unexpectedObservations": [],
+      "errors": []
+    },
+    {
+      "label": "canonical-phrase-set",
+      "status": "completed",
+      "phraseSet": [
+        "LAS",
+        "Listen, Attend and Spell",
+        "WER",
+        "Word Error Rate",
+        "ASR",
+        "Automatic Speech Recognition",
+        "RNN",
+        "Recurrent Neural Network",
+        "WPM",
+        "Word Piece Model",
+        "TPU",
+        "Tensor Processing Unit",
+        "CNN",
+        "Convolutional Neural Network",
+        "Switchboard",
+        "LibriSpeech",
+        "SpecAugment",
+        "Shallow fusion",
+        "log mel spectrogram",
+        "Time warping",
+        "Fisher",
+        "CallHome",
+        "Frequency masking",
+        "Time masking",
+        "Cutout",
+        "Hub5’00",
+        "Kaldi",
+        "tensorflow",
+        "Daniel S. Park",
+        "Quoc V. Le",
+        "LSTMs",
+        "Long Short-Term Memory"
+      ],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "LAS",
+          "english": "Listen, Attend and Spell",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "WER",
+          "english": "Word Error Rate",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "ASR",
+          "english": "Automatic Speech Recognition",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "RNN",
+          "english": "Recurrent Neural Network",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "WPM",
+          "english": "Word Piece Model",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "TPU",
+          "english": "Tensor Processing Unit",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "CNN",
+          "english": "Convolutional Neural Network",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "Switchboard",
+          "english": "Switchboard",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "LibriSpeech",
+          "english": "LibriSpeech",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "SpecAugment",
+          "english": "SpecAugment",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "Shallow fusion",
+          "english": "Shallow fusion",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "log mel spectrogram",
+          "english": "log mel spectrogram",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "Time warping",
+          "english": "Time warping",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "Fisher",
+          "english": "Fisher",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Listen, Attend and Spell",
+          "english": "Listen, Attend and Spell",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "CallHome",
+          "english": "CallHome",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "Frequency masking",
+          "english": "Frequency masking",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "Time masking",
+          "english": "Time masking",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Cutout",
+          "english": "Cutout",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "Hub5’00",
+          "english": "Hub5’00",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "Kaldi",
+          "english": "Kaldi",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "tensorflow",
+          "english": "tensorflow",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "Daniel S. Park",
+          "english": "Daniel S. Park",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "Quoc V. Le",
+          "english": "Quoc V. Le",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "LSTMs",
+          "english": "Long Short-Term Memory",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T10:40:19.885Z",
+      "readyAfterMs": 4,
+      "audioDurationMs": 89996,
+      "wallClockMs": 92533,
+      "interimCount": 14,
+      "finalTranscripts": [
+        {
+          "text": "오늘 공유할 실험은 SpecAugment를 이용한 자동 음성 인식 데이터 증강입니다.",
+          "rawText": "오늘 공유할 실험은 SpecAugment를 이용한 자동 음성 인식 데이터 증강입니다.",
+          "detectedTermIds": [
+            "pdf-10"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "어그먼트는 신경망의 입력인 필터 뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 로그멜 스펙트로그램을 변형합니다.",
+          "rawText": "어그먼트는 신경망의 입력인 필터 뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 로그멜 스펙트로그램을 변형합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "핵심 정책은 Time warping, Frequency masking, Time masking의 세 단계로 구성됩니다.",
+          "rawText": "핵심 정책은 Time warping, Frequency masking, Time masking의 세 단계로 구성됩니다.",
+          "detectedTermIds": [
+            "pdf-13",
+            "pdf-17",
+            "pdf-18"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "타임 워핑은 시간 축의 특징을 변형하고, 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며, 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 Listen, Attend and Spell 네트워크, 줄여서 LAS에 적용됩니다. 평가는 리브리스 스피치",
+          "rawText": "타임 워핑은 시간 축의 특징을 변형하고, 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며, 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 Listen, Attend and Spell 네트워크, 줄여서 LAS에 적용됩니다. 평가는 리브리스 스피치",
+          "detectedTermIds": [
+            "pdf-01",
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "60 아워와",
+          "rawText": "60 아워와",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "스위치보드 300아워 태스크에서 수행하고 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 shallow fusion을 적용한 결과의 WER을 구분해야 합니다. SpecAugment",
+          "rawText": "스위치보드 300아워 태스크에서 수행하고 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 shallow fusion을 적용한 결과의 WER을 구분해야 합니다. SpecAugment",
+          "detectedTermIds": [
+            "pdf-11",
+            "pdf-02",
+            "pdf-10"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "LAS, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+          "rawText": "LAS, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+          "detectedTermIds": [
+            "pdf-01"
+          ],
+          "corrections": []
+        }
+      ],
+      "transcript": "오늘 공유할 실험은 SpecAugment를 이용한 자동 음성 인식 데이터 증강입니다. 어그먼트는 신경망의 입력인 필터 뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 로그멜 스펙트로그램을 변형합니다. 핵심 정책은 Time warping, Frequency masking, Time masking의 세 단계로 구성됩니다. 타임 워핑은 시간 축의 특징을 변형하고, 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며, 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 Listen, Attend and Spell 네트워크, 줄여서 LAS에 적용됩니다. 평가는 리브리스 스피치 60 아워와 스위치보드 300아워 태스크에서 수행하고 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 shallow fusion을 적용한 결과의 WER을 구분해야 합니다. SpecAugment LAS, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+      "rawTranscript": "오늘 공유할 실험은 SpecAugment를 이용한 자동 음성 인식 데이터 증강입니다. 어그먼트는 신경망의 입력인 필터 뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 로그멜 스펙트로그램을 변형합니다. 핵심 정책은 Time warping, Frequency masking, Time masking의 세 단계로 구성됩니다. 타임 워핑은 시간 축의 특징을 변형하고, 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며, 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 Listen, Attend and Spell 네트워크, 줄여서 LAS에 적용됩니다. 평가는 리브리스 스피치 60 아워와 스위치보드 300아워 태스크에서 수행하고 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 shallow fusion을 적용한 결과의 WER을 구분해야 합니다. SpecAugment LAS, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 6,
+        "aliasCorrectionSuccesses": 0,
+        "misses": 11,
+        "falseCorrections": 0,
+        "falseInsertions": 1,
+        "expectedOccurrenceCount": 17,
+        "productLinkRate": 0.35294117647058826
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "log mel spectrogram",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Time warping",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 2,
+          "rawText": "Time warping"
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "Frequency masking",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 2,
+          "rawText": "Frequency masking"
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Time masking",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 2,
+          "rawText": "Time masking"
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Time warping",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "Frequency masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Time masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-10",
+          "canonicalTerm": "Cutout",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "LAS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 3,
+          "rawText": "Listen, Attend and Spell"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "LibriSpeech",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "Switchboard",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "CallHome",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "WER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 5,
+          "rawText": "WER"
+        },
+        {
+          "sequence": 14,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "LAS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "LAS"
+        },
+        {
+          "sequence": 15,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Time warping",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 16,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "Frequency masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 17,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Time masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        }
+      ],
+      "unexpectedObservations": [
+        {
+          "kind": "false-insertion",
+          "reason": "unexpected-direct-match",
+          "targetTermId": "gold-01",
+          "finalTranscriptIndex": 3,
+          "rawText": "LAS"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "label": "spoken-alias-phrase-set",
+      "status": "completed",
+      "phraseSet": [
+        "LAS",
+        "Listen, Attend and Spell",
+        "엘에이에스",
+        "라스",
+        "WER",
+        "Word Error Rate",
+        "더블유이알",
+        "웨어",
+        "ASR",
+        "Automatic Speech Recognition",
+        "에이에스알",
+        "RNN",
+        "Recurrent Neural Network",
+        "알엔엔",
+        "WPM",
+        "Word Piece Model",
+        "더블유피엠",
+        "TPU",
+        "Tensor Processing Unit",
+        "티피유",
+        "CNN",
+        "Convolutional Neural Network",
+        "씨엔엔",
+        "Switchboard",
+        "스위치보드",
+        "LibriSpeech",
+        "리브리스피치",
+        "SpecAugment",
+        "스펙오그먼트",
+        "Shallow fusion",
+        "셜로우 퓨전",
+        "log mel spectrogram",
+        "로그 멜 스펙트로그램",
+        "Time warping",
+        "타임 워핑",
+        "Fisher",
+        "피셔",
+        "리슨 어텐드 앤 스펠",
+        "CallHome",
+        "콜홈",
+        "Frequency masking",
+        "프리퀀시 마스킹",
+        "Time masking",
+        "타임 마스킹",
+        "Cutout",
+        "컷아웃",
+        "Hub5’00",
+        "허브 파이브",
+        "Kaldi",
+        "칼디",
+        "tensorflow",
+        "텐서플로우",
+        "텐서플로",
+        "Daniel S. Park",
+        "대니얼 박",
+        "Quoc V. Le",
+        "쿠옥 레",
+        "LSTMs",
+        "Long Short-Term Memory",
+        "엘에스티엠"
+      ],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "LAS",
+          "english": "Listen, Attend and Spell",
+          "spokenAliases": [
+            "엘에이에스",
+            "라스"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "WER",
+          "english": "Word Error Rate",
+          "spokenAliases": [
+            "더블유이알",
+            "웨어"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "ASR",
+          "english": "Automatic Speech Recognition",
+          "spokenAliases": [
+            "에이에스알"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "RNN",
+          "english": "Recurrent Neural Network",
+          "spokenAliases": [
+            "알엔엔"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "WPM",
+          "english": "Word Piece Model",
+          "spokenAliases": [
+            "더블유피엠"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "TPU",
+          "english": "Tensor Processing Unit",
+          "spokenAliases": [
+            "티피유"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "CNN",
+          "english": "Convolutional Neural Network",
+          "spokenAliases": [
+            "씨엔엔"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "Switchboard",
+          "english": "Switchboard",
+          "spokenAliases": [
+            "스위치보드"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "LibriSpeech",
+          "english": "LibriSpeech",
+          "spokenAliases": [
+            "리브리스피치"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "SpecAugment",
+          "english": "SpecAugment",
+          "spokenAliases": [
+            "스펙오그먼트"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "Shallow fusion",
+          "english": "Shallow fusion",
+          "spokenAliases": [
+            "셜로우 퓨전"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "log mel spectrogram",
+          "english": "log mel spectrogram",
+          "spokenAliases": [
+            "로그 멜 스펙트로그램"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "Time warping",
+          "english": "Time warping",
+          "spokenAliases": [
+            "타임 워핑"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "Fisher",
+          "english": "Fisher",
+          "spokenAliases": [
+            "피셔"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Listen, Attend and Spell",
+          "english": "Listen, Attend and Spell",
+          "spokenAliases": [
+            "리슨 어텐드 앤 스펠"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "CallHome",
+          "english": "CallHome",
+          "spokenAliases": [
+            "콜홈"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "Frequency masking",
+          "english": "Frequency masking",
+          "spokenAliases": [
+            "프리퀀시 마스킹"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "Time masking",
+          "english": "Time masking",
+          "spokenAliases": [
+            "타임 마스킹"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Cutout",
+          "english": "Cutout",
+          "spokenAliases": [
+            "컷아웃"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "Hub5’00",
+          "english": "Hub5’00",
+          "spokenAliases": [
+            "허브 파이브"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "Kaldi",
+          "english": "Kaldi",
+          "spokenAliases": [
+            "칼디"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "tensorflow",
+          "english": "tensorflow",
+          "spokenAliases": [
+            "텐서플로우",
+            "텐서플로"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "Daniel S. Park",
+          "english": "Daniel S. Park",
+          "spokenAliases": [
+            "대니얼 박"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "Quoc V. Le",
+          "english": "Quoc V. Le",
+          "spokenAliases": [
+            "쿠옥 레"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "LSTMs",
+          "english": "Long Short-Term Memory",
+          "spokenAliases": [
+            "엘에스티엠"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T10:41:53.421Z",
+      "readyAfterMs": 6,
+      "audioDurationMs": 89996,
+      "wallClockMs": 92517,
+      "interimCount": 15,
+      "finalTranscripts": [
+        {
+          "text": "오늘 공유할 실험은 스펙 오그먼트를 이용한 자동 음성 인식 데이터 증강입니다.",
+          "rawText": "오늘 공유할 실험은 스펙 오그먼트를 이용한 자동 음성 인식 데이터 증강입니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "어그먼트는 신경망의 입력인 필터뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 log mel spectrogram을 변형합니다.",
+          "rawText": "어그먼트는 신경망의 입력인 필터뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 로그 멜 스펙트로그램을 변형합니다.",
+          "detectedTermIds": [
+            "pdf-12"
+          ],
+          "corrections": [
+            {
+              "originalText": "로그 멜 스펙트로그램",
+              "correctedText": "log mel spectrogram",
+              "termId": "pdf-12",
+              "displayStart": 53,
+              "displayEnd": 72,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "핵심 정책은 Time warping, Frequency masking, Time masking의 세 단계로 구성됩니다.",
+          "rawText": "핵심 정책은 타임 워핑, 프리퀀시 마스킹, 타임 마스킹의 세 단계로 구성됩니다.",
+          "detectedTermIds": [
+            "pdf-13",
+            "pdf-17",
+            "pdf-18"
+          ],
+          "corrections": [
+            {
+              "originalText": "타임 워핑",
+              "correctedText": "Time warping",
+              "termId": "pdf-13",
+              "displayStart": 7,
+              "displayEnd": 19,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "프리퀀시 마스킹",
+              "correctedText": "Frequency masking",
+              "termId": "pdf-17",
+              "displayStart": 21,
+              "displayEnd": 38,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "타임 마스킹",
+              "correctedText": "Time masking",
+              "termId": "pdf-18",
+              "displayStart": 40,
+              "displayEnd": 52,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "Time warping은 시간 축의 특징을 변형하고 Frequency masking은 연속된 멜 프리퀀시 채널을 가립니다. Time masking은 연속된 타임 스텝을 가리며 두 마스킹 방식은 컴퓨터 비전의 Cutout에서 아이디어를 얻었습니다. 이 정책은 리슨 어텐드 앤드 스펠 네트워크 줄여서 LAS에 적용됩니다. 평가는 LibriSpeech",
+          "rawText": "타임 워핑은 시간 축의 특징을 변형하고 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 리슨 어텐드 앤드 스펠 네트워크 줄여서 LAS에 적용됩니다. 평가는 리브리스피치",
+          "detectedTermIds": [
+            "pdf-13",
+            "pdf-17",
+            "pdf-18",
+            "pdf-19",
+            "pdf-01",
+            "pdf-09"
+          ],
+          "corrections": [
+            {
+              "originalText": "타임 워핑",
+              "correctedText": "Time warping",
+              "termId": "pdf-13",
+              "displayStart": 0,
+              "displayEnd": 12,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "프리퀀시 마스킹",
+              "correctedText": "Frequency masking",
+              "termId": "pdf-17",
+              "displayStart": 29,
+              "displayEnd": 46,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "타임 마스킹",
+              "correctedText": "Time masking",
+              "termId": "pdf-18",
+              "displayStart": 69,
+              "displayEnd": 81,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "컷아웃",
+              "correctedText": "Cutout",
+              "termId": "pdf-19",
+              "displayStart": 116,
+              "displayEnd": 122,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "리브리스피치",
+              "correctedText": "LibriSpeech",
+              "termId": "pdf-09",
+              "displayStart": 182,
+              "displayEnd": 193,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "60 아워와",
+          "rawText": "60 아워와",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "Switchboard 300아워 태스크에서 수행하고 CallHome 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 Shallow fusion을 적용한 결과의 WER을 구분해야 합니다. SpecAugment",
+          "rawText": "스위치보드 300아워 태스크에서 수행하고 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 셜로우 퓨전을 적용한 결과의 WER을 구분해야 합니다. 스펙오그먼트",
+          "detectedTermIds": [
+            "pdf-08",
+            "pdf-16",
+            "pdf-11",
+            "pdf-02",
+            "pdf-10"
+          ],
+          "corrections": [
+            {
+              "originalText": "스위치보드",
+              "correctedText": "Switchboard",
+              "termId": "pdf-08",
+              "displayStart": 0,
+              "displayEnd": 11,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "콜홈",
+              "correctedText": "CallHome",
+              "termId": "pdf-16",
+              "displayStart": 29,
+              "displayEnd": 37,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "셜로우 퓨전",
+              "correctedText": "Shallow fusion",
+              "termId": "pdf-11",
+              "displayStart": 75,
+              "displayEnd": 89,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "스펙오그먼트",
+              "correctedText": "SpecAugment",
+              "termId": "pdf-10",
+              "displayStart": 114,
+              "displayEnd": 125,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "LAS, Time warping, Frequency masking, Time masking이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+          "rawText": "LAS, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+          "detectedTermIds": [
+            "pdf-01",
+            "pdf-13",
+            "pdf-17",
+            "pdf-18"
+          ],
+          "corrections": [
+            {
+              "originalText": "타임 워핑",
+              "correctedText": "Time warping",
+              "termId": "pdf-13",
+              "displayStart": 5,
+              "displayEnd": 17,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "프리퀀시 마스킹",
+              "correctedText": "Frequency masking",
+              "termId": "pdf-17",
+              "displayStart": 19,
+              "displayEnd": 36,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "타임 마스킹",
+              "correctedText": "Time masking",
+              "termId": "pdf-18",
+              "displayStart": 38,
+              "displayEnd": 50,
+              "reason": "spokenAlias"
+            }
+          ]
+        }
+      ],
+      "transcript": "오늘 공유할 실험은 스펙 오그먼트를 이용한 자동 음성 인식 데이터 증강입니다. 어그먼트는 신경망의 입력인 필터뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 log mel spectrogram을 변형합니다. 핵심 정책은 Time warping, Frequency masking, Time masking의 세 단계로 구성됩니다. Time warping은 시간 축의 특징을 변형하고 Frequency masking은 연속된 멜 프리퀀시 채널을 가립니다. Time masking은 연속된 타임 스텝을 가리며 두 마스킹 방식은 컴퓨터 비전의 Cutout에서 아이디어를 얻었습니다. 이 정책은 리슨 어텐드 앤드 스펠 네트워크 줄여서 LAS에 적용됩니다. 평가는 LibriSpeech 60 아워와 Switchboard 300아워 태스크에서 수행하고 CallHome 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 Shallow fusion을 적용한 결과의 WER을 구분해야 합니다. SpecAugment LAS, Time warping, Frequency masking, Time masking이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+      "rawTranscript": "오늘 공유할 실험은 스펙 오그먼트를 이용한 자동 음성 인식 데이터 증강입니다. 어그먼트는 신경망의 입력인 필터뱅크 코이피션츠에 직접 적용되며 별도의 합성 음성을 만들지 않고 로그 멜 스펙트로그램을 변형합니다. 핵심 정책은 타임 워핑, 프리퀀시 마스킹, 타임 마스킹의 세 단계로 구성됩니다. 타임 워핑은 시간 축의 특징을 변형하고 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 리슨 어텐드 앤드 스펠 네트워크 줄여서 LAS에 적용됩니다. 평가는 리브리스피치 60 아워와 스위치보드 300아워 태스크에서 수행하고 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 셜로우 퓨전을 적용한 결과의 WER을 구분해야 합니다. 스펙오그먼트 LAS, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 3,
+        "aliasCorrectionSuccesses": 14,
+        "misses": 0,
+        "falseCorrections": 2,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 17,
+        "productLinkRate": 1
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "log mel spectrogram",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 1,
+          "rawText": "로그 멜 스펙트로그램"
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Time warping",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 2,
+          "rawText": "타임 워핑"
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "Frequency masking",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 2,
+          "rawText": "프리퀀시 마스킹"
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Time masking",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 2,
+          "rawText": "타임 마스킹"
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Time warping",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 3,
+          "rawText": "타임 워핑"
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "Frequency masking",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 3,
+          "rawText": "프리퀀시 마스킹"
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Time masking",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 3,
+          "rawText": "타임 마스킹"
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-10",
+          "canonicalTerm": "Cutout",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 3,
+          "rawText": "컷아웃"
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "LAS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 3,
+          "rawText": "LAS"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "LibriSpeech",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 3,
+          "rawText": "리브리스피치"
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "Switchboard",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 5,
+          "rawText": "스위치보드"
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "CallHome",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 5,
+          "rawText": "콜홈"
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "WER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 5,
+          "rawText": "WER"
+        },
+        {
+          "sequence": 14,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "LAS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "LAS"
+        },
+        {
+          "sequence": 15,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Time warping",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 6,
+          "rawText": "타임 워핑"
+        },
+        {
+          "sequence": 16,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "Frequency masking",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 6,
+          "rawText": "프리퀀시 마스킹"
+        },
+        {
+          "sequence": 17,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Time masking",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 6,
+          "rawText": "타임 마스킹"
+        }
+      ],
+      "unexpectedObservations": [
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 5,
+          "rawText": "셜로우 퓨전"
+        },
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 5,
+          "rawText": "스펙오그먼트"
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

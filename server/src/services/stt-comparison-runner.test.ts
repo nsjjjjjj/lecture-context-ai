@@ -88,14 +88,15 @@ afterEach(async () => {
 });
 
 describe("reusable STT comparison runner", () => {
-  it("runs A/B/C sequentially exactly once, forwards replay progress, and continues after a run error", async () => {
+  it("runs A/B/C concurrently exactly once, forwards per-run replay progress, and isolates a run error", async () => {
     const calls: string[] = [];
     const progress: SttComparisonProgress[] = [];
     let active = 0;
     let maximumActive = 0;
+    let releaseStartedRuns!: () => void;
+    const allRunsStarted = new Promise<void>((resolve) => { releaseStartedRuns = resolve; });
     const release = vi.fn(async () => true);
     const publishReport = vi.fn(async () => undefined);
-    const delays: number[] = [];
     const runner = createSttComparisonRunner({
       loadFixture: async () => fixture,
       acquireLock: async () => ({
@@ -113,13 +114,14 @@ describe("reusable STT comparison runner", () => {
         calls.push(options.definition.label);
         active += 1;
         maximumActive = Math.max(maximumActive, active);
+        if (active === 3) releaseStartedRuns();
+        await allRunsStarted;
         options.onReplayProgress?.({ sentBytes: 1_600, totalBytes: 3_200, fraction: 0.5 });
         active -= 1;
         if (options.definition.label === "canonical-phrase-set") throw new Error("synthetic B failure");
         return completedRun(options.definition);
       },
       publishReport,
-      delayBetweenRuns: async (durationMs) => { delays.push(durationMs); },
       now: () => new Date("2026-08-09T01:00:00.000Z")
     });
 
@@ -137,8 +139,7 @@ describe("reusable STT comparison runner", () => {
       "canonical-phrase-set",
       "spoken-alias-phrase-set"
     ]);
-    expect(maximumActive).toBe(1);
-    expect(delays).toEqual([1_000, 1_000]);
+    expect(maximumActive).toBe(3);
     expect(outcome.report.version).toBe(4);
     expect(outcome.report.runs.map((run) => run.status)).toEqual(["completed", "error", "completed"]);
     expect(outcome.report.runs[1]?.errors).toEqual(["synthetic B failure"]);
@@ -146,8 +147,12 @@ describe("reusable STT comparison runner", () => {
     expect(outcome.outputPath).toBe(
       `/virtual/fixtures/results/comparison-${RECORDING_ID}-job-42.json`
     );
-    expect(progress.filter((event) => event.activeRun && event.replayProgress?.fraction === 0.5)
-      .map((event) => event.activeRun?.label)).toEqual(calls);
+    expect(progress.some((event) => event.runProgress.every((run) => run.state === "running"))).toBe(true);
+    for (const label of calls) {
+      expect(progress.some((event) => event.runProgress.some((run) =>
+        run.label === label && run.replayProgress?.fraction === 0.5
+      ))).toBe(true);
+    }
     expect(progress.map((event) => event.phase)).toContain("writing-result");
     expect(publishReport).toHaveBeenCalledOnce();
     expect(release).toHaveBeenCalledOnce();
@@ -170,7 +175,6 @@ describe("reusable STT comparison runner", () => {
       }),
       executeRun: async ({ definition }) => completedRun(definition),
       publishReport: async () => { throw new Error("disk full"); },
-      delayBetweenRuns: async () => undefined,
       now: () => new Date("2026-08-09T01:00:00.000Z")
     });
 

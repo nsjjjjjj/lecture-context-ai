@@ -201,7 +201,7 @@ export function ExperimentSetup({ glossaries, studies, loading, error, onChanged
           </div>
         </>}
 
-        {(localError || error) && <div role="alert" className="mt-4 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs text-rose-100">{localError || error}</div>}
+        {(localError || error) && <div role="alert" className="mt-4 whitespace-pre-line rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs leading-5 text-rose-100">{localError || error}</div>}
         {message && <div role="status" className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.06] p-3 text-xs text-emerald-100"><Check className="mt-0.5 size-4" /> {message}</div>}
         {loading && <div className="mt-3 flex items-center gap-2 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin" /> 저장 목록 갱신 중</div>}
       </section>

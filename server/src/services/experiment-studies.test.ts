@@ -56,6 +56,21 @@ const glossary = {
 };
 
 describe("experiment study snapshots", () => {
+  it("explains every missing target with its usable script forms", () => {
+    try {
+      buildExperimentTargetTerms("WER를 설명합니다.", [{
+        canonicalTerm: "equal error rate",
+        english: "EER",
+        spokenAliases: ["이퀄 에러 레이트"]
+      }]);
+      throw new Error("expected missing target error");
+    } catch (error) {
+      expect(error).toMatchObject({ message: expect.stringContaining("정식 표기: equal error rate") });
+      expect(error).toMatchObject({ message: expect.stringContaining("영문 표기: EER") });
+      expect(error).toMatchObject({ message: expect.stringContaining("발음 별칭: 이퀄 에러 레이트") });
+    }
+  });
+
   it("assigns the same script occurrence to overlapping scoring terms", () => {
     const targets = buildExperimentTargetTerms("Listen, Attend and Spell을 설명합니다.", [
       { canonicalTerm: "LAS", english: "Listen, Attend and Spell", spokenAliases: [] },

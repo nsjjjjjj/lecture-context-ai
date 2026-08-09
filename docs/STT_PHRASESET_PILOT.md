@@ -55,9 +55,9 @@
 
 A와 B의 용어 객체에는 `spokenAliases`가 비어 있다. C만 `scripts.json`에 고정한 한국어 발음을 PhraseSet과 자막 정정 양쪽에 사용한다. PDF 실험 케이스에서는 Gemini가 생성한 발음을 사용자 검토 없이 자동 승인하되 완성형 한글·길이·개수·일반 단어·다른 용어와의 충돌 안전 규칙을 통과해야 하며, fixture 스키마도 같은 규칙을 적용한다.
 
-localhost UI에서는 저장 녹음을 선택하고 **유료 Google STT 스트림 정확히 3회 호출** 동의란을 선택한 뒤 비교를 시작한다. 서버는 A, B, C를 각각 한 번 실행하고, 브라우저는 메모리 job 상태를 폴링해 조건별 진행률을 표시한다. `pnpm stt:compare`도 같은 runner로 최근 WAV 또는 지정한 recording ID를 실행한다. UI와 CLI 모두 실행 한 번에 같은 WAV를 A, B, C에 각각 실시간 속도로 재생하므로 세 번의 유료 Google STT 사용량을 만든다.
+localhost UI에서는 저장 녹음을 선택하고 **유료 Google STT 스트림 정확히 3회 호출** 동의란을 선택한 뒤 비교를 시작한다. 서버는 A, B, C를 동시에 각각 한 번 실행하고, 브라우저는 메모리 job 상태를 폴링해 조건별 진행률을 표시한다. `pnpm stt:compare`도 같은 runner로 최근 WAV 또는 지정한 recording ID를 실행한다. UI와 CLI 모두 실행 한 번에 같은 WAV를 A, B, C에 동시에 실시간 속도로 재생하므로 대기 시간은 한 음원 길이에 가까워지지만 세 번의 유료 Google STT 사용량은 그대로 발생한다.
 
-조건 실행은 자동 재시도하지 않고 중단된 job을 자동 재개하지 않는다. 취소 API와 취소 UI도 없다. 한 조건이 error를 반환하면 해당 조건을 재호출하지 않고 다음 조건으로 진행해 오류를 포함한 v3 리포트를 저장한다. `pnpm test`와 일반 브라우저 QA는 조건 생성, 점수 계산, lock, job, legacy 판별과 파일 경계를 mock/local 데이터로만 검증한다. 테스트나 QA에서 Start를 누르거나 `POST /api/dev/stt-comparison-jobs`를 직접 호출해서는 안 된다.
+조건 실행은 자동 재시도하지 않고 중단된 job을 자동 재개하지 않는다. 취소 API와 취소 UI도 없다. 한 조건이 error를 반환해도 이미 병렬 실행 중인 다른 조건에는 영향을 주지 않으며, 각 결과와 오류를 입력 순서대로 v4 리포트에 저장한다. `pnpm test`와 일반 브라우저 QA는 조건 생성, 점수 계산, lock, job, legacy 판별과 파일 경계를 mock/local 데이터로만 검증한다. 테스트나 QA에서 Start를 누르거나 `POST /api/dev/stt-comparison-jobs`를 직접 호출해서는 안 된다.
 
 ## 5. 기준 문장과 녹음 선언
 
@@ -91,7 +91,7 @@ localhost UI에서는 저장 녹음을 선택하고 **유료 Google STT 스트�
 
 제품 용어 연결률은 설명 카드까지 canonical 용어에 연결할 수 있었는지를 나타낸다. ASR 자체가 영문 철자를 얼마나 정확히 출력했는지와는 다른 제품 지표이며, 논문에서는 둘을 같은 이름으로 섞지 않는다.
 
-## 7. v3 결과 파일, job과 localhost UI
+## 7. v3/v4 결과 파일, job과 localhost UI
 
 실행기는 세 run, 조건별 PhraseSet과 용어 구성, 표시 자막, STT `rawText`, 정정 내역, 출현별 결과, 예상 밖 관찰과 위 지표를 버전 3 JSON으로 원자적으로 저장한다. 새 저장 위치는 `test-fixtures/stt/results/comparison-<recordingId>-<jobId>.json`이다. job ID가 매번 달라 같은 녹음을 반복해도 기존 결과를 덮어쓰지 않는 immutable 기록이 된다. 과거 `comparison-<recordingId>.json`은 삭제·rename하지 않고 함께 조회한다.
 

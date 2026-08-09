@@ -1,0 +1,196 @@
+{"kind":"deck","id":"pr/6tcxud","name":"Deck"}
+{"kind":"layout","layoutId":"ca7864a7-c6ae-4a30-a4fb-e030b0dc372a","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"db495a05-d8f6-445b-896c-5c35406f914f","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/7sbzv7","slide":1,"title":"LECTURE CONTEXT AI · 2026 ABC HACKATHON","textShapes":11}
+{"kind":"textbox","id":"sh/94fedw72","slide":1,"text":"LECTURE CONTEXT AI · 2026 ABC HACKATHON","textPreview":"LECTURE CONTEXT AI · 2026 ABC HACKATHON","textChars":39,"textLines":1,"bbox":[64,54,400,24]}
+{"kind":"textbox","id":"sh/m14fi1or","slide":1,"name":"title-slide-headline","text":"전문용어를 놓치면,\n맥락도 놓칩니다.","textPreview":"전문용어를 놓치면, | 맥락도 놓칩니다.","textChars":20,"textLines":2,"bbox":[64,150,490,150]}
+{"kind":"textbox","id":"sh/n2xwbmpc","slide":1,"text":"발표자료 기반 실시간 전문용어 자막","textPreview":"발표자료 기반 실시간 전문용어 자막","textChars":19,"textLines":1,"bbox":[64,326,500,36]}
+{"kind":"textbox","id":"sh/w76xob6t","slide":1,"text":"비전공자가 겪는 표현의 장벽과 지식의 장벽을\n하나의 강연별 용어집으로 함께 낮춥니다.","textPreview":"비전공자가 겪는 표현의 장벽과 지식의 장벽을 | 하나의 강연별 용어집으로 함께 낮춥니다.","textChars":47,"textLines":2,"bbox":[64,382,490,72]}
+{"kind":"shape","id":"sh/x8fehg7e","slide":1,"bbox":[603,145,628,354]}
+{"kind":"shape","id":"sh/b6xwf6p8","slide":1,"bbox":[64,561,1148,1]}
+{"kind":"textbox","id":"sh/kbqxsb6p","slide":1,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[64,586,34,24]}
+{"kind":"textbox","id":"sh/lwzelg7a","slide":1,"text":"저빈도 전문용어 인식","textPreview":"저빈도 전문용어 인식","textChars":11,"textLines":1,"bbox":[106,581,280,34]}
+{"kind":"textbox","id":"sh/18r2503i","slide":1,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[420,586,34,24]}
+{"kind":"textbox","id":"sh/0ni1wvmx","slide":1,"text":"한국어식 발음 연결","textPreview":"한국어식 발음 연결","textChars":10,"textLines":1,"bbox":[462,581,280,34]}
+{"kind":"textbox","id":"sh/zm9k3qlc","slide":1,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[786,586,34,24]}
+{"kind":"textbox","id":"sh/el0jul4r","slide":1,"text":"쉬운 설명 제공","textPreview":"쉬운 설명 제공","textChars":8,"textLines":1,"bbox":[828,581,280,34]}
+{"kind":"textbox","id":"sh/9cb2903e","slide":1,"text":"PDF 문맥 → STT 적응 → 의미 보조","textPreview":"PDF 문맥 → STT 적응 → 의미 보조","textChars":23,"textLines":1,"bbox":[64,655,430,26]}
+{"kind":"image","id":"im/3yp4vihw","slide":1,"name":"","geometry":"roundRect","alt":"PDF 분석을 마치고 추출한 전문용어를 보여주는 강연맥락 AI 준비 화면","bbox":[585,127,628,354]}
+{"kind":"notes","id":"nt/7sbzv7","slide":1,"text":"[Timing] 0:00–0:40\n[Narration] 안녕하세요. 이 프로젝트는 발표자료의 문맥을 활용해 전문용어 인식을 보조하고, 어려운 용어의 의미를 함께 제공하는 실시간 자막 시스템입니다.\n[Narration] 포용적 AI라는 주제에서 출발해, 비전공자가 강의나 발표를 들을 때 전문용어 때문에 내용을 놓치는 문제를 줄이고자 구현했습니다.\n[Video] 0:40부터 서비스 화면으로 전환한다. PDF 업로드 → 분석 → 용어집과 PhraseSet 확인 → 실시간 자막 시작을 2:50까지 보여준다. 분석 대기 구간은 2–3초로 편집한다.\n\n[Sources]\n- /Users/nohsungbeen/Desktop/ABC 해커톤 제출물/ABC_해커톤_논문_참고문헌_정리본.docx — 서론, 시스템 목표, 실험 요약\n- /Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/README.md — 현재 서비스 기능과 데이터 처리 범위\n- /Users/nohsungbeen/.codex/visualizations/2026/08/09/019fe57b-515a-7290-995f-d78bf1bca77b/lecture-context-ready.png — 실제 제품 준비 화면 캡처\n[/Sources]"}
+{"kind":"slide","id":"sl/j2kgt8","slide":2,"title":"SYSTEM PIPELINE · 2:50–4:00","textShapes":39}
+{"kind":"textbox","id":"sh/0ra1g3ad","slide":2,"text":"SYSTEM PIPELINE · 2:50–4:00","textPreview":"SYSTEM PIPELINE · 2:50–4:00","textChars":27,"textLines":1,"bbox":[64,54,400,24]}
+{"kind":"textbox","id":"sh/fq107i9s","slide":2,"text":"발표자료의 문맥이 실시간 자막까지 이어집니다","textPreview":"발표자료의 문맥이 실시간 자막까지 이어집니다","textChars":24,"textLines":1,"bbox":[64,84,790,58]}
+{"kind":"textbox","id":"sh/epsjedsn","slide":2,"text":"하나의 검증된 용어집을 STT 인식 힌트와 청중용 설명에 함께 사용","textPreview":"하나의 검증된 용어집을 STT 인식 힌트와 청중용 설명에 함께 사용","textChars":37,"textLines":1,"bbox":[64,148,780,30]}
+{"kind":"textbox","id":"sh/dozi58r2","slide":2,"text":"강연 전 · PREP","textPreview":"강연 전 · PREP","textChars":11,"textLines":1,"bbox":[64,200,150,24]}
+{"kind":"shape","id":"sh/snq1c3ah","slide":2,"bbox":[155,264,570,3]}
+{"kind":"textbox","id":"sh/rmh03y9w","slide":2,"text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[245,244,36,42]}
+{"kind":"textbox","id":"sh/ql8jatsb","slide":2,"text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[435,244,36,42]}
+{"kind":"textbox","id":"sh/5kzi1orq","slide":2,"text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[625,244,36,42]}
+{"kind":"shape","id":"sh/4jq18ja5","slide":2,"bbox":[725,378,102,3]}
+{"kind":"shape","id":"sh/yhczat8z","slide":2,"bbox":[824,378,3,56]}
+{"kind":"shape","id":"sh/jilg3ypk","slide":2,"bbox":[458,431,369,3]}
+{"kind":"textbox","id":"sh/k3uhcjqp","slide":2,"text":"phraseSet[]","textPreview":"phraseSet[]","textChars":11,"textLines":1,"bbox":[642,402,115,24]}
+{"kind":"textbox","id":"sh/l43y5o7a","slide":2,"text":"↓","textPreview":"↓","textChars":1,"textLines":1,"bbox":[442,426,36,35]}
+{"kind":"shape","id":"sh/adsz698n","slide":2,"bbox":[134,243,42,42]}
+{"kind":"textbox","id":"sh/be1gzep8","slide":2,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[134,251,42,28]}
+{"kind":"textbox","id":"sh/wfah8jqt","slide":2,"text":"PDF.js","textPreview":"PDF.js","textChars":6,"textLines":1,"bbox":[80,300,150,28]}
+{"kind":"textbox","id":"sh/xg3y1o7e","slide":2,"text":"페이지별 텍스트","textPreview":"페이지별 텍스트","textChars":8,"textLines":1,"bbox":[80,330,150,34]}
+{"kind":"shape","id":"sh/29sf298r","slide":2,"bbox":[324,243,42,42]}
+{"kind":"textbox","id":"sh/na1gvepc","slide":2,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[324,251,42,28]}
+{"kind":"textbox","id":"sh/r2d4n61s","slide":2,"text":"Gemini","textPreview":"Gemini","textChars":6,"textLines":1,"bbox":[270,300,150,28]}
+{"kind":"textbox","id":"sh/6h4ne1k7","slide":2,"text":"용어 후보 생성","textPreview":"용어 후보 생성","textChars":8,"textLines":1,"bbox":[270,330,150,34]}
+{"kind":"shape","id":"sh/t4fmpgjy","slide":2,"bbox":[514,243,42,42]}
+{"kind":"textbox","id":"sh/s3m5gb2d","slide":2,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[514,251,42,28]}
+{"kind":"textbox","id":"sh/f6x4rq1o","slide":2,"text":"서버 검증","textPreview":"서버 검증","textChars":5,"textLines":1,"bbox":[460,300,150,28]}
+{"kind":"textbox","id":"sh/e5onilk3","slide":2,"text":"원문·별칭 검사","textPreview":"원문·별칭 검사","textChars":8,"textLines":1,"bbox":[460,330,150,34]}
+{"kind":"shape","id":"sh/18fmtgju","slide":2,"bbox":[704,243,42,42]}
+{"kind":"textbox","id":"sh/g765kb29","slide":2,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[704,251,42,28]}
+{"kind":"textbox","id":"sh/vat4fm1k","slide":2,"text":"용어집","textPreview":"용어집","textChars":3,"textLines":1,"bbox":[650,300,150,28]}
+{"kind":"textbox","id":"sh/u9k36hkz","slide":2,"text":"terms[] + PhraseSet","textPreview":"terms[] + PhraseSet","textChars":19,"textLines":1,"bbox":[650,330,150,34]}
+{"kind":"textbox","id":"sh/kfi1gnix","slide":2,"text":"강연 중 · LIVE","textPreview":"강연 중 · LIVE","textChars":11,"textLines":1,"bbox":[64,431,150,24]}
+{"kind":"shape","id":"sh/lgr2pszi","slide":2,"bbox":[205,500,500,3]}
+{"kind":"textbox","id":"sh/yd0jed0r","slide":2,"text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[330,480,36,42]}
+{"kind":"textbox","id":"sh/ze9knihc","slide":2,"text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[580,480,36,42]}
+{"kind":"shape","id":"sh/cry1cnil","slide":2,"bbox":[184,479,42,42]}
+{"kind":"textbox","id":"sh/xs72l8z6","slide":2,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[184,487,42,28]}
+{"kind":"textbox","id":"sh/apgjad0v","slide":2,"text":"마이크","textPreview":"마이크","textChars":3,"textLines":1,"bbox":[130,536,150,28]}
+{"kind":"textbox","id":"sh/bqpkjihg","slide":2,"text":"16 kHz PCM · WS","textPreview":"16 kHz PCM · WS","textChars":15,"textLines":1,"bbox":[130,566,150,34]}
+{"kind":"shape","id":"sh/wn2lo7i5","slide":2,"bbox":[434,479,42,42]}
+{"kind":"textbox","id":"sh/h8b2xczq","slide":2,"text":"6","textPreview":"6","textChars":1,"textLines":1,"bbox":[434,487,42,28]}
+{"kind":"textbox","id":"sh/ts3yp4f2","slide":2,"text":"Google STT","textPreview":"Google STT","textChars":10,"textLines":1,"bbox":[380,536,150,28]}
+{"kind":"textbox","id":"sh/sruhgzyh","slide":2,"text":"SpeechAdaptation","textPreview":"SpeechAdaptation","textChars":16,"textLines":1,"bbox":[380,566,150,34]}
+{"kind":"shape","id":"sh/rqlgnuxw","slide":2,"bbox":[684,479,42,42]}
+{"kind":"textbox","id":"sh/6pczepgb","slide":2,"text":"7","textPreview":"7","textChars":1,"textLines":1,"bbox":[684,487,42,28]}
+{"kind":"textbox","id":"sh/1wnytofy","slide":2,"text":"자막 + 설명","textPreview":"자막 + 설명","textChars":7,"textLines":1,"bbox":[630,536,150,28]}
+{"kind":"textbox","id":"sh/gvehkjyd","slide":2,"text":"확정 결과 연결","textPreview":"확정 결과 연결","textChars":8,"textLines":1,"bbox":[630,566,150,34]}
+{"kind":"shape","id":"sh/fu5grex8","slide":2,"bbox":[900,0,380,720]}
+{"kind":"shape","id":"sh/etczi9gn","slide":2,"bbox":[900,0,4,720]}
+{"kind":"textbox","id":"sh/pknixofa","slide":2,"text":"LIVE DEMO","textPreview":"LIVE DEMO","textChars":9,"textLines":1,"bbox":[924,26,170,24]}
+{"kind":"textbox","id":"sh/ojehojyp","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1218,26,36,24]}
+{"kind":"shape","id":"sh/m58vilw7","slide":2,"name":"live-caption-frame","bbox":[916,68,348,286]}
+{"kind":"textbox","id":"sh/87qdkved","slide":2,"text":"실시간 자막","textPreview":"실시간 자막","textChars":6,"textLines":1,"bbox":[934,88,120,20]}
+{"kind":"shape","id":"sh/98zed0vi","slide":2,"name":"term-feed-frame","bbox":[916,370,348,284]}
+{"kind":"textbox","id":"sh/vuhwfqdo","slide":2,"text":"용어 설명","textPreview":"용어 설명","textChars":5,"textLines":1,"bbox":[934,390,120,20]}
+{"kind":"textbox","id":"sh/wvadove9","slide":2,"text":"CAPTION + CONTEXT","textPreview":"CAPTION + CONTEXT","textChars":17,"textLines":1,"bbox":[922,678,330,20]}
+{"kind":"textbox","id":"sh/hwjeh0vu","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[64,682,50,22]}
+{"kind":"image","id":"im/sne5szid","slide":2,"name":"","geometry":"roundRect","alt":"실시간 자막이 표시된 강연맥락 AI 화면","bbox":[922,74,336,274]}
+{"kind":"image","id":"im/5knmhkjm","slide":2,"name":"","geometry":"roundRect","alt":"용어 설명 피드가 표시된 강연맥락 AI 화면","bbox":[922,376,336,272]}
+{"kind":"notes","id":"nt/j2kgt8","slide":2,"text":"[Timing] 2:50–4:00\n[Narration] 전체 파이프라인은 발표자료 분석과 실시간 자막 처리로 구분됩니다. PDF.js로 발표자료의 텍스트를 추출하고 Gemini API로 전문용어 후보를 생성합니다.\n[Narration] 서버에서 후보와 발음 별칭을 검증한 뒤 강연별 PhraseSet을 직접 구성하고, Google Speech-to-Text의 SpeechAdaptation에 명시적으로 적용합니다.\n[Narration] PhraseSet은 STT가 자동으로 만들어 주는 기능이 아니라, 검증한 강연 문맥을 개발자가 직접 구성해 인식 요청에 넣는 데이터입니다.\n[Video] 오른쪽 영역에는 실제 브라우저의 라이브 화면을 같은 크기로 합성한다.\n\n[Sources]\n- /Users/nohsungbeen/Desktop/ABC 해커톤 제출물/ABC_해커톤_논문_참고문헌_정리본.docx — 2.1 전체 파이프라인, 2.2 PDF 용어집 검증, 2.3 PhraseSet 적용\n- /Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/README.md — PDF.js, Gemini, Google STT V2, WebSocket 구현\n- /Users/nohsungbeen/.codex/visualizations/2026/08/09/019fe57b-515a-7290-995f-d78bf1bca77b/lecture-context-live.png — 실제 라이브 제품 화면 캡처\n[/Sources]"}
+{"kind":"slide","id":"sl/u1gw6o","slide":3,"title":"CORE BEHAVIOR · 4:00–5:00","textShapes":24}
+{"kind":"textbox","id":"sh/vq58nuxk","slide":3,"text":"CORE BEHAVIOR · 4:00–5:00","textPreview":"CORE BEHAVIOR · 4:00–5:00","textChars":25,"textLines":1,"bbox":[64,54,400,24]}
+{"kind":"textbox","id":"sh/wrepwzep","slide":3,"text":"빠르게 보여주고, 확정된 순간에만 연결합니다","textPreview":"빠르게 보여주고, 확정된 순간에만 연결합니다","textChars":24,"textLines":1,"bbox":[64,84,790,58]}
+{"kind":"textbox","id":"sh/hsnqp4fa","slide":3,"text":"실시간성은 유지하고, 자동 정정의 근거는 숨기지 않습니다","textPreview":"실시간성은 유지하고, 자동 정정의 근거는 숨기지 않습니다","textChars":31,"textLines":1,"bbox":[64,148,760,30]}
+{"kind":"shape","id":"sh/itw7y9wv","slide":3,"bbox":[113,214,3,402]}
+{"kind":"shape","id":"sh/ju58rexg","slide":3,"bbox":[96,219,36,36]}
+{"kind":"shape","id":"sh/4fep0je1","slide":3,"bbox":[96,365,36,36]}
+{"kind":"shape","id":"sh/5g7qtofm","slide":3,"bbox":[96,519,36,36]}
+{"kind":"textbox","id":"sh/6hgr29w7","slide":3,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[96,226,36,24]}
+{"kind":"textbox","id":"sh/rip8vexc","slide":3,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[96,372,36,24]}
+{"kind":"textbox","id":"sh/vq90nixg","slide":3,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[96,526,36,24]}
+{"kind":"textbox","id":"sh/up0judgv","slide":3,"text":"발화 중 · INTERIM","textPreview":"발화 중 · INTERIM","textChars":14,"textLines":1,"bbox":[162,203,240,24]}
+{"kind":"textbox","id":"sh/hsrip8f6","slide":3,"text":"임시 자막은 STT 원문 그대로","textPreview":"임시 자막은 STT 원문 그대로","textChars":17,"textLines":1,"bbox":[162,232,570,32]}
+{"kind":"shape","id":"sh/gri1wny1","slide":3,"bbox":[162,278,664,52]}
+{"kind":"textbox","id":"sh/7m90jyx4","slide":3,"text":"래그는 외부 문서를 검색해서 답변의 근거를 보강합니다…","textPreview":"래그는 외부 문서를 검색해서 답변의 근거를 보강합니다…","textChars":30,"textLines":1,"bbox":[180,291,625,28]}
+{"kind":"textbox","id":"sh/6lgjqtgj","slide":3,"text":"문장 확정 · FINAL","textPreview":"문장 확정 · FINAL","textChars":13,"textLines":1,"bbox":[162,349,240,24]}
+{"kind":"textbox","id":"sh/toril8fa","slide":3,"text":"검증된 발음 별칭만 정식 용어와 연결","textPreview":"검증된 발음 별칭만 정식 용어와 연결","textChars":20,"textLines":1,"bbox":[162,378,610,32]}
+{"kind":"textbox","id":"sh/8ni1s3yp","slide":3,"text":"RAG","textPreview":"RAG","textChars":3,"textLines":1,"bbox":[162,424,78,38]}
+{"kind":"textbox","id":"sh/rit0v2xo","slide":3,"text":"(래그) 는 외부 문서를 검색해서 답변의 근거를 보강합니다.","textPreview":"(래그) 는 외부 문서를 검색해서 답변의 근거를 보강합니다.","textChars":33,"textLines":1,"bbox":[242,429,584,32]}
+{"kind":"textbox","id":"sh/qhkj2xg3","slide":3,"text":"원래 STT 표기를 함께 남겨 정정 근거를 확인","textPreview":"원래 STT 표기를 함께 남겨 정정 근거를 확인","textChars":26,"textLines":1,"bbox":[162,466,560,24]}
+{"kind":"textbox","id":"sh/mpoval4n","slide":3,"text":"용어 감지 · CONTEXT","textPreview":"용어 감지 · CONTEXT","textChars":15,"textLines":1,"bbox":[162,503,250,24]}
+{"kind":"textbox","id":"sh/nqhcjqls","slide":3,"text":"설명 피드에 자동으로 추가","textPreview":"설명 피드에 자동으로 추가","textChars":14,"textLines":1,"bbox":[162,532,500,32]}
+{"kind":"shape","id":"sh/8rqdcvmd","slide":3,"bbox":[162,580,664,72]}
+{"kind":"textbox","id":"sh/9szul03y","slide":3,"text":"RAG · Retrieval-Augmented Generation","textPreview":"RAG · Retrieval-Augmented Generation","textChars":36,"textLines":1,"bbox":[182,593,360,24]}
+{"kind":"textbox","id":"sh/at8ve54j","slide":3,"text":"외부 문서를 먼저 검색해 근거를 보강하는 생성 방식","textPreview":"외부 문서를 먼저 검색해 근거를 보강하는 생성 방식","textChars":28,"textLines":1,"bbox":[182,622,610,22]}
+{"kind":"shape","id":"sh/vuhcnal4","slide":3,"bbox":[900,0,380,720]}
+{"kind":"shape","id":"sh/wfqdgfmp","slide":3,"bbox":[900,0,4,720]}
+{"kind":"textbox","id":"sh/xgzup03a","slide":3,"text":"LIVE DEMO","textPreview":"LIVE DEMO","textChars":9,"textLines":1,"bbox":[924,26,170,24]}
+{"kind":"textbox","id":"sh/qx4b214f","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1218,26,36,24]}
+{"kind":"shape","id":"sh/byxcb6l0","slide":3,"name":"live-caption-frame","bbox":[916,68,348,286]}
+{"kind":"textbox","id":"sh/sbuxoz6x","slide":3,"text":"실시간 자막","textPreview":"실시간 자막","textChars":6,"textLines":1,"bbox":[934,88,120,20]}
+{"kind":"shape","id":"sh/7algfe5c","slide":3,"name":"term-feed-frame","bbox":[916,370,348,284]}
+{"kind":"textbox","id":"sh/hg3ylone","slide":3,"text":"용어 설명","textPreview":"용어 설명","textChars":5,"textLines":1,"bbox":[934,390,120,20]}
+{"kind":"textbox","id":"sh/gfuxsj6t","slide":3,"text":"CAPTION + CONTEXT","textPreview":"CAPTION + CONTEXT","textChars":17,"textLines":1,"bbox":[922,678,330,20]}
+{"kind":"textbox","id":"sh/felgje58","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[64,682,50,22]}
+{"kind":"image","id":"im/mlgbu9w7","slide":3,"name":"","geometry":"roundRect","alt":"실시간 자막이 표시된 강연맥락 AI 화면","bbox":[922,74,336,274]}
+{"kind":"image","id":"im/9o7u5ovy","slide":3,"name":"","geometry":"roundRect","alt":"용어 설명 피드가 표시된 강연맥락 AI 화면","bbox":[922,376,336,272]}
+{"kind":"notes","id":"nt/u1gw6o","slide":3,"text":"[Timing] 4:00–5:00\n[Narration] 발화 중에는 빠른 표시를 위해 임시 인식 결과를 먼저 보여줍니다. 문장이 확정된 뒤에만 검증된 한국어 발음 별칭을 정식 전문용어와 연결합니다.\n[Narration] 예를 들어 RAG를 ‘래그’라고 말하면 확정 자막에서 RAG와 원래 STT 표기를 함께 보여주고, 오른쪽 설명 피드에 쉬운 설명이 자동으로 추가됩니다.\n[Narration] 실제 구현은 용어를 클릭해 여는 방식이 아니라, 확정 자막에서 감지된 용어 설명이 최신순으로 쌓이는 방식입니다.\n[Video] 임시 자막 변화 → 확정 자막 → 원문 병기 → 오른쪽 설명 카드 자동 추가를 차례로 보여준다.\n\n[Sources]\n- /Users/nohsungbeen/Desktop/ABC 해커톤 제출물/ABC_해커톤_논문_참고문헌_정리본.docx — 2.3 임시·확정 자막, 2.4 발음 별칭과 투명한 정정, 2.5 설명 피드\n- /Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/README.md — 확정 자막과 용어 설명 카드의 실제 동작\n- /Users/nohsungbeen/.codex/visualizations/2026/08/09/019fe57b-515a-7290-995f-d78bf1bca77b/lecture-context-live.png — 실제 라이브 제품 화면 캡처\n[/Sources]"}
+{"kind":"slide","id":"sl/uusewh","slide":4,"title":"EXPERIMENT · 5:00–6:00","textShapes":24}
+{"kind":"textbox","id":"sh/ds7a1wr6","slide":4,"text":"EXPERIMENT · 5:00–6:00","textPreview":"EXPERIMENT · 5:00–6:00","textChars":22,"textLines":1,"bbox":[64,54,400,24]}
+{"kind":"textbox","id":"sh/q5grqh8v","slide":4,"text":"발음 별칭까지 연결했을 때 84.5%","textPreview":"발음 별칭까지 연결했을 때 84.5%","textChars":20,"textLines":1,"bbox":[64,84,790,58]}
+{"kind":"textbox","id":"sh/r6pszm9g","slide":4,"text":"목표 전문용어 인식·연결률 · 전체 문장 정확도(CER/WER)가 아님","textPreview":"목표 전문용어 인식·연결률 · 전체 문장 정확도(CER/WER)가 아님","textChars":39,"textLines":1,"bbox":[64,148,795,30]}
+{"kind":"textbox","id":"sh/43y9orqp","slide":4,"text":"전문용어 연결률","textPreview":"전문용어 연결률","textChars":8,"textLines":1,"bbox":[306,205,470,22]}
+{"kind":"textbox","id":"sh/547axcra","slide":4,"text":"A","textPreview":"A","textChars":1,"textLines":1,"bbox":[64,238,36,40]}
+{"kind":"textbox","id":"sh/i1grmh8j","slide":4,"text":"기본 STT","textPreview":"기본 STT","textChars":6,"textLines":1,"bbox":[110,240,178,42]}
+{"kind":"shape","id":"sh/32psvm94","slide":4,"bbox":[306,236,470,48]}
+{"kind":"shape","id":"sh/ozit0bqt","slide":4,"bbox":[306,236,132.54,48]}
+{"kind":"textbox","id":"sh/p0ba9gre","slide":4,"text":"28.2%","textPreview":"28.2%","textChars":5,"textLines":1,"bbox":[452.54,234,104,42]}
+{"kind":"textbox","id":"sh/hkvmlg7a","slide":4,"text":"60 / 213","textPreview":"60 / 213","textChars":8,"textLines":1,"bbox":[306,293,150,22]}
+{"kind":"textbox","id":"sh/wjm5sb6p","slide":4,"text":"B","textPreview":"B","textChars":1,"textLines":1,"bbox":[64,354,36,40]}
+{"kind":"textbox","id":"sh/vid4j6p4","slide":4,"text":"정식·영문 PhraseSet","textPreview":"정식·영문 PhraseSet","textChars":15,"textLines":1,"bbox":[110,356,178,42]}
+{"kind":"shape","id":"sh/ah4nq1oj","slide":4,"bbox":[306,352,470,48]}
+{"kind":"shape","id":"sh/9gvmhw7e","slide":4,"bbox":[306,352,258.03,48]}
+{"kind":"textbox","id":"sh/8f25obqt","slide":4,"text":"54.9%","textPreview":"54.9%","textChars":5,"textLines":1,"bbox":[578.03,350,104,42]}
+{"kind":"textbox","id":"sh/net4f6p8","slide":4,"text":"117 / 213","textPreview":"117 / 213","textChars":9,"textLines":1,"bbox":[306,409,150,22]}
+{"kind":"textbox","id":"sh/mdknm18n","slide":4,"text":"C","textPreview":"C","textChars":1,"textLines":1,"bbox":[64,470,36,40]}
+{"kind":"textbox","id":"sh/tcf6t07i","slide":4,"text":"발음 별칭 + 확정 연결","textPreview":"발음 별칭 + 확정 연결","textChars":13,"textLines":1,"bbox":[110,472,178,42]}
+{"kind":"shape","id":"sh/sb650v6x","slide":4,"bbox":[306,468,470,48]}
+{"kind":"shape","id":"sh/cfepwze9","slide":4,"bbox":[306,468,397.15,48]}
+{"kind":"textbox","id":"sh/dgnqp4fu","slide":4,"text":"84.5%","textPreview":"84.5%","textChars":5,"textLines":1,"bbox":[717.15,466,104,42]}
+{"kind":"textbox","id":"sh/qtw7u9w3","slide":4,"text":"180 / 213","textPreview":"180 / 213","textChars":9,"textLines":1,"bbox":[306,525,150,22]}
+{"kind":"shape","id":"sh/ru5onuxo","slide":4,"bbox":[64,586,762,62]}
+{"kind":"textbox","id":"sh/4repszex","slide":4,"text":"C 조건의 180회 연결 중 104회는 한국어 발음 별칭 연결","textPreview":"C 조건의 180회 연결 중 104회는 한국어 발음 별칭 연결","textChars":34,"textLines":1,"bbox":[84,603,710,28]}
+{"kind":"textbox","id":"sh/psn6l4fi","slide":4,"text":"5개 기술 강연 × 조건별 3회 · 동일 음원 비교 · 목표 용어 213회","textPreview":"5개 기술 강연 × 조건별 3회 · 동일 음원 비교 · 목표 용어 213회","textChars":41,"textLines":1,"bbox":[64,660,770,24]}
+{"kind":"shape","id":"sh/2pc7qpwr","slide":4,"bbox":[900,0,380,720]}
+{"kind":"shape","id":"sh/3qlojuxc","slide":4,"bbox":[900,0,4,720]}
+{"kind":"textbox","id":"sh/gnupofe1","slide":4,"text":"LIVE DEMO","textPreview":"LIVE DEMO","textChars":9,"textLines":1,"bbox":[924,26,170,24]}
+{"kind":"textbox","id":"sh/ho36hkfm","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1218,26,36,24]}
+{"kind":"shape","id":"sh/ji187ah8","slide":4,"name":"live-caption-frame","bbox":[916,68,348,286]}
+{"kind":"textbox","id":"sh/5k3q9kze","slide":4,"text":"실시간 자막","textPreview":"실시간 자막","textChars":6,"textLines":1,"bbox":[934,88,120,20]}
+{"kind":"shape","id":"sh/kjap0fit","slide":4,"name":"term-feed-frame","bbox":[916,370,348,284]}
+{"kind":"textbox","id":"sh/6lc72pgz","slide":4,"text":"용어 설명","textPreview":"용어 설명","textChars":5,"textLines":1,"bbox":[934,390,120,20]}
+{"kind":"textbox","id":"sh/to3qd4za","slide":4,"text":"CAPTION + CONTEXT","textPreview":"CAPTION + CONTEXT","textChars":17,"textLines":1,"bbox":[922,678,330,20]}
+{"kind":"textbox","id":"sh/snu94zyp","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[64,682,50,22]}
+{"kind":"image","id":"im/14vy183a","slide":4,"name":"","geometry":"roundRect","alt":"실시간 자막이 표시된 강연맥락 AI 화면","bbox":[922,74,336,274]}
+{"kind":"image","id":"im/ormhw3ml","slide":4,"name":"","geometry":"roundRect","alt":"용어 설명 피드가 표시된 강연맥락 AI 화면","bbox":[922,376,336,272]}
+{"kind":"notes","id":"nt/uusewh","slide":4,"text":"[Timing] 5:00–6:00\n[Narration] 다섯 개 기술 강연 대본을 조건별로 세 차례 비교해 총 213회의 목표 전문용어 출현을 측정했습니다.\n[Narration] 기본 STT는 28.2%, 정식 표기와 영어 표기를 PhraseSet으로 적용한 조건은 54.9%, 한국어 발음 별칭과 확정 자막 연결을 결합한 조건은 84.5%였습니다.\n[Narration] 이 값은 전체 문장 정확도가 아니라, 발화된 목표 용어가 정식 용어와 설명 카드에 연결될 수 있는 상태로 처리된 비율입니다.\n[Caveat] C는 5개 중 4개 케이스에서 가장 높았지만, 복합 약어가 집중된 test03에서는 B보다 낮았다. 필요하면 질의응답에서 혼합형 발음과 겹치는 약어의 한계를 설명한다.\n\n[Sources]\n- /Users/nohsungbeen/Desktop/ABC 해커톤 제출물/ABC_해커톤_논문_참고문헌_정리본.docx — 3.1 실험 절차, 3.2 지표 정의, 3.3 결과(60/213, 117/213, 180/213)\n- /Users/nohsungbeen/.codex/visualizations/2026/08/09/019fe57b-515a-7290-995f-d78bf1bca77b/lecture-context-live.png — 실제 라이브 제품 화면 캡처\n[/Sources]"}
+{"kind":"slide","id":"sl/j5iede","slide":5,"title":"IMPACT · 6:00–6:40","textShapes":25}
+{"kind":"textbox","id":"sh/2dgjudgf","slide":5,"text":"IMPACT · 6:00–6:40","textPreview":"IMPACT · 6:00–6:40","textChars":18,"textLines":1,"bbox":[64,54,400,24]}
+{"kind":"textbox","id":"sh/pg7ip8fq","slide":5,"text":"음성을 문자로 바꾸는 것을 넘어,\n맥락과 의미를 전달합니다","textPreview":"음성을 문자로 바꾸는 것을 넘어, | 맥락과 의미를 전달합니다","textChars":32,"textLines":2,"bbox":[64,84,790,104]}
+{"kind":"shape","id":"sh/ofy1wnyl","slide":5,"bbox":[122,315,632,3]}
+{"kind":"textbox","id":"sh/fq50jyxo","slide":5,"text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[288,294,44,48]}
+{"kind":"textbox","id":"sh/epwjqtg3","slide":5,"text":"›","textPreview":"›","textChars":1,"textLines":1,"bbox":[554,294,44,48]}
+{"kind":"shape","id":"sh/1s7il8fu","slide":5,"bbox":[119,292,46,46]}
+{"kind":"textbox","id":"sh/0ry1s3y9","slide":5,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[119,302,46,28]}
+{"kind":"textbox","id":"sh/zm9kv2x8","slide":5,"text":"발표자료","textPreview":"발표자료","textChars":4,"textLines":1,"bbox":[64,357,190,34]}
+{"kind":"textbox","id":"sh/yl0j2xgn","slide":5,"text":"사전에 확보한 문맥","textPreview":"사전에 확보한 문맥","textChars":10,"textLines":1,"bbox":[64,396,190,28]}
+{"kind":"shape","id":"sh/sf69wnql","slide":5,"bbox":[385,292,46,46]}
+{"kind":"textbox","id":"sh/d0fapsr6","slide":5,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[385,302,46,28]}
+{"kind":"textbox","id":"sh/qdorudsf","slide":5,"text":"더 잘 들리는 용어","textPreview":"더 잘 들리는 용어","textChars":10,"textLines":1,"bbox":[330,357,190,34]}
+{"kind":"textbox","id":"sh/rexsni90","slide":5,"text":"PhraseSet + 발음 별칭","textPreview":"PhraseSet + 발음 별칭","textChars":17,"textLines":1,"bbox":[330,396,190,28]}
+{"kind":"shape","id":"sh/4b69s3ap","slide":5,"bbox":[651,292,46,46]}
+{"kind":"textbox","id":"sh/5cfal8ru","slide":5,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[651,302,46,28]}
+{"kind":"textbox","id":"sh/i94rqdsj","slide":5,"text":"바로 이해하는 설명","textPreview":"바로 이해하는 설명","textChars":10,"textLines":1,"bbox":[596,357,190,34]}
+{"kind":"textbox","id":"sh/3adsjy94","slide":5,"text":"확정 자막과 자동 연결","textPreview":"확정 자막과 자동 연결","textChars":12,"textLines":1,"bbox":[596,396,190,28]}
+{"kind":"textbox","id":"sh/g7m9o3ad","slide":5,"text":"확장 가능한 환경","textPreview":"확장 가능한 환경","textChars":9,"textLines":1,"bbox":[64,476,220,28]}
+{"kind":"shape","id":"sh/h8vah8ry","slide":5,"bbox":[64,518,762,1]}
+{"kind":"textbox","id":"sh/x4nqlkjm","slide":5,"text":"온라인 강의","textPreview":"온라인 강의","textChars":6,"textLines":1,"bbox":[64,548,174,30]}
+{"kind":"shape","id":"sh/w3epcf2h","slide":5,"bbox":[254.5,542,1,44]}
+{"kind":"textbox","id":"sh/v258ju1w","slide":5,"text":"전문지식 콘텐츠","textPreview":"전문지식 콘텐츠","textChars":8,"textLines":1,"bbox":[272.5,548,174,30]}
+{"kind":"shape","id":"sh/a1w7apkb","slide":5,"bbox":[445,542,1,44]}
+{"kind":"textbox","id":"sh/90nqhkjq","slide":5,"text":"학술대회·웨비나","textPreview":"학술대회·웨비나","textChars":8,"textLines":1,"bbox":[463,548,174,30]}
+{"kind":"shape","id":"sh/8zup8f25","slide":5,"bbox":[635.5,542,1,44]}
+{"kind":"textbox","id":"sh/nyl8fa1k","slide":5,"text":"뉴스·공공 브리핑","textPreview":"뉴스·공공 브리핑","textChars":9,"textLines":1,"bbox":[653.5,548,174,30]}
+{"kind":"textbox","id":"sh/mxc765kz","slide":5,"text":"다음 검증 · 혼합형 발음 · 다중 화자와 소음 · 실제 사용자 이해도","textPreview":"다음 검증 · 혼합형 발음 · 다중 화자와 소음 · 실제 사용자 이해도","textChars":39,"textLines":1,"bbox":[64,625,762,26]}
+{"kind":"shape","id":"sh/tw7qt4ju","slide":5,"bbox":[900,0,380,720]}
+{"kind":"shape","id":"sh/svy9kj29","slide":5,"bbox":[900,0,4,720]}
+{"kind":"textbox","id":"sh/qhsne10r","slide":5,"text":"LIVE DEMO","textPreview":"LIVE DEMO","textChars":9,"textLines":1,"bbox":[924,26,170,24]}
+{"kind":"textbox","id":"sh/ri14n6hc","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1218,26,36,24]}
+{"kind":"shape","id":"sh/c3a5gbix","slide":5,"name":"live-caption-frame","bbox":[916,68,348,286]}
+{"kind":"textbox","id":"sh/2d8na10v","slide":5,"text":"실시간 자막","textPreview":"실시간 자막","textChars":6,"textLines":1,"bbox":[934,88,120,20]}
+{"kind":"shape","id":"sh/3eh4j6hg","slide":5,"name":"term-feed-frame","bbox":[916,370,348,284]}
+{"kind":"textbox","id":"sh/pgzmlwz6","slide":5,"text":"용어 설명","textPreview":"용어 설명","textChars":5,"textLines":1,"bbox":[934,390,120,20]}
+{"kind":"textbox","id":"sh/m9cnml0z","slide":5,"text":"CAPTION + CONTEXT","textPreview":"CAPTION + CONTEXT","textChars":17,"textLines":1,"bbox":[922,678,330,20]}
+{"kind":"textbox","id":"sh/nalovqhk","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[64,682,50,22]}
+{"kind":"image","id":"im/ipcrmpcf","slide":5,"name":"","geometry":"roundRect","alt":"실시간 자막이 표시된 강연맥락 AI 화면","bbox":[922,74,336,274]}
+{"kind":"image","id":"im/v218but4","slide":5,"name":"","geometry":"roundRect","alt":"용어 설명 피드가 표시된 강연맥락 AI 화면","bbox":[922,376,336,272]}
+{"kind":"notes","id":"nt/j5iede","slide":5,"text":"[Timing] 6:00–6:40\n[Narration] 이 시스템은 온라인 강의, 전문지식 중심 콘텐츠, 학술대회와 웨비나처럼 발표자료와 음성이 함께 제공되는 환경에 적용할 수 있습니다.\n[Narration] 기사 원고나 보도자료가 있는 뉴스와 공공 브리핑에도 같은 개념을 확장할 수 있지만, 오류 영향이 큰 공공정보는 사람의 검수와 출처 확인이 필요합니다.\n[Narration] 이번 프로젝트는 단순히 음성을 문자로 바꾸는 데 그치지 않고, 발표자료의 문맥으로 전문용어를 더 잘 전달하고 그 의미까지 이해하도록 보조하는 것을 목표로 했습니다. 이상으로 시연을 마치겠습니다.\n[Video] 마지막 문장까지 오른쪽 라이브 자막을 유지한 뒤 서비스의 강연 종료 화면으로 전환한다.\n\n[Sources]\n- /Users/nohsungbeen/Desktop/ABC 해커톤 제출물/ABC_해커톤_논문_참고문헌_정리본.docx — 4. 결론 및 향후 활용\n- /Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/README.md — 현재 구현 범위와 개인정보 처리 경계\n- /Users/nohsungbeen/.codex/visualizations/2026/08/09/019fe57b-515a-7290-995f-d78bf1bca77b/lecture-context-live.png — 실제 라이브 제품 화면 캡처\n[/Sources]"}

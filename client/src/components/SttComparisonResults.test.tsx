@@ -451,6 +451,42 @@ describe("STT comparison job rendering", () => {
     expect(html).toContain("temporary poll failure");
     expect(html).toContain("자동으로 다시 확인합니다");
   });
+
+  it("shows independent progress for all three concurrent conditions", () => {
+    const job = createJob({
+      state: "running",
+      status: "running",
+      progress: { completed: 0, total: 3, percent: 50 },
+      activeRunLabel: null,
+      message: "A/B/C 3개 조건을 병렬로 실행하고 있습니다.",
+      runs: [
+        { label: "without-phrase-set", state: "running", progress: 48, message: "고정 음원 재생 중 · 48%", error: null },
+        { label: "canonical-phrase-set", state: "running", progress: 50, message: "고정 음원 재생 중 · 50%", error: null },
+        { label: "spoken-alias-phrase-set", state: "running", progress: 52, message: "고정 음원 재생 중 · 52%", error: null }
+      ]
+    });
+    const html = renderToStaticMarkup(
+      <SttComparisonJobPanel
+        recordings={recordings}
+        selectedRecordingId={recordings[1]!.id}
+        onSelectRecording={() => undefined}
+        consent={true}
+        onConsentChange={() => undefined}
+        active={{ kind: "local", job }}
+        checkingActive={false}
+        starting={false}
+        startError=""
+        currentError=""
+        pollingError=""
+        onStart={() => undefined}
+      />
+    );
+
+    expect(html).toContain("A/B/C 3개 조건을 병렬로 실행하고 있습니다.");
+    expect(html).toContain('aria-label="A 조건 진행률 48%"');
+    expect(html).toContain('aria-label="B 조건 진행률 50%"');
+    expect(html).toContain('aria-label="C 조건 진행률 52%"');
+  });
 });
 
 describe("STT comparison result rendering", () => {

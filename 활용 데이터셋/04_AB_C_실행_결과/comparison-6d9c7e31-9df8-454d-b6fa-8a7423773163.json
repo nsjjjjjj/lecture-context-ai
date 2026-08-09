@@ -1,0 +1,303 @@
+{
+  "version": 1,
+  "createdAt": "2026-08-09T04:01:59.326Z",
+  "recordingId": "6d9c7e31-9df8-454d-b6fa-8a7423773163",
+  "scriptId": "korean-english-terms-v1",
+  "scriptTitle": "한국어 강연 속 영어 전문용어 기준 문장",
+  "websocketUrl": "ws://127.0.0.1:8787/ws",
+  "targetTerms": [
+    "Transformer",
+    "Attention",
+    "Large Language Model",
+    "Prompt",
+    "Token",
+    "RAG",
+    "Vector Database",
+    "Embedding",
+    "LangChain",
+    "Pipeline",
+    "Fine-tuning",
+    "Prompt Engineering",
+    "API",
+    "Latency",
+    "Hallucination",
+    "Guardrail",
+    "PhraseSet"
+  ],
+  "runs": [
+    {
+      "label": "without-phrase-set",
+      "status": "completed",
+      "phraseSet": [],
+      "startedAt": "2026-08-09T03:58:19.702Z",
+      "readyAfterMs": 64,
+      "audioDurationMs": 106435,
+      "wallClockMs": 109009,
+      "interimCount": 11,
+      "finalTranscripts": [
+        {
+          "text": "안녕하세요. 오늘은 제가 만든 강연 자막 시스템을 간단히 소개하겠습니다. 이번 강연의 주제는 생성형 AI입니다. 먼저 강연 자료를 PDF에서 레그, LLM, 트랜스포머, 파인 튜닝과 같은 전문 용어를 추출했습니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "레그는 외부 자료를 검색해서 답변에 활용하는 방식이고, LLM은 많은 텍스트를 학습한 대규모 언어 모델입니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "트랜스포머는 최근 자연어 처리와 생생 AI에 널리 사용되는 핵심 구조입니다. 이 용어들은 일반적인 음성 인식에서는 발음이 비슷한 다른 단어로 잘못 인식될 수 있습니다. 그래서 추천한 용어를 구글 스피치 투 텍스트에서",
+          "detectedTermIds": []
+        },
+        {
+          "text": "프레이저스 셋",
+          "detectedTermIds": []
+        },
+        {
+          "text": "프레이저스 셋에 넣어서 음성인식에 해당 단어를 우선적으로 고려하도록 구성했습니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "트레이더스 셋은 정답을 강제로 입력하는 기능이 아니라 레그나 에르겐처럼 광현수 자주 나올 가능성이 높은 단어를 인식 후보로 강제하는 기능입니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "시스템의 PDF. 자바스크립트를 이용해 문서를 페이지 별로 분석하고 생성형 AI가",
+          "detectedTermIds": []
+        },
+        {
+          "text": "용어와 쉬운 설명을 따로 만듭니다. 이후 서버가 해당 용어, 서버가 해당 용어가 실제 PDF에 존재하는지 다시 확인합니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "회의가 시작되면 마이크 음성은 웹소켓을 통해 서버로 전송되고, 구글 스피치 텍스트가 실시간 자막을 반환합니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "자막에 레그나 트랜스포머 같은 용어가 등장하면 해당 단어를 강조하고",
+          "detectedTermIds": []
+        },
+        {
+          "text": "옆에는 쉬운 설명과 같은 PDF 페이지를 함께 보여 줍니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "앞으로는 파인 튜닝이나 더 나은 전문 용어를 추가해 여러 분야의 강연에서도 테스트해 볼 예정입니다.",
+          "detectedTermIds": []
+        }
+      ],
+      "transcript": "안녕하세요. 오늘은 제가 만든 강연 자막 시스템을 간단히 소개하겠습니다. 이번 강연의 주제는 생성형 AI입니다. 먼저 강연 자료를 PDF에서 레그, LLM, 트랜스포머, 파인 튜닝과 같은 전문 용어를 추출했습니다. 레그는 외부 자료를 검색해서 답변에 활용하는 방식이고, LLM은 많은 텍스트를 학습한 대규모 언어 모델입니다. 트랜스포머는 최근 자연어 처리와 생생 AI에 널리 사용되는 핵심 구조입니다. 이 용어들은 일반적인 음성 인식에서는 발음이 비슷한 다른 단어로 잘못 인식될 수 있습니다. 그래서 추천한 용어를 구글 스피치 투 텍스트에서 프레이저스 셋 프레이저스 셋에 넣어서 음성인식에 해당 단어를 우선적으로 고려하도록 구성했습니다. 트레이더스 셋은 정답을 강제로 입력하는 기능이 아니라 레그나 에르겐처럼 광현수 자주 나올 가능성이 높은 단어를 인식 후보로 강제하는 기능입니다. 시스템의 PDF. 자바스크립트를 이용해 문서를 페이지 별로 분석하고 생성형 AI가 용어와 쉬운 설명을 따로 만듭니다. 이후 서버가 해당 용어, 서버가 해당 용어가 실제 PDF에 존재하는지 다시 확인합니다. 회의가 시작되면 마이크 음성은 웹소켓을 통해 서버로 전송되고, 구글 스피치 텍스트가 실시간 자막을 반환합니다. 자막에 레그나 트랜스포머 같은 용어가 등장하면 해당 단어를 강조하고 옆에는 쉬운 설명과 같은 PDF 페이지를 함께 보여 줍니다. 앞으로는 파인 튜닝이나 더 나은 전문 용어를 추가해 여러 분야의 강연에서도 테스트해 볼 예정입니다.",
+      "recognizedTerms": [],
+      "unrecognizedTerms": [
+        "Transformer",
+        "Attention",
+        "Large Language Model",
+        "Prompt",
+        "Token",
+        "RAG",
+        "Vector Database",
+        "Embedding",
+        "LangChain",
+        "Pipeline",
+        "Fine-tuning",
+        "Prompt Engineering",
+        "API",
+        "Latency",
+        "Hallucination",
+        "Guardrail",
+        "PhraseSet"
+      ],
+      "errors": []
+    },
+    {
+      "label": "with-phrase-set",
+      "status": "completed",
+      "phraseSet": [
+        "Transformer",
+        "Attention",
+        "Large Language Model",
+        "Prompt",
+        "Token",
+        "RAG",
+        "Vector Database",
+        "Embedding",
+        "LangChain",
+        "Pipeline",
+        "Fine-tuning",
+        "Prompt Engineering",
+        "API",
+        "Latency",
+        "Hallucination",
+        "Guardrail",
+        "PhraseSet"
+      ],
+      "startedAt": "2026-08-09T04:00:09.712Z",
+      "readyAfterMs": 5,
+      "audioDurationMs": 106435,
+      "wallClockMs": 108614,
+      "interimCount": 12,
+      "finalTranscripts": [
+        {
+          "text": "안녕하세요. 오늘은 제가 만든 강연 자막 시스템을 간단히 소개하겠습니다. 이번 강연의 주제는 생성형 AI 입니다. 먼저 강연 자료를 PDF에서 레그, LLM, 트랜스포머, 파인 튜닝과 같은 전문 용어를 추출했습니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "레그는 외부 자료를 검색해서 답변에 활용하는 방식이고 LLM은 많은 텍스트를 학습한 대규모 언어 모델입니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "최근 자연어 처리와 생생 AI에 널리 사용되는 핵심 주제입니다. 이 용어들은 일반적인 음성 인식에서는 발음이 비슷한 다른 단어로 잘못 인식될 수 있습니다. 그래서 추천한 용어를 구글 스피치 투 텍스트에서",
+          "detectedTermIds": []
+        },
+        {
+          "text": "PhraseSet",
+          "detectedTermIds": [
+            "fixture-term-17"
+          ]
+        },
+        {
+          "text": "PhraseSet에 넣어서 음성 인식에 해당 단어를 우선적으로 고려하도록 구성했습니다.",
+          "detectedTermIds": [
+            "fixture-term-17"
+          ]
+        },
+        {
+          "text": "프레이더스 셋은 정답을 강제로 입력하는 기능이 아니라 레그나 에르겐처럼 광연수 자주 나올 가능성이 높은 단어를 인식 후보로 강제하는 기능입니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "시스템은 PDF.js를 이용해 문서를 페이지 별로 분석하고 생성형 AI가",
+          "detectedTermIds": []
+        },
+        {
+          "text": "용어와 쉬운 설명을 따로 만듭니다. 이후 서버가 해당 용어, 서버가 해당 용어가 실제 PDF에 존재하는지 다시 확인합니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "회의가 시작되면 마이크 음성은 웹소켓을 통해 서버로 전송되고, 구글 스피치 투 텍스트가 실시간 자막을 반환합니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "자막에 레그나 트랜스포머 같은 용어가 등장하면 해당 단어를 강조하고",
+          "detectedTermIds": []
+        },
+        {
+          "text": "옆에는 쉬운 설명과 같은 PDF 페이지를 함께 보여줍니다.",
+          "detectedTermIds": []
+        },
+        {
+          "text": "앞으로는 파인 튜닝이나 더 나은 전문 용어를 추가해 여러 분야의 강연에서도 테스트해 볼 예정입니다.",
+          "detectedTermIds": []
+        }
+      ],
+      "transcript": "안녕하세요. 오늘은 제가 만든 강연 자막 시스템을 간단히 소개하겠습니다. 이번 강연의 주제는 생성형 AI 입니다. 먼저 강연 자료를 PDF에서 레그, LLM, 트랜스포머, 파인 튜닝과 같은 전문 용어를 추출했습니다. 레그는 외부 자료를 검색해서 답변에 활용하는 방식이고 LLM은 많은 텍스트를 학습한 대규모 언어 모델입니다. 최근 자연어 처리와 생생 AI에 널리 사용되는 핵심 주제입니다. 이 용어들은 일반적인 음성 인식에서는 발음이 비슷한 다른 단어로 잘못 인식될 수 있습니다. 그래서 추천한 용어를 구글 스피치 투 텍스트에서 PhraseSet PhraseSet에 넣어서 음성 인식에 해당 단어를 우선적으로 고려하도록 구성했습니다. 프레이더스 셋은 정답을 강제로 입력하는 기능이 아니라 레그나 에르겐처럼 광연수 자주 나올 가능성이 높은 단어를 인식 후보로 강제하는 기능입니다. 시스템은 PDF.js를 이용해 문서를 페이지 별로 분석하고 생성형 AI가 용어와 쉬운 설명을 따로 만듭니다. 이후 서버가 해당 용어, 서버가 해당 용어가 실제 PDF에 존재하는지 다시 확인합니다. 회의가 시작되면 마이크 음성은 웹소켓을 통해 서버로 전송되고, 구글 스피치 투 텍스트가 실시간 자막을 반환합니다. 자막에 레그나 트랜스포머 같은 용어가 등장하면 해당 단어를 강조하고 옆에는 쉬운 설명과 같은 PDF 페이지를 함께 보여줍니다. 앞으로는 파인 튜닝이나 더 나은 전문 용어를 추가해 여러 분야의 강연에서도 테스트해 볼 예정입니다.",
+      "recognizedTerms": [
+        "PhraseSet"
+      ],
+      "unrecognizedTerms": [
+        "Transformer",
+        "Attention",
+        "Large Language Model",
+        "Prompt",
+        "Token",
+        "RAG",
+        "Vector Database",
+        "Embedding",
+        "LangChain",
+        "Pipeline",
+        "Fine-tuning",
+        "Prompt Engineering",
+        "API",
+        "Latency",
+        "Hallucination",
+        "Guardrail"
+      ],
+      "errors": []
+    }
+  ],
+  "comparison": [
+    {
+      "term": "Transformer",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Attention",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Large Language Model",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Prompt",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Token",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "RAG",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Vector Database",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Embedding",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "LangChain",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Pipeline",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Fine-tuning",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Prompt Engineering",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "API",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Latency",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Hallucination",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "Guardrail",
+      "withoutPhraseSet": false,
+      "withPhraseSet": false
+    },
+    {
+      "term": "PhraseSet",
+      "withoutPhraseSet": false,
+      "withPhraseSet": true
+    }
+  ]
+}

@@ -84,7 +84,12 @@ describe("thin STT comparison CLI", () => {
         completedRuns: 0,
         totalRuns: 3,
         activeRun: { label: "without-phrase-set", index: 0, total: 3 },
-        replayProgress: { sentBytes: 0, totalBytes: 3_200, fraction: 0 }
+        replayProgress: { sentBytes: 0, totalBytes: 3_200, fraction: 0 },
+        runProgress: [
+          { label: "without-phrase-set", index: 0, total: 3, state: "running", replayProgress: { sentBytes: 0, totalBytes: 3_200, fraction: 0 } },
+          { label: "canonical-phrase-set", index: 1, total: 3, state: "pending", replayProgress: null },
+          { label: "spoken-alias-phrase-set", index: 2, total: 3, state: "pending", replayProgress: null }
+        ]
       });
       return makeOutcome(false);
     });

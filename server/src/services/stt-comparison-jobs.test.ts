@@ -61,17 +61,24 @@ function reportWithStatuses(statuses: Array<"completed" | "error">): ComparisonR
 describe("in-memory STT comparison UI jobs", () => {
   it("moves through running and writing-result to completed", async () => {
     const observed: string[] = [];
+    let parallelSnapshot: ReturnType<SttComparisonJobManager["getJob"]>;
     let manager: SttComparisonJobManager;
     const runner = vi.fn<SttComparisonRunner>(async (request) => {
       request.onProgress?.({
         phase: "running",
         jobId: request.jobId!,
         recordingId: RECORDING_ID,
-        completedRuns: 1,
+        completedRuns: 0,
         totalRuns: 3,
-        activeRun: { label: "canonical-phrase-set", index: 1, total: 3 },
-        replayProgress: { sentBytes: 1_600, totalBytes: 3_200, fraction: 0.5 }
+        activeRun: null,
+        replayProgress: null,
+        runProgress: [
+          { label: "without-phrase-set", index: 0, total: 3, state: "running", replayProgress: { sentBytes: 1_600, totalBytes: 3_200, fraction: 0.5 } },
+          { label: "canonical-phrase-set", index: 1, total: 3, state: "running", replayProgress: { sentBytes: 1_600, totalBytes: 3_200, fraction: 0.5 } },
+          { label: "spoken-alias-phrase-set", index: 2, total: 3, state: "running", replayProgress: { sentBytes: 1_600, totalBytes: 3_200, fraction: 0.5 } }
+        ]
       });
+      parallelSnapshot = manager.getJob(request.jobId!);
       observed.push(manager.getJob(request.jobId!)!.status);
       request.onProgress?.({
         phase: "writing-result",
@@ -80,7 +87,12 @@ describe("in-memory STT comparison UI jobs", () => {
         completedRuns: 3,
         totalRuns: 3,
         activeRun: null,
-        replayProgress: null
+        replayProgress: null,
+        runProgress: [
+          { label: "without-phrase-set", index: 0, total: 3, state: "completed", replayProgress: null },
+          { label: "canonical-phrase-set", index: 1, total: 3, state: "completed", replayProgress: null },
+          { label: "spoken-alias-phrase-set", index: 2, total: 3, state: "completed", replayProgress: null }
+        ]
       });
       observed.push(manager.getJob(request.jobId!)!.status);
       const report = reportWithStatuses(["completed", "completed", "completed"]);
@@ -105,6 +117,18 @@ describe("in-memory STT comparison UI jobs", () => {
     const finished = await manager.waitForJob(started.id);
 
     expect(observed).toEqual(["running", "writing-result"]);
+    expect(parallelSnapshot).toMatchObject({
+      status: "running",
+      completedRuns: 0,
+      progress: { completed: 0, total: 3, percent: 50 },
+      activeRunLabel: null,
+      message: "A/B/C 3개 조건을 병렬로 실행하고 있습니다.",
+      runs: [
+        { label: "without-phrase-set", state: "running", progress: 50 },
+        { label: "canonical-phrase-set", state: "running", progress: 50 },
+        { label: "spoken-alias-phrase-set", state: "running", progress: 50 }
+      ]
+    });
     expect(finished).toMatchObject({
       status: "completed",
       state: "completed",

@@ -31,6 +31,7 @@ export type SttComparisonJobRunState = "pending" | "running" | "completed" | "er
 export type SttComparisonJobRunStatus = {
   label: ComparisonRunLabel;
   state: SttComparisonJobRunState;
+  progress?: number;
   message: string | null;
   error: string | null;
 };
@@ -111,6 +112,7 @@ function initialRuns(): SttComparisonJobRunStatus[] {
   ] satisfies ComparisonRunLabel[]).map((label) => ({
     label,
     state: "pending",
+    progress: 0,
     message: null,
     error: null
   }));
@@ -231,34 +233,51 @@ export class SttComparisonJobManager {
     }
     if (progress.phase === "running" && job.status === "writing-result") return;
     job.state = job.status;
+    const activeRuns = progress.runProgress.filter((run) => run.state === "running");
+    const representative = activeRuns.length === 1 ? activeRuns[0]! : null;
     job.completedRuns = progress.completedRuns;
-    job.activeRun = cloneActiveRun(progress.activeRun);
-    job.activeRunLabel = progress.activeRun?.label ?? null;
-    job.replayProgress = cloneReplayProgress(progress.replayProgress);
-    const replayFraction = progress.activeRun ? (progress.replayProgress?.fraction ?? 0) : 0;
+    job.activeRun = representative
+      ? { label: representative.label, index: representative.index, total: representative.total }
+      : null;
+    job.activeRunLabel = representative?.label ?? null;
+    job.replayProgress = cloneReplayProgress(representative?.replayProgress ?? null);
+    const totalProgress = progress.runProgress.reduce((sum, run) => {
+      if (run.state === "completed" || run.state === "error") return sum + 1;
+      if (run.state === "running") return sum + (run.replayProgress?.fraction ?? 0);
+      return sum;
+    }, 0);
     job.progress = {
       completed: progress.completedRuns,
       total: 3,
-      percent: Math.min(100, Math.max(0, ((progress.completedRuns + replayFraction) / 3) * 100))
+      percent: Math.min(100, Math.max(0, (totalProgress / 3) * 100))
     };
-    job.runs = job.runs.map((run, index) => ({
-      ...run,
-      state: run.label === progress.activeRun?.label
-        ? "running"
-        : index < progress.completedRuns
-          ? "completed"
-          : "pending",
-      message: run.label === progress.activeRun?.label
-        ? "고정 음원 재생 중"
-        : index < progress.completedRuns
-          ? "실행 완료"
-          : null
-    }));
+    job.runs = progress.runProgress.map((run) => {
+      const fraction = run.state === "completed" || run.state === "error"
+        ? 1
+        : run.replayProgress?.fraction ?? 0;
+      return {
+        label: run.label,
+        state: run.state,
+        progress: Math.min(100, Math.max(0, fraction * 100)),
+        message: run.state === "running"
+          ? `고정 음원 재생 중 · ${Math.round(fraction * 100)}%`
+          : run.state === "completed"
+            ? "실행 완료"
+            : run.state === "error"
+              ? "오류 발생"
+              : null,
+        error: job.runs.find((candidate) => candidate.label === run.label)?.error ?? null
+      };
+    });
     job.message = progress.phase === "writing-result"
-      ? "A/B/C 결과를 v3 리포트로 저장하고 있습니다."
-      : progress.activeRun
-        ? `${progress.activeRun.label} 조건을 실행하고 있습니다.`
-        : "다음 STT 비교 조건을 준비하고 있습니다.";
+      ? "A/B/C 결과를 v4 리포트로 저장하고 있습니다."
+      : activeRuns.length > 1
+        ? `A/B/C ${activeRuns.length}개 조건을 병렬로 실행하고 있습니다.`
+        : representative
+          ? `${representative.label} 조건을 실행하고 있습니다.`
+          : progress.completedRuns === 3
+            ? "A/B/C 병렬 실행을 마무리하고 있습니다."
+            : "A/B/C 병렬 실행을 준비하고 있습니다.";
     this.timestamp(job);
   }
 
@@ -278,12 +297,13 @@ export class SttComparisonJobManager {
     job.runs = outcome.report.runs.map((run) => ({
       label: run.label,
       state: run.status === "error" ? "error" : "completed",
-      message: run.status === "error" ? "오류를 기록하고 다음 조건을 계속 실행했습니다." : "실행 완료",
+      progress: 100,
+      message: run.status === "error" ? "병렬 실행 중 발생한 오류를 기록했습니다." : "실행 완료",
       error: run.errors.join("\n") || null
     }));
     job.message = outcome.hasRunErrors
-      ? "일부 조건의 오류를 포함한 v3 결과를 저장했습니다."
-      : "A/B/C v3 결과를 저장했습니다.";
+      ? "일부 조건의 오류를 포함한 v4 결과를 저장했습니다."
+      : "A/B/C 병렬 실행의 v4 결과를 저장했습니다.";
     job.finishedAt = this.timestamp(job);
     job.completedAt = job.finishedAt;
   }

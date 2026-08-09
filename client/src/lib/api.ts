@@ -202,6 +202,7 @@ export type SttComparisonJobRunState = "pending" | "running" | "completed" | "er
 export type SttComparisonJobRunStatus = {
   label: ComparisonRunLabel;
   state: SttComparisonJobRunState;
+  progress?: number;
   message: string | null;
   error: string | null;
 };
