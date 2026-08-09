@@ -74,6 +74,15 @@ export function knownSpokenAliases(term: string, english: string): string[] {
     .flatMap((group) => group.aliases);
 }
 
+export function isKnownSpokenAlias(term: string, english: string, alias: string): boolean {
+  const aliasKey = spokenFormKey(alias);
+  return aliasKey.length > 0 && knownSpokenAliases(term, english).some((candidate) => spokenFormKey(candidate) === aliasKey);
+}
+
+export function isContextAmbiguousSpokenAlias(alias: string): boolean {
+  return spokenFormKey(alias) === spokenFormKey("레그");
+}
+
 export function sanitizeSpokenAliases(term: string, english: string, value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   if (!hasAsciiSource(term, english)) return [];
@@ -93,6 +102,7 @@ export function sanitizeSpokenAliases(term: string, english: string, value: unkn
       hangulCount < 2 ||
       protectedKeys.has(key) ||
       UNSAFE_ALIASES.has(key) ||
+      !isKnownSpokenAlias(term, english, alias) ||
       seen.has(key)
     ) continue;
     seen.add(key);
@@ -102,19 +112,15 @@ export function sanitizeSpokenAliases(term: string, english: string, value: unkn
   return aliases;
 }
 
-export function withValidatedSpokenAliases<T extends GlossaryTerm>(terms: T[]): T[] {
-  const augmented = terms.map((term) => ({
+export function withSanitizedSpokenAliases<T extends GlossaryTerm>(terms: T[]): T[] {
+  const sanitized = terms.map((term) => ({
     ...term,
-    spokenAliases: sanitizeSpokenAliases(
-      term.term,
-      term.english,
-      [...term.spokenAliases, ...knownSpokenAliases(term.term, term.english)]
-    )
+    spokenAliases: sanitizeSpokenAliases(term.term, term.english, term.spokenAliases)
   }));
   const protectedOwners = new Map<string, string>();
   const aliasOwners = new Map<string, Set<string>>();
 
-  for (const term of augmented) {
+  for (const term of sanitized) {
     for (const label of [term.term, term.english]) {
       const key = spokenFormKey(label);
       if (key) protectedOwners.set(key, term.id);
@@ -127,7 +133,7 @@ export function withValidatedSpokenAliases<T extends GlossaryTerm>(terms: T[]): 
     }
   }
 
-  return augmented.map((term) => ({
+  return sanitized.map((term) => ({
     ...term,
     spokenAliases: term.spokenAliases.filter((alias) => {
       const key = spokenFormKey(alias);
@@ -135,4 +141,11 @@ export function withValidatedSpokenAliases<T extends GlossaryTerm>(terms: T[]): 
       return aliasOwners.get(key)?.size === 1 && (!protectedOwner || protectedOwner === term.id);
     })
   }));
+}
+
+export function withValidatedSpokenAliases<T extends GlossaryTerm>(terms: T[]): T[] {
+  return withSanitizedSpokenAliases(terms.map((term) => ({
+    ...term,
+    spokenAliases: [...term.spokenAliases, ...knownSpokenAliases(term.term, term.english)]
+  })));
 }

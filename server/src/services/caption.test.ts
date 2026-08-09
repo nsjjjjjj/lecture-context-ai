@@ -48,14 +48,45 @@ describe("transparent final caption correction", () => {
     expect(findTranscriptTermMatches("레그는 기술입니다", [rag]).map((match) => match.term.id)).toEqual(["rag"]);
   });
 
-  it("chooses the longest candidate and never creates overlapping replacements", () => {
-    const short = { ...rag, id: "short", term: "Phrase", english: "", spokenAliases: ["프레이즈"] };
-    const long = { ...rag, id: "long", term: "PhraseSet", english: "", spokenAliases: ["프레이즈 셋"] };
-    const event = createTranscriptEvent("프레이즈 셋을 적용합니다", true, [short, long]);
+  it("does not correct an arbitrary unreviewed alias even when passed directly", () => {
+    const api = {
+      ...rag,
+      id: "api",
+      term: "API",
+      english: "Application Programming Interface",
+      spokenAliases: ["사과"]
+    };
 
-    expect(event.text).toBe("PhraseSet을 적용합니다");
+    expect(createTranscriptEvent("사과를 먹습니다.", true, [api])).toEqual({
+      type: "final",
+      text: "사과를 먹습니다.",
+      rawText: "사과를 먹습니다.",
+      detectedTerms: [],
+      relatedPage: undefined,
+      corrections: []
+    });
+  });
+
+  it("does not correct ambiguous 레그 before a separate Korean word", () => {
+    expect(createTranscriptEvent("레그 프레스를 합니다.", true, [rag])).toEqual({
+      type: "final",
+      text: "레그 프레스를 합니다.",
+      rawText: "레그 프레스를 합니다.",
+      detectedTerms: [],
+      relatedPage: undefined,
+      corrections: []
+    });
+    expect(createTranscriptEvent("레그는 기술입니다.", true, [rag]).text).toBe("RAG는 기술입니다.");
+  });
+
+  it("chooses the longest candidate and never creates overlapping replacements", () => {
+    const short = { ...rag, id: "short", term: "생성형", english: "", spokenAliases: [] };
+    const long = { ...rag, id: "long", term: "생성형 AI", english: "", spokenAliases: [] };
+    const event = createTranscriptEvent("생성형 AI를 적용합니다", true, [short, long]);
+
+    expect(event.text).toBe("생성형 AI를 적용합니다");
     expect(event.detectedTerms).toEqual(["long"]);
-    expect(event.corrections).toHaveLength(1);
+    expect(event.corrections).toHaveLength(0);
   });
 
   it("does not duplicate one source glyph when NFKC expands it into multiple matches", () => {

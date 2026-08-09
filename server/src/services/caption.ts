@@ -1,4 +1,5 @@
 import type { GlossaryTerm, TranscriptCorrection, TranscriptEvent } from "../types.js";
+import { isContextAmbiguousSpokenAlias, isKnownSpokenAlias } from "./spoken-aliases.js";
 
 type NormalizedText = {
   value: string;
@@ -75,7 +76,11 @@ function hasSafeAliasBoundaries(text: string, start: number, candidate: string):
   const previous = text[start - 1];
   if (previous && /[가-힣A-Za-z0-9_]/u.test(previous)) return false;
 
-  const trailing = text.slice(start + candidate.length).match(/^[가-힣]+/u)?.[0] ?? "";
+  const remainder = text.slice(start + candidate.length);
+  const trailing = remainder.match(/^[가-힣]+/u)?.[0] ?? "";
+  if (trailing.length === 0 && isContextAmbiguousSpokenAlias(candidate) && /^\s+[가-힣]/u.test(remainder)) {
+    return false;
+  }
   return trailing.length === 0 || KOREAN_SUFFIXES.has(trailing);
 }
 
@@ -85,7 +90,7 @@ export function findTranscriptTermMatches(text: string, terms: GlossaryTerm[]): 
     const forms: Array<{ value: string; kind: MatchKind; formIndex: number }> = [
       { value: term.term, kind: "canonical", formIndex: 0 },
       ...(term.english ? [{ value: term.english, kind: "english" as const, formIndex: 1 }] : []),
-      ...term.spokenAliases.map((value, aliasIndex) => ({
+      ...term.spokenAliases.filter((value) => isKnownSpokenAlias(term.term, term.english, value)).map((value, aliasIndex) => ({
         value,
         kind: "spokenAlias" as const,
         formIndex: aliasIndex + 2

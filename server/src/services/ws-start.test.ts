@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GlossaryTerm } from "../types.js";
+import { createTranscriptEvent } from "./caption.js";
 import { demoTerms } from "./demo.js";
 import { resolveStartContext, sanitizeGlossaryTerms, sanitizePhraseSet } from "./ws-start.js";
 
@@ -32,12 +33,28 @@ describe("sanitizeGlossaryTerms", () => {
     expect(result.some((candidate) => candidate.id === "duplicate")).toBe(false);
   });
 
-  it("발음 별칭을 안전 규칙으로 정리하고 알려진 RAG 발음을 보완한다", () => {
+  it("제공된 검토 별칭만 정리하고 알려진 별칭도 몰래 보완하지 않는다", () => {
     const result = sanitizeGlossaryTerms([
       term({ spokenAliases: [" 레그 ", "모델", "not-korean", "레그"] })
     ]);
 
-    expect(result[0]?.spokenAliases).toEqual(["레그", "래그", "알에이지"]);
+    expect(result[0]?.spokenAliases).toEqual(["레그"]);
+  });
+
+  it("중복 ID는 첫 번째 유효 용어만 보존해 canonical term과 소유권을 일치시킨다", () => {
+    const result = sanitizeGlossaryTerms([
+      term({ id: "shared", term: "RAG", english: "Retrieval-Augmented Generation", spokenAliases: ["레그"] }),
+      term({ id: "shared", term: "LLM", english: "Large Language Model", spokenAliases: ["엘엘엠"] })
+    ]);
+
+    expect(result).toEqual([
+      term({ id: "shared", term: "RAG", english: "Retrieval-Augmented Generation", spokenAliases: ["레그"] })
+    ]);
+    expect(createTranscriptEvent("레그는 기술입니다.", true, result)).toMatchObject({
+      text: "RAG는 기술입니다.",
+      detectedTerms: ["shared"],
+      corrections: [{ originalText: "레그", correctedText: "RAG", termId: "shared" }]
+    });
   });
 
   it("공백뿐인 용어는 거부하고 허용한 용어와 영문 표기는 정규화된 값으로 반환한다", () => {
@@ -105,5 +122,13 @@ describe("resolveStartContext", () => {
 
     expect(context.terms).toEqual([term()]);
     expect(context.phraseSet).toEqual(["Retrieval-Augmented Generation"]);
+  });
+
+  it("v1에서 이전된 빈 별칭과 기존 PhraseSet을 끝까지 그대로 유지한다", () => {
+    const legacyTerm = term({ spokenAliases: [] });
+    const context = resolveStartContext("live", [legacyTerm], ["RAG", "Retrieval-Augmented Generation", "레그"]);
+
+    expect(context.terms).toEqual([legacyTerm]);
+    expect(context.phraseSet).toEqual(["RAG", "Retrieval-Augmented Generation"]);
   });
 });

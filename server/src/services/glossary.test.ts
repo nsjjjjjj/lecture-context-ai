@@ -40,6 +40,19 @@ describe("buildPhraseSet", () => {
       "Retrieval-Augmented Generation"
     ]);
   });
+
+  it("직접 주입된 미검토 별칭은 PhraseSet에 포함하지 않는다", () => {
+    const api = {
+      ...terms[0],
+      id: "api",
+      term: "API",
+      english: "Application Programming Interface",
+      spokenAliases: ["사과"]
+    };
+    const apiPages = [{ pageNumber: 1, text: "API를 소개합니다." }];
+
+    expect(buildPhraseSet([api], apiPages)).toEqual(["API"]);
+  });
 });
 
 describe("matchTerms", () => {

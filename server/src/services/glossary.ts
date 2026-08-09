@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { AnalysisResult, GlossaryTerm, PageText } from "../types.js";
 import { findTranscriptTermMatches } from "./caption.js";
-import { withValidatedSpokenAliases } from "./spoken-aliases.js";
+import { isKnownSpokenAlias, withValidatedSpokenAliases } from "./spoken-aliases.js";
 
 const MAX_TERMS = 50;
 const MAX_GEMINI_CHARACTERS = 120_000;
@@ -206,7 +206,9 @@ export function buildPhraseSet(terms: GlossaryTerm[], pages: PageText[]): string
     const hasEnglishEvidence = Boolean(term.english && locateTerm(pages, term.english));
     if (!hasCanonicalEvidence && !hasEnglishEvidence) continue;
     if (hasCanonicalEvidence) phrases.set(normalize(term.term), term.term);
-    for (const alias of term.spokenAliases) phrases.set(normalize(alias), alias);
+    for (const alias of term.spokenAliases) {
+      if (isKnownSpokenAlias(term.term, term.english, alias)) phrases.set(normalize(alias), alias);
+    }
     if (hasEnglishEvidence) phrases.set(normalize(term.english), term.english);
   }
   return [...phrases.values()].slice(0, MAX_TERMS);

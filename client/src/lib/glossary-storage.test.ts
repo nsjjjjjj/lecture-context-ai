@@ -60,7 +60,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("browser glossary storage v2", () => {
+describe("browser glossary storage v3", () => {
   it("roundtrips complete terms and PhraseSet while excluding PDF-derived and transient data", () => {
     const storage = new MemoryStorage();
     const saved = saveAnalyzedGlossary(storage, analysis(), "생성형 AI 용어집", {
@@ -76,7 +76,7 @@ describe("browser glossary storage v2", () => {
     expect(raw).not.toContain("민감한 PDF 추출 페이지 텍스트");
     expect(raw).not.toContain("private-pdf");
     expect(raw).not.toContain("저장하면 안 되는 분석 경고");
-    expect(JSON.parse(raw || "{}")).toEqual({ version: 2, glossaries: [saved] });
+    expect(JSON.parse(raw || "{}")).toEqual({ version: 3, glossaries: [saved] });
   });
 
   it("rejects malformed JSON and strict-shape violations", () => {
@@ -85,13 +85,13 @@ describe("browser glossary storage v2", () => {
 
     expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "invalid" }));
 
-    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({ version: 2, glossaries: [], unexpected: true }));
+    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({ version: 3, glossaries: [], unexpected: true }));
     expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "invalid" }));
   });
 
   it("rejects an unsupported schema version without rewriting it", () => {
     const storage = new MemoryStorage();
-    const raw = JSON.stringify({ version: 3, glossaries: [] });
+    const raw = JSON.stringify({ version: 4, glossaries: [] });
     storage.setItem(GLOSSARY_STORAGE_KEY, raw);
 
     expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "version" }));
@@ -100,7 +100,7 @@ describe("browser glossary storage v2", () => {
 
   it("clears corrupt or unsupported data only after an explicit recovery call", () => {
     const storage = new MemoryStorage();
-    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({ version: 3, glossaries: [] }));
+    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({ version: 4, glossaries: [] }));
 
     expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "version" }));
     expect(storage.getItem(GLOSSARY_STORAGE_KEY)).not.toBeNull();
@@ -120,7 +120,7 @@ describe("browser glossary storage v2", () => {
     expect(listStoredGlossaries(storage)).toEqual([]);
   });
 
-  it("explicitly migrates valid v1 glossaries to v2 without changing IDs or invoking analysis", () => {
+  it("explicitly migrates valid v1 glossaries to v3 without changing IDs or invoking analysis", () => {
     const storage = new MemoryStorage();
     const legacyTerm = { ...term() } as Record<string, unknown>;
     delete legacyTerm.spokenAliases;
@@ -140,12 +140,34 @@ describe("browser glossary storage v2", () => {
 
     expect(migrated[0]).toMatchObject({
       id: "legacy-glossary",
-      terms: [{ id: "term-rag", spokenAliases: [] }]
+      terms: [{ id: "term-rag", spokenAliases: [] }],
+      phraseSet: ["RAG", "Retrieval-Augmented Generation"]
     });
     expect(JSON.parse(storage.getItem(GLOSSARY_STORAGE_KEY) || "{}")).toMatchObject({
-      version: 2,
+      version: 3,
       glossaries: [{ id: "legacy-glossary", terms: [{ spokenAliases: [] }] }]
     });
+  });
+
+  it("migrates v2 by retaining reviewed aliases and dropping unsafe aliases and their PhraseSet entries", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({
+      version: 2,
+      glossaries: [{
+        id: "v2-glossary",
+        name: "이전 별칭 용어집",
+        createdAt: "2026-08-08T01:00:00.000Z",
+        updatedAt: "2026-08-08T01:00:00.000Z",
+        terms: [term({ spokenAliases: ["레그", "사과"] })],
+        phraseSet: ["RAG", "레그", "사과"]
+      }]
+    }));
+
+    const migrated = listStoredGlossaries(storage);
+
+    expect(migrated[0]?.terms[0]?.spokenAliases).toEqual(["레그"]);
+    expect(migrated[0]?.phraseSet).toEqual(["RAG", "레그"]);
+    expect(JSON.parse(storage.getItem(GLOSSARY_STORAGE_KEY) || "{}").version).toBe(3);
   });
 
   it("validates alias limits, common-word hazards, collisions, and PhraseSet correspondence", () => {
@@ -154,6 +176,11 @@ describe("browser glossary storage v2", () => {
       terms: [term({ spokenAliases: ["모델"] })],
       phraseSet: ["RAG", "모델"]
     }), "위험 별칭")).toThrowError(expect.objectContaining({ code: "invalid" }));
+
+    expect(() => saveAnalyzedGlossary(storage, analysis({
+      terms: [term({ term: "API", english: "Application Programming Interface", spokenAliases: ["사과"] })],
+      phraseSet: ["API", "사과"]
+    }), "미검토 별칭")).toThrowError(expect.objectContaining({ code: "invalid" }));
 
     expect(() => saveAnalyzedGlossary(storage, analysis({
       terms: [
@@ -287,5 +314,28 @@ describe("stored glossary lecture path", () => {
     expect(loaded).not.toHaveProperty("pdfUrl");
     expect(loaded.pages).toEqual([]);
     expect(start).toEqual({ type: "start", mode: "live", terms: saved.terms, phraseSet: saved.phraseSet });
+  });
+
+  it("keeps migrated v1 aliases empty in the live start message", () => {
+    const storage = new MemoryStorage();
+    const legacyTerm = { ...term() } as Record<string, unknown>;
+    delete legacyTerm.spokenAliases;
+    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({
+      version: 1,
+      glossaries: [{
+        id: "legacy-live",
+        name: "기존 용어집",
+        createdAt: "2026-08-08T01:00:00.000Z",
+        updatedAt: "2026-08-08T01:00:00.000Z",
+        terms: [legacyTerm],
+        phraseSet: ["RAG", "Retrieval-Augmented Generation"]
+      }]
+    }));
+
+    const readyState = loadStoredGlossaryReadyState(storage, "legacy-live");
+    const start = createLectureStartMessage("live", readyState.analysis.terms, readyState.analysis.phraseSet);
+
+    expect(start.terms[0]?.spokenAliases).toEqual([]);
+    expect(start.phraseSet).toEqual(["RAG", "Retrieval-Augmented Generation"]);
   });
 });

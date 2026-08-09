@@ -1,7 +1,7 @@
 import type { GlossaryTerm, StartMessage } from "../types.js";
 import { glossaryTermSchema } from "../types.js";
 import { demoTerms } from "./demo.js";
-import { withValidatedSpokenAliases } from "./spoken-aliases.js";
+import { withSanitizedSpokenAliases } from "./spoken-aliases.js";
 
 const MAX_TERMS = 50;
 const MAX_PHRASES = 50;
@@ -20,7 +20,8 @@ function normalize(value: string): string {
 export function sanitizeGlossaryTerms(value: unknown): GlossaryTerm[] {
   if (!Array.isArray(value)) return [];
 
-  const seen = new Set<string>();
+  const seenIds = new Set<string>();
+  const seenTerms = new Set<string>();
   const terms: GlossaryTerm[] = [];
   for (const candidate of value) {
     const parsed = glossaryTermSchema.safeParse(candidate);
@@ -28,15 +29,17 @@ export function sanitizeGlossaryTerms(value: unknown): GlossaryTerm[] {
 
     const term = canonicalize(parsed.data.term);
     const english = canonicalize(parsed.data.english);
-    if (term.length < 2 || term.length > 80 || english.length > 120) continue;
+    const id = parsed.data.id.trim();
+    if (id.length === 0 || id.length > 160 || term.length < 2 || term.length > 80 || english.length > 120) continue;
 
     const key = normalize(term);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    terms.push({ ...parsed.data, term, english });
+    if (seenIds.has(id) || seenTerms.has(key)) continue;
+    seenIds.add(id);
+    seenTerms.add(key);
+    terms.push({ ...parsed.data, id, term, english });
     if (terms.length === MAX_TERMS) break;
   }
-  return withValidatedSpokenAliases(terms);
+  return withSanitizedSpokenAliases(terms);
 }
 
 export function sanitizePhraseSet(value: unknown, terms: GlossaryTerm[]): string[] {

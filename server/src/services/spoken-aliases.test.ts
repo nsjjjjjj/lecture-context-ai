@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { GlossaryTerm } from "../types.js";
-import { sanitizeSpokenAliases, withValidatedSpokenAliases } from "./spoken-aliases.js";
+import {
+  sanitizeSpokenAliases,
+  withSanitizedSpokenAliases,
+  withValidatedSpokenAliases
+} from "./spoken-aliases.js";
 
 function term(overrides: Partial<GlossaryTerm> = {}): GlossaryTerm {
   return {
@@ -42,18 +46,23 @@ describe("spoken alias validation", () => {
     expect(sanitizeSpokenAliases("전문용어", "", ["alias", "모델", "용어", "충분한별칭"])).toEqual([]);
   });
 
-  it("caps aliases at six after canonicalization", () => {
-    expect(sanitizeSpokenAliases("Example", "", ["가나다", "라마바", "사아자", "차카타", "파하가", "나다라", "마바사"]))
-      .toHaveLength(6);
+  it("rejects plausible-looking aliases that are not a reviewed term-pronunciation pair", () => {
+    expect(sanitizeSpokenAliases("API", "Application Programming Interface", ["사과", "에이피아이"])).toEqual([]);
   });
 
   it("drops aliases shared by different terms or equal to another canonical term", () => {
     const result = withValidatedSpokenAliases([
-      term({ id: "one", term: "Alpha", english: "", spokenAliases: ["알파", "공유발음"] }),
-      term({ id: "two", term: "Beta", english: "", spokenAliases: ["공유발음", "알파"] })
+      term({ id: "one", term: "RAG", english: "", spokenAliases: ["레그"] }),
+      term({ id: "two", term: "Retrieval-Augmented Generation", english: "", spokenAliases: ["레그"] })
     ]);
 
     expect(result[0]?.spokenAliases).toEqual([]);
     expect(result[1]?.spokenAliases).toEqual([]);
+  });
+
+  it("sanitizes supplied aliases without silently adding reviewed aliases", () => {
+    expect(withSanitizedSpokenAliases([term({ spokenAliases: [] })])[0]?.spokenAliases).toEqual([]);
+    expect(withSanitizedSpokenAliases([term({ spokenAliases: [" 레그 ", "사과"] })])[0]?.spokenAliases)
+      .toEqual(["레그"]);
   });
 });
