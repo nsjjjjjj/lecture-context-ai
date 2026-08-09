@@ -12,19 +12,8 @@ const MAX_SPOKEN_ALIAS_LENGTH = 40;
 const UNSAFE_ALIASES = new Set([
   "강연", "검색", "결과", "경우", "관련", "그래서", "기능", "다시", "다음", "데이터", "모델", "문서",
   "방식", "생성", "서비스", "사용자", "설명", "그리고", "이것", "입니다", "인식", "오늘", "외부", "이유",
-  "이미", "이번", "자료", "정도", "자막", "저것", "하지만", "답변", "용어", "우리", "페이지", "현재"
+  "이미", "이번", "자료", "정도", "자막", "저것", "하지만", "답변", "사과", "용어", "우리", "페이지", "현재"
 ]);
-const KNOWN_ALIAS_GROUPS: Array<{ labels: string[]; aliases: string[] }> = [
-  { labels: ["RAG", "Retrieval-Augmented Generation"], aliases: ["래그", "레그", "알에이지"] },
-  { labels: ["LLM", "Large Language Model"], aliases: ["엘엘엠"] },
-  { labels: ["AI", "Artificial Intelligence"], aliases: ["에이아이"] },
-  { labels: ["Transformer"], aliases: ["트랜스포머"] },
-  { labels: ["Fine-tuning", "파인튜닝"], aliases: ["파인 튜닝"] },
-  { labels: ["PhraseSet"], aliases: ["프레이즈셋", "프레이즈 세트", "프레이저스 셋"] },
-  { labels: ["LangChain"], aliases: ["랭체인", "랑체인"] },
-  { labels: ["PDF.js"], aliases: ["피디에프 제이에스"] },
-  { labels: ["WebSocket"], aliases: ["웹소켓"] }
-];
 
 export type StoredGlossary = {
   id: string;
@@ -76,15 +65,6 @@ function normalizedKey(value: string): string {
   return canonicalize(value).toLocaleLowerCase("ko-KR");
 }
 
-function isKnownSpokenAlias(term: string, english: string, alias: string): boolean {
-  const labels = new Set([normalizedKey(term), normalizedKey(english)].filter(Boolean));
-  const aliasKey = normalizedKey(alias);
-  return KNOWN_ALIAS_GROUPS.some((group) =>
-    group.labels.some((label) => labels.has(normalizedKey(label))) &&
-    group.aliases.some((candidate) => normalizedKey(candidate) === aliasKey)
-  );
-}
-
 function validatedString(value: unknown, label: string, minimum: number, maximum: number): string {
   if (typeof value !== "string") fail("invalid", `${label} 형식이 올바르지 않습니다.`);
   const canonical = canonicalize(value);
@@ -121,8 +101,7 @@ function validateSpokenAliases(value: unknown, term: string, english: string): s
       !/^[가-힣]+(?:[ -][가-힣]+)*$/u.test(alias) ||
       hangulCount < 2 ||
       protectedKeys.has(key) ||
-      UNSAFE_ALIASES.has(key) ||
-      !isKnownSpokenAlias(term, english, alias)
+      UNSAFE_ALIASES.has(key)
     ) {
       fail("invalid", "안전하지 않거나 전문용어와 중복되는 발음 별칭이 있습니다.");
     }
@@ -140,13 +119,14 @@ function migrateV2SpokenAliases(value: unknown, term: string, english: string): 
   }
 
   const aliases: string[] = [];
-  const seen = new Set<string>();
   for (const candidate of value) {
-    const alias = validatedString(candidate, "발음 별칭", 2, MAX_SPOKEN_ALIAS_LENGTH);
-    const key = normalizedKey(alias);
-    if (!isKnownSpokenAlias(term, english, alias) || seen.has(key)) continue;
-    seen.add(key);
-    aliases.push(alias);
+    try {
+      const alias = validatedString(candidate, "발음 별칭", 2, MAX_SPOKEN_ALIAS_LENGTH);
+      validateSpokenAliases([alias], term, english);
+      aliases.push(alias);
+    } catch {
+      // v2 migration remains tolerant: retain safe aliases and drop only invalid legacy entries.
+    }
   }
   return validateSpokenAliases(aliases, term, english);
 }

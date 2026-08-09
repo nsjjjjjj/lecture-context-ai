@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { AnalysisResult, GlossaryTerm, PageText } from "../types.js";
 import { findTranscriptTermMatches } from "./caption.js";
-import { isKnownSpokenAlias, withValidatedSpokenAliases } from "./spoken-aliases.js";
+import { withSanitizedSpokenAliases, withValidatedSpokenAliases } from "./spoken-aliases.js";
 
 const MAX_TERMS = 50;
 const MAX_GEMINI_CHARACTERS = 120_000;
@@ -106,6 +106,17 @@ function validateCandidates(
   );
 }
 
+function mergeValidatedTerms(primary: GlossaryTerm[], supplements: GlossaryTerm[]): GlossaryTerm[] {
+  const seen = new Set<string>();
+  const merged = [...primary, ...supplements].filter((term) => {
+    const key = normalize(term.term);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return withValidatedSpokenAliases(merged).slice(0, MAX_TERMS);
+}
+
 function extractHeuristicCandidates(pages: PageText[]): GeminiTerm[] {
   const fullText = pages.map((page) => page.text).join("\n");
   const candidates: GeminiTerm[] = [];
@@ -145,7 +156,8 @@ async function extractWithGemini(pages: PageText[]): Promise<GeminiTerm[]> {
 - 일상적인 단어와 너무 긴 문장은 제외한다.
 - easyExplanation은 비전공자가 이해할 수 있는 한국어 한 문장으로 60자 이내로 작성한다.
 - english는 PDF에 명시된 경우에만 넣고, 없으면 빈 문자열로 둔다.
-- spokenAliases에는 한국인이 실제로 말했을 때 STT가 만들 수 있는 한글 발음 표기만 최대 3개 넣는다. 예: RAG는 ["래그", "레그", "알에이지"]. 일반 단어는 넣지 않는다.
+- term 또는 english에 영문 알파벳이 하나라도 있으면 spokenAliases에 한국인이 실제로 읽을 때 STT가 만들 수 있는 한글 발음을 반드시 1개 이상, 최대 3개 넣는다. 예: BERT는 ["버트"], ResNet은 ["레즈넷"], RAG는 ["래그", "레그", "알에이지"].
+- spokenAliases는 완성형 한글과 단어 사이 공백 또는 하이픈만 사용한다. 일반 단어, 번역어, 설명 문구는 넣지 않는다. 영문 알파벳이 전혀 없는 용어는 빈 배열로 둔다.
 - 같은 용어의 중복은 제거한다.
 
 PDF 텍스트:
@@ -201,14 +213,12 @@ ${documentText}`;
 
 export function buildPhraseSet(terms: GlossaryTerm[], pages: PageText[]): string[] {
   const phrases = new Map<string, string>();
-  for (const term of terms) {
+  for (const term of withSanitizedSpokenAliases(terms)) {
     const hasCanonicalEvidence = Boolean(locateTerm(pages, term.term));
     const hasEnglishEvidence = Boolean(term.english && locateTerm(pages, term.english));
     if (!hasCanonicalEvidence && !hasEnglishEvidence) continue;
     if (hasCanonicalEvidence) phrases.set(normalize(term.term), term.term);
-    for (const alias of term.spokenAliases) {
-      if (isKnownSpokenAlias(term.term, term.english, alias)) phrases.set(normalize(alias), alias);
-    }
+    for (const alias of term.spokenAliases) phrases.set(normalize(alias), alias);
     if (hasEnglishEvidence) phrases.set(normalize(term.english), term.english);
   }
   return [...phrases.values()].slice(0, MAX_TERMS);
@@ -220,9 +230,20 @@ export async function analyzeGlossary(title: string, pages: PageText[]): Promise
 
   try {
     const geminiCandidates = await extractWithGemini(pages);
-    const terms = validateCandidates(pages, geminiCandidates, "gemini");
-    if (terms.length < 3) throw new Error("검증을 통과한 전문용어가 충분하지 않습니다.");
-    return { title, terms, phraseSet: buildPhraseSet(terms, pages), mode: "gemini" };
+    const geminiTerms = validateCandidates(pages, geminiCandidates, "gemini");
+    if (geminiTerms.length >= 3) {
+      return { title, terms: geminiTerms, phraseSet: buildPhraseSet(geminiTerms, pages), mode: "gemini" };
+    }
+
+    const heuristicTerms = validateCandidates(pages, extractHeuristicCandidates(pages), "heuristic");
+    const terms = mergeValidatedTerms(geminiTerms, heuristicTerms);
+    return {
+      title,
+      terms,
+      phraseSet: buildPhraseSet(terms, pages),
+      mode: geminiTerms.length > 0 ? "gemini" : "heuristic",
+      warning: `AI가 검증 가능한 전문용어를 ${geminiTerms.length}개만 반환해 문서 표기 기반 후보로 보완했습니다.`
+    };
   } catch (error) {
     const terms = validateCandidates(pages, extractHeuristicCandidates(pages), "heuristic");
     return {

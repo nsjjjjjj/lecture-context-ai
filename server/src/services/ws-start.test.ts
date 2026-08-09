@@ -33,12 +33,21 @@ describe("sanitizeGlossaryTerms", () => {
     expect(result.some((candidate) => candidate.id === "duplicate")).toBe(false);
   });
 
-  it("제공된 검토 별칭만 정리하고 알려진 별칭도 몰래 보완하지 않는다", () => {
+  it("제공된 안전한 자동 발음만 정리하고 알려진 별칭도 몰래 보완하지 않는다", () => {
     const result = sanitizeGlossaryTerms([
       term({ spokenAliases: [" 레그 ", "모델", "not-korean", "레그"] })
     ]);
 
     expect(result[0]?.spokenAliases).toEqual(["레그"]);
+  });
+
+  it("고정 목록에 없는 안전한 자동 발음을 WebSocket 경계에서 보존한다", () => {
+    const result = sanitizeGlossaryTerms([
+      term({ id: "bert", term: "BERT", english: "", spokenAliases: ["버트"] })
+    ]);
+
+    expect(result[0]?.spokenAliases).toEqual(["버트"]);
+    expect(sanitizePhraseSet(["BERT", "버트"], result)).toEqual(["BERT", "버트"]);
   });
 
   it("중복 ID는 첫 번째 유효 용어만 보존해 canonical term과 소유권을 일치시킨다", () => {

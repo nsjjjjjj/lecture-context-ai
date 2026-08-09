@@ -10,7 +10,7 @@
 - `강연`과 DEV 전용 `STT 실험실`을 분리한 기본 탐색과 `#/lecture`, `#/experiment/setup`, `#/experiment/record`, `#/experiment/run`, `#/experiment/results` 해시 라우트
 - 실험실에 `1. 실험 설정`, `2. 고정음원 녹음`, `3. A/B/C 비교 실행`, `4. 결과 기록` 보조 탐색 제공
 - 브라우저 저장 용어집과 정확한 대본을 Gemini 재호출 없이 로컬 study/case 스냅샷으로 저장하고 glossary·script·case 해시와 고유 identity로 중복·덮어쓰기를 방지하는 실험 설정 UI
-- 채점용 targetTerms와 PDF adaptationTerms를 분리해 A=없음, B=PDF canonical/English, C=PDF+검토된 발음 별칭으로 실행하고 PDF에 없는 수동 정답 용어를 힌트에는 넣지 않는 v4 비교 계약
+- 채점용 targetTerms와 PDF adaptationTerms를 분리해 A=없음, B=PDF canonical/English, C=PDF+자동 승인된 안전한 발음 별칭으로 실행하고 PDF에 없는 수동 정답 용어를 힌트에는 넣지 않는 v4 비교 계약
 - 녹음과 v4 결과에 study/case/snapshot/glossary/script identity를 고정하고, 결과의 세트·케이스 필터·완전한 accuracy 평균·CSV/TSV/JSON 내보내기 제공
 - 강연 `analyzing`·`live` 상태의 실험실 이동 차단과, 결과 기록의 데스크톱 history/detail pane 및 좁은 화면 목록/상세·`결과 목록으로` 전환
 - PDF.js 페이지별 텍스트 추출
@@ -25,21 +25,21 @@
 - 녹음 시작 시 가명 화자·환경·실험문장 snapshot과 prepared 상태 선택 잠금
 - temp WAV 검증·rename·atomic manifest, 실패 rollback/queue 회복과 cross-process writer lock
 - 저장 WAV의 offline PCM 재로드와 15KB 이하 짝수 청크 분할 계약
-- 기준 문장 각 용어의 canonical·English·검토된 한국어 발음과 출현 순서를 담는 구조화 fixture script v2
+- 기준 문장 각 용어의 canonical·English·안전한 한국어 발음과 출현 순서를 담는 구조화 fixture script v2
 - 녹음별 **“기준 문장을 그대로 읽었습니다”** 선언과, 선언 없는 기존 manifest v1 녹음을 smoke 전용으로 읽는 v2 호환 경계
-- 고정 음원을 PhraseSet 없음(A), canonical+English PhraseSet(B), canonical+English+검토된 한국어 발음 PhraseSet 및 별칭 정정(C) 순서로 실행하는 비교 코어
+- 고정 음원을 PhraseSet 없음(A), canonical+English PhraseSet(B), canonical+English+안전한 한국어 발음 PhraseSet 및 별칭 정정(C) 순서로 실행하는 비교 코어
 - localhost UI에서 저장 녹음 선택, 유료 Google STT 스트림 정확히 3회 호출 동의, 비동기 job 시작과 A/B/C 진행 상태 폴링
 - UI와 CLI가 함께 사용하는 `.stt-comparison.lock` 기반 cross-process 단일 실행과 stale PID의 검증 후 회수·unsafe lock 차단
 - 직접 인식·별칭 정정 성공·누락·잘못된 정정·잘못된 삽입·제품 용어 연결률을 출현 단위로 계산하는 비교 결과 v3
 - `comparison-<recordingId>-<jobId>.json` immutable 결과 저장과 기존 파일 보존, 수정 시각 최신순 페이지 목록·파일별 상세 조회
 - 저장된 v3/v4 결과의 조건 차트·A/B/C 원문/표시 자막·용어별 표와, 정확도·세 run 정상 완료 조건에서만 활성화되는 TSV 복사를 제공하고 v1/v2를 안내-only legacy로 격리하는 localhost 개발 결과 화면
 - 임시·확정 자막, 용어 강조, 반복 언급마다 생성되는 최신순 쉬운 설명 피드
-- `spokenAliases` 후보 중 코드에서 검토된 용어-발음 쌍만 채택하는 검증과 새 분석의 알려진 기술용어 발음 보완, 별칭을 포함할 수 있는 50개 제한 PhraseSet
+- PDF 전문용어를 원문 검증한 뒤 영문 용어의 Gemini 한글 발음을 안전 규칙으로 자동 승인하고, 알려진 기술용어 발음은 누락 보완에만 사용하는 최대 50개 PhraseSet
 - 임시 자막 원문 유지, 확정 자막의 위치 기반 canonical 정정, `rawText`·정정 내역 보존
 - 자막에 `RAG(레그)`처럼 canonical 용어와 STT 원문을 나란히 표시하고 canonical 용어 설명 카드 연결
 - API 없는 데모 모드
 - 분석 완료 시 전체 `GlossaryTerm[]`과 `phraseSet`의 브라우저 `localStorage` v3 자동 저장
-- 기존 localStorage v1의 빈 별칭·ID·PhraseSet을 보존하는 v3 이전과 v2의 미검토 별칭을 제거하는 v3 이전
+- 기존 localStorage v1의 빈 별칭·ID·PhraseSet을 보존하는 v3 이전과 v2의 안전하지 않은 별칭을 제거하는 v3 이전
 - 앱 새로고침·서버 재시작 뒤 저장 용어집 목록/로드, 이름 변경, 삭제
 - 저장 용어집 로드 시 Gemini 분석 없이 기존 WebSocket live/demo 시작 메시지 재사용
 - 저장 형식 엄격 검증, 정규화 중복 제거, 용어 ID 보존, 저장 공간·차단·손상·버전 오류 표시
@@ -49,12 +49,12 @@
 - 타입 검사, 프로토콜·용어 검증 테스트, 프로덕션 빌드
 - Docker 이미지 빌드와 컨테이너 헬스 체크
 
-### 2026-08-09 독립 리뷰 조치
+### 2026-08-09 독립 리뷰 조치와 후속 변경
 
-- P1 임의·모호한 별칭 오정정: **수용**. 검토된 용어-발음 쌍만 자동 정정·PhraseSet에 사용하고, `사과를 먹습니다.`를 `API`로 바꾸지 않으며 `레그 프레스`도 RAG로 바꾸지 않는 회귀 테스트를 추가했습니다.
+- P1 임의·모호한 별칭 오정정: 최초에는 고정 검토 목록으로 제한했으나, 후속 요구에 따라 영문 용어의 Gemini 한글 발음을 사용자 검토 없이 자동 승인하도록 바꿨습니다. 대신 완성형 한글·길이·개수·일반 단어 차단·canonical/English 및 용어 간 충돌 제거를 유지하고, `사과를 먹습니다.`를 `API`로 바꾸지 않으며 `레그 프레스`도 RAG로 바꾸지 않는 회귀 테스트를 유지합니다.
 - P2 WebSocket 중복 용어 ID: **수용**. 정규화된 용어 표기와 ID를 각각 검사하고, 중복 ID는 첫 번째 유효 용어만 남겨 자막 canonical 표기와 클라이언트 설명 카드 소유권을 일치시켰습니다.
 - P3 v1 별칭 계약 불일치: **수용**. WebSocket의 숨은 알려진 별칭 보완을 제거해 v1의 빈 별칭과 기존 PhraseSet이 클라이언트·서버에서 일치합니다. 기존 v2도 열리지 않게 만들지 않도록 저장 버전을 v3으로 올리고 안전하게 이전합니다.
-- 기각한 지적은 없습니다. 의미 분류기를 추가하는 범위는 이번 수정에서 보류했습니다. 그 결과 `레그 기반`처럼 실제 RAG를 뜻해도 모호한 별칭 뒤에 별도 한글 단어가 오면 정정하지 않을 수 있으며, 이는 오정정보다 누락을 택한 의도된 제한입니다.
+- 의미 분류기를 추가하는 범위는 보류했습니다. 그 결과 `레그 기반`처럼 실제 RAG를 뜻해도 모호한 별칭 뒤에 별도 한글 단어가 오면 정정하지 않을 수 있으며, 이는 오정정보다 누락을 택한 의도된 제한입니다. 자동 승인 방식은 새 용어 확장성을 높이는 대신 Gemini의 드문 오발음 후보가 안전 규칙을 통과할 위험을 수용합니다.
 
 ## 실제 Google STT 검증 결과
 
@@ -86,7 +86,7 @@
 
 1. 단일 accuracy 리포트에 사용한 exact-script WAV를 보존하고 같은 녹음으로 A/B/C를 여러 차례 실행해 조건별 직접 인식·별칭 정정·누락·오정정·오삽입·제품 용어 연결률의 분포를 확인합니다. 기존 106초 음원은 smoke 회귀에만 사용합니다.
 2. 논문에 반복 수, 실행 시각, 모델·리전, 집계 방식과 개별 실행값을 함께 기록합니다.
-3. 용어별 발음 별칭을 사용자가 검수·수정하는 최소 UI의 필요성을 반복 실험의 오정정 결과로 판단합니다.
+3. 자동 생성 발음의 오정정률을 별도로 집계하고, 안전 차단 목록이나 문맥 규칙을 보완할 필요가 있는지 판단합니다.
 4. glossary 결과에 `contextExplanation`을 추가해 용어가 현재 문맥에서 등장한 이유를 표시합니다.
 5. Google STT 스트리밍 제한에 대비한 자동 재연결과 자막 연속성 처리를 구현합니다.
 6. Cloud Run에 배포하고 모바일·노트북 마이크 권한과 WebSocket을 재검증합니다.
@@ -168,7 +168,7 @@ pnpm dev
 - Google STT 오디오 write는 15KB 이하로 제한합니다. 정상 종료는 request 쪽만 half-close한 뒤 지연된 final과 readable `end`/`close`를 기다리고, 5초 안에 종료되지 않으면 강제 정리합니다. error/end/close/크기 초과 중 첫 terminal event만 콜백하고 클라이언트 close는 한 번만 실행합니다.
 - 실제 발화 시작 시점을 신뢰성 있게 측정하지 않으므로 결과 리포트에서 표시 지연을 추정하지 않고, 검증된 PhraseSet 힌트 수를 표시합니다.
 - 서버의 `final.detectedTerms`는 왼쪽부터 실제 출현한 순서와 반복을 보존합니다. canonical 자막 강조와 서버 matcher는 grapheme별 NFKC·문맥 독립 소문자화·공백·ASCII 경계 기반을 공유하고, 서버는 여기에 영문 표기·검증된 한글 별칭 경계를 추가합니다. 같은 글자 구간에 용어가 겹치면 가장 긴 표기 하나를 선택하고, 한 원문 grapheme이 여러 용어로 확장돼도 표시 자막은 glyph를 중복 생성하지 않습니다. 자막·결과용 `termIds`는 고유하게 유지하고 설명 피드용 출현 목록만 중복을 보존합니다.
-- 발음 별칭은 영문 원어가 있는 용어 중 코드에서 검토된 용어-발음 쌍만 허용하며 용어당 최대 6개·별칭당 2~40자, 완성형 한글과 내부 공백/하이픈만 허용합니다. Gemini가 제안하거나 WebSocket에 직접 넣은 임의 별칭은 버립니다. 고빈도 일반 표현 차단 목록·다른 canonical/영문 표기·다른 용어의 별칭과 충돌하면 제거하거나 저장을 거부합니다. `레그`는 별도 한글 단어 앞에서 모호하므로 `레그는`은 찾지만 `레그레이즈`와 `레그 프레스`는 찾지 않습니다. 이는 오탐을 줄이는 대신 일부 RAG 발화를 놓치는 의도된 절충입니다.
+- 발음 별칭은 영문 원어가 있는 용어에만 허용하며 용어당 최대 6개·별칭당 2~40자, 완성형 한글과 내부 공백/하이픈만 허용합니다. Gemini가 제안한 값은 이 안전 규칙을 통과하면 자동 승인하고, 알려진 기술용어 목록은 결정적 보완에만 사용합니다. 고빈도 일반 표현 차단 목록·다른 canonical/영문 표기·다른 용어의 별칭과 충돌하면 제거하거나 저장을 거부합니다. `레그`는 별도 한글 단어 앞에서 모호하므로 `레그는`은 찾지만 `레그레이즈`와 `레그 프레스`는 찾지 않습니다. 이는 오탐을 줄이는 대신 일부 RAG 발화를 놓치는 의도된 절충입니다.
 - WebSocket 용어 입력은 정규화된 canonical 표기뿐 아니라 ID도 중복 제거하며, 같은 ID에는 첫 번째 유효 용어를 결정적으로 보존합니다. 이로써 서버 정정의 canonical 용어와 클라이언트 `termById` 소유권이 어긋나지 않습니다.
 - 임시 자막은 STT 원문 그대로입니다. 확정 자막은 `text`와 별도로 `rawText`, `corrections`를 보존하고, 원문 위치 기준 왼쪽→오른쪽 최장 일치로 겹침·반복 치환을 방지합니다. UI는 `RAG(레그)`처럼 canonical 용어 옆에 원문을 괄호로 항상 표시하며 결과 화면에서도 같은 표기를 유지합니다.
 - 공개 사용자 인증은 없으므로 외부 공개 시 Cloud Run·API 할당량으로 비용을 제한해야 합니다.

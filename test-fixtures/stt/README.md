@@ -16,7 +16,7 @@
 
 `#/experiment/setup`에서 브라우저에 이미 저장된 용어집과 정확히 읽을 대본을 선택해 케이스를 만듭니다. 이 동작은 `/api/analyze`나 Gemini를 호출하지 않습니다. 서버는 glossary·script·case SHA-256과 고유 study/case/snapshot ID를 기록하고 같은 세트의 동일 스냅샷 중복 생성을 거부합니다. 케이스 수정 API는 없으며 변경 실험은 새 케이스로 추가합니다.
 
-채점 정답인 `targetTerms`와 PDF에서 얻은 `adaptationTerms`는 분리됩니다. A는 PhraseSet 없음, B는 PDF canonical/English, C는 PDF canonical/English와 검토된 한국어 발음 별칭을 사용합니다. PDF에 없는 용어도 채점 정답으로 수동 등록할 수 있지만 B/C PhraseSet에는 들어가지 않습니다. 정확한 대본에서 발견되지 않는 채점 용어는 케이스 저장 전에 거부합니다.
+채점 정답인 `targetTerms`와 PDF에서 얻은 `adaptationTerms`는 분리됩니다. A는 PhraseSet 없음, B는 PDF canonical/English, C는 PDF canonical/English와 안전 규칙을 통과해 자동 승인된 한국어 발음 별칭을 사용합니다. PDF에 없는 용어도 채점 정답으로 수동 등록할 수 있지만 B/C PhraseSet에는 들어가지 않습니다. 정확한 대본에서 발견되지 않는 채점 용어는 케이스 저장 전에 거부합니다.
 
 녹음 manifest와 v4 결과에는 study/case/snapshot/glossary/script identity가 이어집니다. 결과 화면은 세트·케이스 필터, 완전한 accuracy 실행만 사용한 케이스별 A/B/C 평균, CSV·TSV·JSON 내보내기를 제공합니다. 기존 고정 대본, manifest v1/v2, 결과 v1~v3 읽기는 유지됩니다.
 
@@ -30,7 +30,7 @@
 |---|---|---|
 | A | 없음 | 없음 |
 | B | canonical + English | 없음 |
-| C | canonical + English + 검토된 한국어 발음 | 검토된 별칭만 canonical로 정정 |
+| C | canonical + English + 안전한 한국어 발음 | 저장된 안전 발음을 canonical로 정정 |
 
 UI나 CLI 실행 한 번은 Google STT를 세 번 호출하므로 세 조건 모두 유료 사용량이 발생합니다. 자동 retry·자동 재개·cancel route/UI는 없습니다. 테스트와 브라우저 QA에서는 Start를 누르거나 job POST API를 호출하지 않으며, `pnpm test`도 Google STT를 호출하지 않습니다.
 

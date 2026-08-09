@@ -17,15 +17,15 @@ export const fixtureAdaptationTermSchema = z.object({
   spokenAliases: z.array(z.string().min(1).max(40)).max(6).optional().default([])
 }).strict().superRefine((term, context) => {
   const normalizedAliases = term.spokenAliases.map(canonicalizeSpokenForm);
-  const reviewedAliases = sanitizeSpokenAliases(term.canonicalTerm, term.english, normalizedAliases);
+  const safeAliases = sanitizeSpokenAliases(term.canonicalTerm, term.english, normalizedAliases);
   if (
-    reviewedAliases.length !== normalizedAliases.length ||
-    reviewedAliases.some((alias, index) => alias !== normalizedAliases[index])
+    safeAliases.length !== normalizedAliases.length ||
+    safeAliases.some((alias, index) => alias !== normalizedAliases[index])
   ) {
     context.addIssue({
       code: "custom",
       path: ["spokenAliases"],
-      message: "spokenAliases에는 정규화된 검토 완료 별칭만 사용할 수 있습니다."
+      message: "spokenAliases에는 정규화된 안전한 한글 발음만 사용할 수 있습니다."
     });
   }
 });
@@ -48,15 +48,15 @@ export const fixtureTargetTermSchema = z.object({
   expectedOccurrences: z.array(z.number().int().positive()).min(1).max(50)
 }).strict().superRefine((term, context) => {
   const normalizedAliases = term.spokenAliases.map(canonicalizeSpokenForm);
-  const reviewedAliases = sanitizeSpokenAliases(term.canonicalTerm, term.english, normalizedAliases);
+  const safeAliases = sanitizeSpokenAliases(term.canonicalTerm, term.english, normalizedAliases);
   if (
-    reviewedAliases.length !== normalizedAliases.length ||
-    reviewedAliases.some((alias, index) => alias !== normalizedAliases[index])
+    safeAliases.length !== normalizedAliases.length ||
+    safeAliases.some((alias, index) => alias !== normalizedAliases[index])
   ) {
     context.addIssue({
       code: "custom",
       path: ["spokenAliases"],
-      message: "spokenAliases에는 정규화된 검토 완료 별칭만 사용할 수 있습니다."
+      message: "spokenAliases에는 정규화된 안전한 한글 발음만 사용할 수 있습니다."
     });
   }
   if (new Set(term.expectedOccurrences).size !== term.expectedOccurrences.length) {
@@ -141,6 +141,48 @@ export const fixtureScriptSchema = z.object({
       }
     });
   });
+
+  if (script.adaptationTerms) {
+    const adaptationIds = new Set<string>();
+    const adaptationFormOwners = new Map<string, Set<string>>();
+    const adaptationAliasOwners = new Map<string, Set<string>>();
+
+    script.adaptationTerms.forEach((term, termIndex) => {
+      if (adaptationIds.has(term.id)) {
+        context.addIssue({ code: "custom", path: ["adaptationTerms", termIndex, "id"], message: "adaptation term id가 중복되었습니다." });
+      }
+      adaptationIds.add(term.id);
+      [term.canonicalTerm, term.english].forEach((form) => {
+        const key = spokenFormKey(form);
+        if (key) addOwner(adaptationFormOwners, key, term.id);
+      });
+      term.spokenAliases.forEach((alias) => addOwner(adaptationAliasOwners, spokenFormKey(alias), term.id));
+    });
+
+    script.adaptationTerms.forEach((term, termIndex) => {
+      [term.canonicalTerm, term.english].forEach((form) => {
+        const key = spokenFormKey(form);
+        if (!key) return;
+        if ((adaptationFormOwners.get(key)?.size ?? 0) > 1 || [...(adaptationAliasOwners.get(key) ?? [])].some((owner) => owner !== term.id)) {
+          context.addIssue({
+            code: "custom",
+            path: ["adaptationTerms", termIndex],
+            message: "PDF adaptation canonical/English 표기가 다른 용어와 충돌합니다."
+          });
+        }
+      });
+      term.spokenAliases.forEach((alias, aliasIndex) => {
+        const key = spokenFormKey(alias);
+        if ((adaptationAliasOwners.get(key)?.size ?? 0) > 1 || [...(adaptationFormOwners.get(key) ?? [])].some((owner) => owner !== term.id)) {
+          context.addIssue({
+            code: "custom",
+            path: ["adaptationTerms", termIndex, "spokenAliases", aliasIndex],
+            message: "PDF adaptation spoken alias가 다른 용어 표기와 충돌합니다."
+          });
+        }
+      });
+    });
+  }
 
   for (let sequence = 1; sequence <= expectedCount; sequence += 1) {
     if (!expectedSequences.has(sequence)) {
@@ -450,8 +492,8 @@ export function scoreComparisonRun(options: {
       .forEach(({ correction }) => {
         const target = targetById.get(correction.termId) ?? adaptationTargetById.get(correction.termId);
         const correctedCanonical = target && spokenFormKey(correction.correctedText) === spokenFormKey(target.canonicalTerm);
-        const reviewedOriginal = target?.spokenAliases.some((alias) => spokenFormKey(alias) === spokenFormKey(correction.originalText)) ?? false;
-        const aliasMatchIndex = target && correctedCanonical && reviewedOriginal
+        const storedAliasOriginal = target?.spokenAliases.some((alias) => spokenFormKey(alias) === spokenFormKey(correction.originalText)) ?? false;
+        const aliasMatchIndex = target && correctedCanonical && storedAliasOriginal
           ? aliasMatches.findIndex((match, index) =>
               !usedAliasMatches.has(index) &&
               match.term.id === target.id &&

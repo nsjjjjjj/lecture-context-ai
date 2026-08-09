@@ -79,6 +79,25 @@ describe("browser glossary storage v3", () => {
     expect(JSON.parse(raw || "{}")).toEqual({ version: 3, glossaries: [saved] });
   });
 
+  it("roundtrips a safe generated pronunciation outside the fallback list", () => {
+    const storage = new MemoryStorage();
+    const bert = term({
+      id: "term-bert",
+      term: "BERT",
+      english: "",
+      spokenAliases: ["버트"],
+      easyExplanation: "문맥을 양방향으로 이해하는 언어 모델"
+    });
+    const saved = saveAnalyzedGlossary(storage, analysis({ terms: [bert], phraseSet: ["BERT", "버트"] }), "BERT 용어집", {
+      id: "glossary-bert",
+      now: "2026-08-08T01:10:00.000Z"
+    });
+
+    expect(saved.terms[0]?.spokenAliases).toEqual(["버트"]);
+    expect(saved.phraseSet).toEqual(["BERT", "버트"]);
+    expect(listStoredGlossaries(storage)).toEqual([saved]);
+  });
+
   it("rejects malformed JSON and strict-shape violations", () => {
     const storage = new MemoryStorage();
     storage.setItem(GLOSSARY_STORAGE_KEY, "{");
@@ -149,7 +168,7 @@ describe("browser glossary storage v3", () => {
     });
   });
 
-  it("migrates v2 by retaining reviewed aliases and dropping unsafe aliases and their PhraseSet entries", () => {
+  it("migrates v2 by retaining safe aliases and dropping unsafe aliases and their PhraseSet entries", () => {
     const storage = new MemoryStorage();
     storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({
       version: 2,
@@ -180,7 +199,7 @@ describe("browser glossary storage v3", () => {
     expect(() => saveAnalyzedGlossary(storage, analysis({
       terms: [term({ term: "API", english: "Application Programming Interface", spokenAliases: ["사과"] })],
       phraseSet: ["API", "사과"]
-    }), "미검토 별칭")).toThrowError(expect.objectContaining({ code: "invalid" }));
+    }), "위험 일반 단어 별칭")).toThrowError(expect.objectContaining({ code: "invalid" }));
 
     expect(() => saveAnalyzedGlossary(storage, analysis({
       terms: [

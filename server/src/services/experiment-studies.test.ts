@@ -41,6 +41,16 @@ const glossary = {
       pageNumber: 2,
       occurrences: 1,
       source: "gemini" as const
+    },
+    {
+      id: "term-bert",
+      term: "BERT",
+      english: "",
+      spokenAliases: ["버트"],
+      easyExplanation: "문맥을 양방향으로 이해하는 언어 모델",
+      pageNumber: 2,
+      occurrences: 1,
+      source: "gemini" as const
     }
   ]
 };
@@ -72,7 +82,7 @@ describe("experiment study snapshots", () => {
       ["RAG", [1, 3]],
       ["LoRA", [2]]
     ]);
-    expect(experimentCase.script.adaptationTerms?.map((term) => term.canonicalTerm)).toEqual(["RAG", "LLM"]);
+    expect(experimentCase.script.adaptationTerms?.map((term) => term.canonicalTerm)).toEqual(["RAG", "LLM", "BERT"]);
     expect(experimentCase.snapshotHash).toMatch(/^[0-9a-f]{64}$/);
     expect(experimentCase.script.experimentIdentity).toMatchObject({
       studyId: study.id,
@@ -87,6 +97,7 @@ describe("experiment study snapshots", () => {
     expect(definitions[1]?.phraseSet).toContain("LLM");
     expect(definitions[1]?.phraseSet).not.toContain("LoRA");
     expect(definitions[2]?.phraseSet).toContain("래그");
+    expect(definitions[2]?.phraseSet).toContain("버트");
 
     const cScore = scoreComparisonRun({
       runLabel: "spoken-alias-phrase-set",

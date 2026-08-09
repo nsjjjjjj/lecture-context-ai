@@ -60,11 +60,27 @@ describe("fixed STT A/B/C definitions", () => {
     ]);
   });
 
-  it("rejects plausible but unreviewed Korean aliases in fixture data", () => {
+  it("accepts safe generated Korean aliases in condition C", () => {
+    const value = comparisonScript();
+    value.targetTerms.push({
+      id: "bert",
+      canonicalTerm: "BERT",
+      english: "",
+      spokenAliases: ["버트"],
+      expectedOccurrences: [4]
+    });
+
+    const parsed = fixtureScriptSchema.parse(value);
+    const conditionC = buildComparisonRunDefinitions(parsed)[2];
+    expect(conditionC?.phraseSet).toContain("버트");
+    expect(conditionC?.terms.find((term) => term.id === "bert")?.spokenAliases).toEqual(["버트"]);
+  });
+
+  it("rejects blocked common-word aliases in fixture data", () => {
     const value = comparisonScript();
     value.targetTerms[0]!.spokenAliases.push("사과");
 
-    expect(() => fixtureScriptSchema.parse(value)).toThrow("검토 완료 별칭");
+    expect(() => fixtureScriptSchema.parse(value)).toThrow("안전한 한글 발음");
   });
 
   it("rejects an alias that collides with a later canonical term regardless of declaration order", () => {
@@ -78,6 +94,16 @@ describe("fixed STT A/B/C definitions", () => {
         { id: "rag-pronunciation", canonicalTerm: "래그", spokenAliases: [], expectedOccurrences: [2] }
       ]
     })).toThrow("충돌");
+  });
+
+  it("rejects collisions inside PDF adaptation terms", () => {
+    const value = comparisonScript();
+    value.adaptationTerms = [
+      { id: "pdf-bert", canonicalTerm: "BERT", english: "", spokenAliases: ["버트"] },
+      { id: "pdf-other", canonicalTerm: "버트", english: "", spokenAliases: [] }
+    ];
+
+    expect(() => fixtureScriptSchema.parse(value)).toThrow("PDF adaptation");
   });
 });
 
@@ -96,7 +122,7 @@ describe("occurrence-level comparison scoring", () => {
     }]
   };
 
-  it("aligns repeated expected occurrences to direct matches and reviewed alias corrections", () => {
+  it("aligns repeated expected occurrences to direct matches and safe alias corrections", () => {
     const result = scoreComparisonRun({
       runLabel: "spoken-alias-phrase-set",
       script: comparisonScript(),

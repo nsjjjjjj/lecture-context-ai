@@ -48,7 +48,24 @@ describe("transparent final caption correction", () => {
     expect(findTranscriptTermMatches("레그는 기술입니다", [rag]).map((match) => match.term.id)).toEqual(["rag"]);
   });
 
-  it("does not correct an arbitrary unreviewed alias even when passed directly", () => {
+  it("corrects a safe generated alias outside the fallback list", () => {
+    const bert = {
+      ...rag,
+      id: "bert",
+      term: "BERT",
+      english: "",
+      spokenAliases: ["버트"]
+    };
+
+    expect(createTranscriptEvent("버트를 사용합니다.", true, [bert])).toMatchObject({
+      text: "BERT를 사용합니다.",
+      rawText: "버트를 사용합니다.",
+      detectedTerms: ["bert"],
+      corrections: [{ originalText: "버트", correctedText: "BERT", termId: "bert" }]
+    });
+  });
+
+  it("does not correct a blocked common-word alias even when passed directly", () => {
     const api = {
       ...rag,
       id: "api",

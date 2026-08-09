@@ -18,6 +18,7 @@ const UNSAFE_ALIASES = new Set([
   "모델",
   "문서",
   "방식",
+  "사과",
   "생성",
   "서비스",
   "사용자",
@@ -85,11 +86,6 @@ export function knownSpokenAliases(term: string, english: string): string[] {
     .flatMap((group) => group.aliases);
 }
 
-export function isKnownSpokenAlias(term: string, english: string, alias: string): boolean {
-  const aliasKey = spokenFormKey(alias);
-  return aliasKey.length > 0 && knownSpokenAliases(term, english).some((candidate) => spokenFormKey(candidate) === aliasKey);
-}
-
 export function isContextAmbiguousSpokenAlias(alias: string): boolean {
   return spokenFormKey(alias) === spokenFormKey("레그");
 }
@@ -113,7 +109,6 @@ export function sanitizeSpokenAliases(term: string, english: string, value: unkn
       hangulCount < 2 ||
       protectedKeys.has(key) ||
       UNSAFE_ALIASES.has(key) ||
-      !isKnownSpokenAlias(term, english, alias) ||
       seen.has(key)
     ) continue;
     seen.add(key);

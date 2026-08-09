@@ -44,24 +44,24 @@ describe("spoken alias validation", () => {
     ]);
   });
 
-  it("accepts only the reviewed spoken forms used by the v2 fixed script", () => {
+  it("accepts safe generated Korean pronunciations outside the deterministic fallback list", () => {
     expect(sanitizeSpokenAliases("Prompt Engineering", "", ["프롬프트 엔지니어링", "프롬프트 설계"])).toEqual([
-      "프롬프트 엔지니어링"
+      "프롬프트 엔지니어링",
+      "프롬프트 설계"
     ]);
-    expect(sanitizeSpokenAliases("Vector Database", "", ["벡터 데이터베이스"])).toEqual(["벡터 데이터베이스"]);
+    expect(sanitizeSpokenAliases("BERT", "", ["버트"])).toEqual(["버트"]);
+    expect(sanitizeSpokenAliases("ResNet", "", ["레즈넷"])).toEqual(["레즈넷"]);
   });
 
   it("rejects non-Hangul forms, unsafe common words, and every alias for Korean-only terms", () => {
     expect(sanitizeSpokenAliases("전문용어", "", ["alias", "모델", "용어", "충분한별칭"])).toEqual([]);
   });
 
-  it("accepts reviewed API pronunciation while rejecting unrelated plausible-looking aliases", () => {
+  it("accepts generated pronunciations while rejecting blocked common-word aliases", () => {
     expect(sanitizeSpokenAliases("API", "Application Programming Interface", ["사과", "에이피아이"])).toEqual([
       "에이피아이"
     ]);
-    expect(sanitizeSpokenAliases("Large Language Model", "LLM", ["엘엘엠", "거대 언어 모델"])).toEqual([
-      "엘엘엠"
-    ]);
+    expect(sanitizeSpokenAliases("Large Language Model", "LLM", ["엘엘엠", "거대 언어 모델"])).toEqual(["엘엘엠", "거대 언어 모델"]);
   });
 
   it("drops aliases shared by different terms or equal to another canonical term", () => {
@@ -74,7 +74,7 @@ describe("spoken alias validation", () => {
     expect(result[1]?.spokenAliases).toEqual([]);
   });
 
-  it("sanitizes supplied aliases without silently adding reviewed aliases", () => {
+  it("sanitizes supplied aliases without silently adding deterministic fallback aliases", () => {
     expect(withSanitizedSpokenAliases([term({ spokenAliases: [] })])[0]?.spokenAliases).toEqual([]);
     expect(withSanitizedSpokenAliases([term({ spokenAliases: [" 레그 ", "사과"] })])[0]?.spokenAliases)
       .toEqual(["레그"]);

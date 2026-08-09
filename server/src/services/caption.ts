@@ -1,5 +1,5 @@
 import type { GlossaryTerm, TranscriptCorrection, TranscriptEvent } from "../types.js";
-import { isContextAmbiguousSpokenAlias, isKnownSpokenAlias } from "./spoken-aliases.js";
+import { isContextAmbiguousSpokenAlias, withSanitizedSpokenAliases } from "./spoken-aliases.js";
 
 type NormalizedText = {
   value: string;
@@ -86,11 +86,11 @@ function hasSafeAliasBoundaries(text: string, start: number, candidate: string):
 
 export function findTranscriptTermMatches(text: string, terms: GlossaryTerm[]): TranscriptTermMatch[] {
   const normalizedText = normalizeTextWithSourceMap(text);
-  const candidates = terms.flatMap((term, sourceIndex) => {
+  const candidates = withSanitizedSpokenAliases(terms).flatMap((term, sourceIndex) => {
     const forms: Array<{ value: string; kind: MatchKind; formIndex: number }> = [
       { value: term.term, kind: "canonical", formIndex: 0 },
       ...(term.english ? [{ value: term.english, kind: "english" as const, formIndex: 1 }] : []),
-      ...term.spokenAliases.filter((value) => isKnownSpokenAlias(term.term, term.english, value)).map((value, aliasIndex) => ({
+      ...term.spokenAliases.map((value, aliasIndex) => ({
         value,
         kind: "spokenAlias" as const,
         formIndex: aliasIndex + 2

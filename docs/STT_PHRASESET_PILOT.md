@@ -51,9 +51,9 @@
 |---|---|---|---|
 | A | `without-phrase-set` | 없음 | 없음 |
 | B | `canonical-phrase-set` | canonical 표기 + English 표기 | 없음 |
-| C | `spoken-alias-phrase-set` | canonical 표기 + English 표기 + 검토된 한국어 발음 | 검토된 별칭을 canonical 용어로 정정 |
+| C | `spoken-alias-phrase-set` | canonical 표기 + English 표기 + 저장된 안전한 한국어 발음 | 안전한 별칭을 canonical 용어로 정정 |
 
-A와 B의 용어 객체에는 `spokenAliases`가 비어 있다. C만 `scripts.json`에 검토 완료로 등록된 한국어 발음을 PhraseSet과 자막 정정 양쪽에 사용한다. Gemini가 제안했지만 검토되지 않은 발음이나 다른 용어와 충돌하는 별칭은 fixture 스키마가 거부한다.
+A와 B의 용어 객체에는 `spokenAliases`가 비어 있다. C만 `scripts.json`에 고정한 한국어 발음을 PhraseSet과 자막 정정 양쪽에 사용한다. PDF 실험 케이스에서는 Gemini가 생성한 발음을 사용자 검토 없이 자동 승인하되 완성형 한글·길이·개수·일반 단어·다른 용어와의 충돌 안전 규칙을 통과해야 하며, fixture 스키마도 같은 규칙을 적용한다.
 
 localhost UI에서는 저장 녹음을 선택하고 **유료 Google STT 스트림 정확히 3회 호출** 동의란을 선택한 뒤 비교를 시작한다. 서버는 A, B, C를 각각 한 번 실행하고, 브라우저는 메모리 job 상태를 폴링해 조건별 진행률을 표시한다. `pnpm stt:compare`도 같은 runner로 최근 WAV 또는 지정한 recording ID를 실행한다. UI와 CLI 모두 실행 한 번에 같은 WAV를 A, B, C에 각각 실시간 속도로 재생하므로 세 번의 유료 Google STT 사용량을 만든다.
 
@@ -78,10 +78,10 @@ localhost UI에서는 저장 녹음을 선택하고 **유료 Google STT 스트�
 
 ## 6. v3 출현 단위 지표
 
-구조화된 `targetTerms`는 용어 ID, canonical 표기, English 표기, 검토된 `spokenAliases`, `expectedOccurrences`를 가진다. 반복 등장한 같은 용어도 출현 순서별로 따로 정렬해 다음 결과 중 하나를 부여한다.
+구조화된 `targetTerms`는 용어 ID, canonical 표기, English 표기, 안전한 `spokenAliases`, `expectedOccurrences`를 가진다. 반복 등장한 같은 용어도 출현 순서별로 따로 정렬해 다음 결과 중 하나를 부여한다.
 
 - **직접 인식(`directRecognitions`)**: STT 원문에서 해당 canonical 또는 English 표기를 직접 연결한 기준 출현 수
-- **별칭 정정 성공(`aliasCorrectionSuccesses`)**: C에서 검토된 한국어 발음을 해당 canonical 용어로 올바르게 정정한 기준 출현 수
+- **별칭 정정 성공(`aliasCorrectionSuccesses`)**: C에서 저장된 안전한 한국어 발음을 해당 canonical 용어로 올바르게 정정한 기준 출현 수
 - **누락(`misses`)**: 직접 인식과 올바른 별칭 정정 어느 쪽에도 정렬되지 않은 기준 출현 수
 - **잘못된 정정(`falseCorrections`)**: 검토되지 않은 원문을 바꾸거나, 예상 출현에 정렬되지 않거나, 별칭 정정을 허용하지 않는 A/B에서 정정이 발생한 수
 - **잘못된 삽입(`falseInsertions`)**: 기준 출현에 정렬되지 않은 추가 canonical/English 용어 인식 수
@@ -163,4 +163,4 @@ smoke v3는 연결 관찰을 위해 차트·원문·표를 표시하지만 TSV �
 8. 오정정 결과를 근거로 별칭 목록과 회귀 테스트를 함께 수정할지 판단한다.
 9. 이후 소음 환경, 다른 화자, 10분 이상 스트림과 Cloud Run 환경으로 범위를 확대한다.
 
-현재 구현으로 `레그`, `트랜스포머`, `파인 튜닝` 같은 검토된 발음을 canonical 용어에 연결하고 원문을 함께 표시할 수 있다. 남은 논문 실험의 핵심은 동일 exact-script WAV의 사전 계획된 반복 실행이며, 단일 17.6% / 17.6% / 94.1% 결과나 기존 106초 파일럿 수치를 일반적 정확도 향상으로 재해석하는 것이 아니다.
+현재 구현으로 `레그`, `트랜스포머`, `파인 튜닝`뿐 아니라 Gemini가 새로 생성한 안전한 한글 발음도 canonical 용어에 연결하고 원문을 함께 표시할 수 있다. 남은 논문 실험의 핵심은 동일 exact-script WAV의 사전 계획된 반복 실행이며, 단일 17.6% / 17.6% / 94.1% 결과나 기존 106초 파일럿 수치를 일반적 정확도 향상으로 재해석하는 것이 아니다.
