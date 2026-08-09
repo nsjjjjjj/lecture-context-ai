@@ -1,18 +1,34 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
-import type {
-  ComparisonOccurrenceOutcome,
-  ComparisonReportV3,
-  ComparisonRunLabel,
-  ComparisonRunResult,
-  ComparisonUnexpectedObservation
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  getCurrentSttComparisonJob,
+  getSttComparison,
+  getSttComparisons,
+  PAID_STT_CALL_CONSENT,
+  startSttComparisonJob,
+  type AudioFixtureRecording,
+  type ComparisonOccurrenceOutcome,
+  type ComparisonReportV3,
+  type ComparisonRunLabel,
+  type ComparisonRunResult,
+  type ComparisonUnexpectedObservation,
+  type ExternalSttComparisonJob,
+  type SttComparisonJobStatus
 } from "../lib/api";
 import {
   aggregateComparisonReport,
   comparisonReportToTsv,
+  defaultRecordingId,
+  historyBadgeLabels,
   isPaperReadyComparison,
+  startSttComparisonAttempt,
+  SttComparisonJobPanel,
   SttComparisonResultsView
 } from "./SttComparisonResults";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 const targetTerms = [
   {
@@ -23,6 +39,65 @@ const targetTerms = [
     expectedOccurrences: [1, 2]
   }
 ];
+
+const recordings: AudioFixtureRecording[] = [
+  {
+    id: "11111111-1111-4111-8111-111111111111",
+    fileName: "older.wav",
+    relativePath: "audio/older.wav",
+    scriptId: "baseline-v2",
+    speakerLabel: "speaker-a",
+    environment: "quiet",
+    createdAt: "2026-08-09T00:00:00.000Z",
+    durationMs: 1_000,
+    sampleRate: 16000,
+    channels: 1,
+    bitsPerSample: 16,
+    dataBytes: 32_000,
+    speakerReadReferenceScriptVerbatim: true
+  },
+  {
+    id: "22222222-2222-4222-8222-222222222222",
+    fileName: "latest.wav",
+    relativePath: "audio/latest.wav",
+    scriptId: "baseline-v2",
+    speakerLabel: "speaker-b",
+    environment: "noisy",
+    createdAt: "2026-08-09T01:00:00.000Z",
+    durationMs: 2_000,
+    sampleRate: 16000,
+    channels: 1,
+    bitsPerSample: 16,
+    dataBytes: 64_000,
+    speakerReadReferenceScriptVerbatim: true
+  }
+];
+
+function createJob(overrides: Partial<SttComparisonJobStatus> = {}): SttComparisonJobStatus {
+  const state = overrides.state ?? overrides.status ?? "starting";
+  return {
+    id: "job-1",
+    recordingId: recordings[1]!.id,
+    status: state,
+    state,
+    createdAt: "2026-08-09T01:00:00.000Z",
+    startedAt: null,
+    updatedAt: "2026-08-09T01:00:00.000Z",
+    finishedAt: null,
+    completedAt: null,
+    progress: { completed: 0, total: 3, percent: 0 },
+    activeRunLabel: null,
+    runs: [
+      { label: "without-phrase-set", state: "pending", message: null, error: null },
+      { label: "canonical-phrase-set", state: "pending", message: null, error: null },
+      { label: "spoken-alias-phrase-set", state: "pending", message: null, error: null }
+    ],
+    message: "STT 비교 작업을 시작합니다.",
+    fatalError: null,
+    resultFileName: null,
+    ...overrides
+  };
+}
 
 function createRun(
   label: ComparisonRunLabel,
@@ -142,16 +217,277 @@ describe("STT comparison aggregation", () => {
   });
 });
 
+describe("STT comparison API request safety", () => {
+  it("limits external job owners to the implemented CLI and UI values", () => {
+    const owners: ExternalSttComparisonJob["owner"][] = ["cli", "ui"];
+    expect(owners).toEqual(["cli", "ui"]);
+  });
+
+  it("sends the exact paid-call consent only from the explicit start helper", async () => {
+    const job = createJob();
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ job }), {
+      status: 202,
+      headers: { "Content-Type": "application/json" }
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await startSttComparisonJob(recordings[1]!.id);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("/api/dev/stt-comparison-jobs");
+    expect(options.method).toBe("POST");
+    expect(JSON.parse(String(options.body))).toEqual({
+      recordingId: recordings[1]!.id,
+      paidCallConsent: PAID_STT_CALL_CONSENT
+    });
+    expect(PAID_STT_CALL_CONSENT).toBe("I_UNDERSTAND_3_PAID_GOOGLE_STT_CALLS");
+  });
+
+  it("uses GET-only requests for current job, history paging, and detail selection", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ active: null }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ latest: null, latestFileName: null, reportCount: 0, history: [], page: { offset: 5, limit: 5, hasMore: false } }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ fileName: "comparison-safe.json", modifiedAt: "2026-08-09T01:00:00.000Z", report: { version: 2 } }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getCurrentSttComparisonJob();
+    await getSttComparisons({ offset: 5, limit: 5 });
+    await getSttComparison("comparison-safe.json");
+
+    expect(fetchMock.mock.calls.map(([url, options]) => ({
+      url,
+      method: (options as RequestInit | undefined)?.method ?? "GET"
+    }))).toEqual([
+      { url: "/api/dev/stt-comparison-jobs/current", method: "GET" },
+      { url: "/api/dev/stt-comparisons?offset=5&limit=5", method: "GET" },
+      { url: "/api/dev/stt-comparisons/comparison-safe.json", method: "GET" }
+    ]);
+  });
+
+  it("reloads the current job after a failed start and resets consent after every attempt", async () => {
+    const conflict = new Error("이미 다른 STT 비교가 실행 중입니다.");
+    const failedLoadCurrent = vi.fn().mockResolvedValue(undefined);
+    const failedResetConsent = vi.fn();
+    const failedRequest = vi.fn().mockRejectedValue(conflict);
+
+    await expect(startSttComparisonAttempt({
+      recordingId: recordings[1]!.id,
+      loadCurrent: failedLoadCurrent,
+      resetConsent: failedResetConsent,
+      requestStart: failedRequest
+    })).rejects.toBe(conflict);
+
+    expect(failedRequest).toHaveBeenCalledOnce();
+    expect(failedLoadCurrent).toHaveBeenCalledOnce();
+    expect(failedResetConsent).toHaveBeenCalledOnce();
+
+    const completedJob = createJob({ state: "completed", status: "completed" });
+    const successfulLoadCurrent = vi.fn().mockResolvedValue(undefined);
+    const successfulResetConsent = vi.fn();
+    await expect(startSttComparisonAttempt({
+      recordingId: recordings[1]!.id,
+      loadCurrent: successfulLoadCurrent,
+      resetConsent: successfulResetConsent,
+      requestStart: vi.fn().mockResolvedValue({ job: completedJob })
+    })).resolves.toBe(completedJob);
+
+    expect(successfulLoadCurrent).not.toHaveBeenCalled();
+    expect(successfulResetConsent).toHaveBeenCalledOnce();
+  });
+});
+
+describe("STT comparison job rendering", () => {
+  it("defaults to the latest recording and disables start until explicit three-stream consent", () => {
+    expect(defaultRecordingId(recordings)).toBe(recordings[1]!.id);
+    expect(defaultRecordingId([...recordings].reverse())).toBe(recordings[1]!.id);
+    const html = renderToStaticMarkup(
+      <SttComparisonJobPanel
+        recordings={recordings}
+        selectedRecordingId={recordings[1]!.id}
+        onSelectRecording={() => undefined}
+        consent={false}
+        onConsentChange={() => undefined}
+        active={null}
+        checkingActive={false}
+        starting={false}
+        startError=""
+        currentError=""
+        pollingError=""
+        onStart={() => undefined}
+      />
+    );
+
+    expect(html).toContain("정확히 3개의 유료 Google STT 스트림");
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>.*유료 비교 시작/s);
+    expect(html).not.toContain("취소");
+  });
+
+  it("blocks a paid start when the current-job check failed", () => {
+    const html = renderToStaticMarkup(
+      <SttComparisonJobPanel
+        recordings={recordings}
+        selectedRecordingId={recordings[1]!.id}
+        onSelectRecording={() => undefined}
+        consent
+        onConsentChange={() => undefined}
+        active={null}
+        checkingActive={false}
+        starting={false}
+        startError=""
+        currentError="current job unavailable"
+        pollingError=""
+        onStart={() => undefined}
+      />
+    );
+
+    expect(html).toContain("실행 상태 확인 오류: current job unavailable");
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>.*유료 비교 시작/s);
+    expect(html).toMatch(/type="checkbox"[^>]*disabled=""/);
+  });
+
+  it("exposes per-condition state, condition error, fatal error, and polling failure", () => {
+    const job = createJob({
+      id: "job-visible",
+      state: "running",
+      status: "running",
+      progress: { completed: 1, total: 3, percent: 33.333 },
+      activeRunLabel: "canonical-phrase-set",
+      runs: [
+        { label: "without-phrase-set", state: "completed", message: "실행 완료", error: null },
+        { label: "canonical-phrase-set", state: "error", message: "오류", error: "B stream failed" },
+        { label: "spoken-alias-phrase-set", state: "pending", message: null, error: null }
+      ],
+      fatalError: "writer unavailable",
+      resultFileName: null
+    });
+    const html = renderToStaticMarkup(
+      <SttComparisonJobPanel
+        recordings={recordings}
+        selectedRecordingId={recordings[1]!.id}
+        onSelectRecording={() => undefined}
+        consent={false}
+        onConsentChange={() => undefined}
+        active={{ kind: "local", job }}
+        checkingActive={false}
+        starting={false}
+        startError=""
+        currentError=""
+        pollingError="temporary poll failure"
+        onStart={() => undefined}
+      />
+    );
+
+    expect(html).toContain("aria-label=\"STT 비교 작업 진행률 33%\"");
+    expect(html).toContain("A/B/C 조건별 진행 상태");
+    expect(html).toContain("B stream failed");
+    expect(html).toContain("치명적 오류: writer unavailable");
+    expect(html).toContain("temporary poll failure");
+    expect(html).toContain("자동으로 다시 확인합니다");
+  });
+});
+
 describe("STT comparison result rendering", () => {
-  it("shows the compare command when no saved report exists", () => {
+  it("shows a GET-safe empty state when no saved report exists", () => {
     const html = renderToStaticMarkup(<SttComparisonResultsView latest={null} reportCount={0} loading={false} error="" onRefresh={() => undefined} />);
-    expect(html).toContain("pnpm stt:compare");
-    expect(html).toContain("이 화면에서 유료 STT API를 실행하지 않습니다");
+    expect(html).toContain("저장된 비교 결과가 없습니다");
+    expect(html).toContain("새로고침과 결과 선택은 유료 호출을 만들지 않습니다");
   });
 
   it("labels v1/v2 as legacy smoke data without rendering invented metrics", () => {
     const html = renderToStaticMarkup(<SttComparisonResultsView latest={{ version: 2, metrics: { accuracy: 99 } }} reportCount={1} loading={false} error="" onRefresh={() => undefined} />);
     expect(html).toContain("레거시 스모크 결과");
+    expect(html).not.toContain("제품 연결률");
+  });
+
+  it("renders paged history and marks the selected detail without starting a job", () => {
+    const history = [
+      {
+        fileName: "comparison-new.json",
+        modifiedAt: "2026-08-09T02:00:00.000Z",
+        version: 3 as const,
+        createdAt: "2026-08-09T02:00:00.000Z",
+        recordingId: recordings[1]!.id,
+        scriptTitle: "기준 문장",
+        evaluationMode: "accuracy" as const,
+        runOutcome: "complete" as const
+      },
+      {
+        fileName: "comparison-old.json",
+        modifiedAt: "2026-08-09T01:00:00.000Z",
+        version: 2 as const,
+        createdAt: null,
+        recordingId: null,
+        scriptTitle: null,
+        evaluationMode: null,
+        runOutcome: "legacy" as const
+      }
+    ];
+    const html = renderToStaticMarkup(
+      <SttComparisonResultsView
+        latest={{ version: 2 }}
+        reportCount={3}
+        loading={false}
+        error=""
+        onRefresh={() => undefined}
+        history={history}
+        selectedFileName="comparison-old.json"
+        page={{ offset: 0, limit: 2, hasMore: true }}
+      />
+    );
+
+    expect(html).toContain("comparison-new.json");
+    expect(html).toMatch(/aria-current="true"[^>]*>.*comparison-old\.json/s);
+    expect(html).toContain("1–2 / 3");
+  });
+
+  it("renders accuracy, smoke, outcome, and legacy badges only from history metadata", () => {
+    const accuracy = {
+      fileName: "comparison-accuracy.json",
+      modifiedAt: "2026-08-09T03:00:00.000Z",
+      version: 3 as const,
+      createdAt: "2026-08-09T03:00:00.000Z",
+      recordingId: recordings[1]!.id,
+      scriptTitle: "기준 문장",
+      evaluationMode: "accuracy" as const,
+      runOutcome: "complete" as const
+    };
+    const smokeWithErrors = {
+      ...accuracy,
+      fileName: "comparison-smoke.json",
+      evaluationMode: "smoke" as const,
+      runOutcome: "has-errors" as const
+    };
+    const legacy = {
+      fileName: "comparison-legacy.json",
+      modifiedAt: "2026-08-09T01:00:00.000Z",
+      version: 2 as const,
+      createdAt: null,
+      recordingId: null,
+      scriptTitle: null,
+      evaluationMode: null,
+      runOutcome: "legacy" as const
+    };
+    const html = renderToStaticMarkup(
+      <SttComparisonResultsView
+        latest={{ version: 2, metrics: { accuracy: 99 } }}
+        reportCount={3}
+        loading={false}
+        error=""
+        onRefresh={() => undefined}
+        history={[accuracy, smokeWithErrors, legacy]}
+        page={{ offset: 0, limit: 3, hasMore: false }}
+      />
+    );
+
+    expect(historyBadgeLabels(accuracy)).toEqual(["정확도", "완료"]);
+    expect(historyBadgeLabels(smokeWithErrors)).toEqual(["스모크", "오류 있음"]);
+    expect(historyBadgeLabels(legacy)).toEqual(["레거시 스모크"]);
+    expect(html).toContain(">정확도<");
+    expect(html).toContain(">스모크<");
+    expect(html).toContain(">완료<");
+    expect(html).toContain(">오류 있음<");
+    expect(html).toContain(">레거시 스모크<");
     expect(html).not.toContain("제품 연결률");
   });
 
@@ -172,6 +508,8 @@ describe("STT comparison result rendering", () => {
     expect(html).toContain("STT 원문");
     expect(html).toContain("정정·표시 문장");
     expect(html).toContain("전역·미할당 예외");
+    expect(html).toContain("완료된 리포트 1개만으로는 출판 수준의 반복 실험이 아닙니다");
+    expect(html).not.toContain("PUBLICATION READY");
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>.*TSV로 복사/s);
   });
 });

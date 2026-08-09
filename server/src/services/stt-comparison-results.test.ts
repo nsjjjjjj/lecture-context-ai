@@ -9,7 +9,11 @@ import {
   isLegacyComparisonReport
 } from "./stt-comparison.js";
 import {
+  DEFAULT_STT_COMPARISON_RESULTS_LIMIT,
   MAX_COMPARISON_REPORT_BYTES,
+  MAX_STT_COMPARISON_RESULTS_LIMIT,
+  isValidSttComparisonResultFileName,
+  readSttComparisonResult,
   readSttComparisonResults
 } from "./stt-comparison-results.js";
 
@@ -97,13 +101,56 @@ afterEach(async () => {
 });
 
 describe("STT comparison result discovery", () => {
-  it("returns the stable empty response when the results directory has no reports", async () => {
+  it("returns the stable empty response with default pagination", async () => {
     const { root } = await fixtureRootWithResults();
 
-    await expect(readSttComparisonResults(root)).resolves.toEqual({ latest: null, reportCount: 0 });
+    await expect(readSttComparisonResults(root)).resolves.toEqual({
+      latest: null,
+      latestFileName: null,
+      reportCount: 0,
+      history: [],
+      page: { offset: 0, limit: DEFAULT_STT_COMPARISON_RESULTS_LIMIT, hasMore: false }
+    });
   });
 
-  it("returns the newest valid v3 report with complete final transcripts", async () => {
+  it("paginates summaries in mtime-descending and filename-descending order without changing latest", async () => {
+    const { root, results } = await fixtureRootWithResults();
+    const reports = [
+      ["comparison-oldest.json", "oldest", "2026-08-09T00:00:00.000Z"],
+      ["comparison-alpha.json", "alpha", "2026-08-09T00:01:00.000Z"],
+      ["comparison-zulu.json", "zulu", "2026-08-09T00:01:00.000Z"],
+      ["comparison-newest.json", "newest", "2026-08-09T00:02:00.000Z"]
+    ] as const;
+    for (const [fileName, marker, modifiedAt] of reports) {
+      const filePath = path.join(results, fileName);
+      await writeFile(filePath, JSON.stringify({ version: 2, marker }));
+      await utimes(filePath, new Date(modifiedAt), new Date(modifiedAt));
+    }
+
+    const result = await readSttComparisonResults(root, { offset: 1, limit: 2 });
+
+    expect(result.latestFileName).toBe("comparison-newest.json");
+    expect(result.latest).toEqual({ version: 2, marker: "newest" });
+    expect(result.reportCount).toBe(4);
+    expect(result.history.map(({ fileName }) => fileName)).toEqual([
+      "comparison-zulu.json",
+      "comparison-alpha.json"
+    ]);
+    expect(result.page).toEqual({ offset: 1, limit: 2, hasMore: true });
+  });
+
+  it("uses the default page size and caps requested limits at 100", async () => {
+    const { root, results } = await fixtureRootWithResults();
+    await writeFile(path.join(results, "comparison-only.json"), JSON.stringify({ version: 1 }));
+
+    const defaultPage = await readSttComparisonResults(root);
+    const cappedPage = await readSttComparisonResults(root, { limit: MAX_STT_COMPARISON_RESULTS_LIMIT + 50 });
+
+    expect(defaultPage.page.limit).toBe(DEFAULT_STT_COMPARISON_RESULTS_LIMIT);
+    expect(cappedPage.page).toEqual({ offset: 0, limit: MAX_STT_COMPARISON_RESULTS_LIMIT, hasMore: false });
+  });
+
+  it("keeps the newest valid v3 report complete and exposes only validated summary metadata", async () => {
     const { root, results } = await fixtureRootWithResults();
     const legacyPath = path.join(results, "comparison-older.json");
     const v3Path = path.join(results, "comparison-newer.json");
@@ -116,6 +163,7 @@ describe("STT comparison result discovery", () => {
     const result = await readSttComparisonResults(root);
 
     expect(result.reportCount).toBe(2);
+    expect(result.latestFileName).toBe("comparison-newer.json");
     expect(result.latest).toEqual(v3);
     expect(result.latest).toMatchObject({
       runs: expect.arrayContaining([
@@ -124,19 +172,58 @@ describe("STT comparison result discovery", () => {
         })
       ])
     });
+    expect(result.history[0]).toEqual({
+      fileName: "comparison-newer.json",
+      modifiedAt: "2026-08-09T00:02:00.000Z",
+      version: 3,
+      createdAt: "2026-08-09T00:01:00.000Z",
+      recordingId: "11111111-1111-4111-8111-111111111111",
+      scriptTitle: "v3 comparison",
+      evaluationMode: "accuracy",
+      runOutcome: "complete"
+    });
   });
 
-  it("returns v1/v2 only as opaque legacy data without adding accuracy semantics", async () => {
+  it("marks a v3 report with a failed run as has-errors", async () => {
     const { root, results } = await fixtureRootWithResults();
-    const legacy = { version: 2, createdAt: "legacy timestamp", runs: [{ transcript: "legacy transcript" }] };
+    const report = validV3Report("partial transcript");
+    report.runs[1]!.status = "error";
+    report.runs[1]!.errors = ["stream failed"];
+    await writeFile(path.join(results, "comparison-error.json"), JSON.stringify(report));
+
+    const result = await readSttComparisonResults(root);
+
+    expect(result.history[0]?.runOutcome).toBe("has-errors");
+  });
+
+  it("returns v1/v2 as opaque legacy reports and never infers summary accuracy or metrics", async () => {
+    const { root, results } = await fixtureRootWithResults();
+    const legacy = {
+      version: 2,
+      createdAt: "2026-08-09T00:01:00.000Z",
+      recording: { id: "untrusted-recording", evaluationMode: "accuracy" },
+      script: { title: "untrusted title" },
+      metrics: { accuracy: 99 },
+      runs: [{ transcript: "legacy transcript" }]
+    };
     await writeFile(path.join(results, "comparison-legacy.json"), JSON.stringify(legacy));
 
     const result = await readSttComparisonResults(root);
 
-    expect(result).toEqual({ reportCount: 1, latest: legacy });
+    expect(result.reportCount).toBe(1);
+    expect(result.latestFileName).toBe("comparison-legacy.json");
+    expect(result.latest).toEqual(legacy);
     expect(result.latest && isLegacyComparisonReport(result.latest)).toBe(true);
-    expect(result.latest).not.toHaveProperty("metrics");
-    expect(result.latest).not.toHaveProperty("accuracyValid");
+    expect(result.history[0]).toMatchObject({
+      version: 2,
+      createdAt: null,
+      recordingId: null,
+      scriptTitle: null,
+      evaluationMode: null,
+      runOutcome: "legacy"
+    });
+    expect(result.history[0]).not.toHaveProperty("metrics");
+    expect(result.history[0]).not.toHaveProperty("accuracyValid");
   });
 
   it("silently skips malformed, schema-invalid, oversized, symlinked, non-regular, and nonmatching entries", async () => {
@@ -155,10 +242,10 @@ describe("STT comparison result discovery", () => {
 
     const result = await readSttComparisonResults(root);
 
-    expect(result).toMatchObject({
-      reportCount: 1,
-      latest: { version: 1, runs: [{ transcript: "safe" }] }
-    });
+    expect(result.reportCount).toBe(1);
+    expect(result.latestFileName).toBe("comparison-valid.json");
+    expect(result.latest).toEqual({ version: 1, runs: [{ transcript: "safe" }] });
+    expect(result.history.map(({ fileName }) => fileName)).toEqual(["comparison-valid.json"]);
     expect(JSON.stringify(result)).not.toContain("must not escape");
     expect(JSON.stringify(result)).not.toContain("nonmatching");
   });
@@ -169,6 +256,60 @@ describe("STT comparison result discovery", () => {
     await writeFile(path.join(outsideRoot, "comparison-outside.json"), JSON.stringify({ version: 2, secret: true }));
     await symlink(outsideRoot, path.join(root, "results"));
 
-    await expect(readSttComparisonResults(root)).resolves.toEqual({ latest: null, reportCount: 0 });
+    await expect(readSttComparisonResults(root)).resolves.toEqual({
+      latest: null,
+      latestFileName: null,
+      reportCount: 0,
+      history: [],
+      page: { offset: 0, limit: DEFAULT_STT_COMPARISON_RESULTS_LIMIT, hasMore: false }
+    });
+  });
+});
+
+describe("individual STT comparison result reads", () => {
+  it("returns the exact validated report with filename and filesystem modification time", async () => {
+    const { root, results } = await fixtureRootWithResults();
+    const fileName = "comparison-detail.json";
+    const filePath = path.join(results, fileName);
+    const report = validV3Report("detail transcript");
+    await writeFile(filePath, JSON.stringify(report));
+    await utimes(filePath, new Date("2026-08-09T02:03:04.000Z"), new Date("2026-08-09T02:03:04.000Z"));
+
+    await expect(readSttComparisonResult(root, fileName)).resolves.toEqual({
+      fileName,
+      modifiedAt: "2026-08-09T02:03:04.000Z",
+      report
+    });
+    await expect(readSttComparisonResult(root, "comparison-missing.json")).resolves.toBeNull();
+  });
+
+  it("exports exact filename validation and rejects path escape attempts", async () => {
+    const { root } = await fixtureRootWithResults();
+
+    expect(isValidSttComparisonResultFileName("comparison-safe_01.json")).toBe(true);
+    expect(isValidSttComparisonResultFileName("../comparison-safe.json")).toBe(false);
+    expect(isValidSttComparisonResultFileName("comparison/nested.json")).toBe(false);
+    expect(isValidSttComparisonResultFileName("comparison-safe.json/extra")).toBe(false);
+    expect(isValidSttComparisonResultFileName(`comparison-${"a".repeat(129)}.json`)).toBe(false);
+    await expect(readSttComparisonResult(root, "../comparison-safe.json")).resolves.toBeNull();
+  });
+
+  it("returns null for malformed, schema-invalid, oversized, symlinked, and nonmatching detail targets", async () => {
+    const { root, results } = await fixtureRootWithResults();
+    const outsideRoot = await temporaryRoot("stt-comparison-detail-outside-");
+    const outsidePath = path.join(outsideRoot, "comparison-outside.json");
+    await writeFile(outsidePath, JSON.stringify({ version: 2, secret: "must not escape" }));
+
+    await writeFile(path.join(results, "comparison-malformed.json"), "{not json");
+    await writeFile(path.join(results, "comparison-invalid-schema.json"), JSON.stringify({ version: 3 }));
+    await writeFile(path.join(results, "comparison-oversized.json"), Buffer.alloc(MAX_COMPARISON_REPORT_BYTES + 1, 0x20));
+    await writeFile(path.join(results, "not-a-comparison.json"), JSON.stringify({ version: 2 }));
+    await symlink(outsidePath, path.join(results, "comparison-symlink.json"));
+
+    await expect(readSttComparisonResult(root, "comparison-malformed.json")).resolves.toBeNull();
+    await expect(readSttComparisonResult(root, "comparison-invalid-schema.json")).resolves.toBeNull();
+    await expect(readSttComparisonResult(root, "comparison-oversized.json")).resolves.toBeNull();
+    await expect(readSttComparisonResult(root, "comparison-symlink.json")).resolves.toBeNull();
+    await expect(readSttComparisonResult(root, "not-a-comparison.json")).resolves.toBeNull();
   });
 });

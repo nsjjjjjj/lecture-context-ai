@@ -21,7 +21,7 @@ Google API 자격증명이 없어도 내장된 샘플 강연으로 전체 발표
 - 분석된 전체 용어 객체와 PhraseSet을 브라우저에 자동 저장하고 다시 불러오기
 - 이 브라우저의 저장 용어집 목록, 이름 변경, 삭제
 - 실시간 강연 음성과 PDF를 서버에 저장하지 않는 휘발성 처리
-- 같은 음원을 A/B/C 세 조건으로 비교하고 저장 결과의 차트·조건별 자막·용어별 표·TSV를 확인하는 localhost 전용 개발 도구
+- 저장 녹음을 선택하고 유료 Google STT 스트림 정확히 3회 호출에 동의한 뒤 A/B/C 진행률과 저장 결과 기록을 확인하는 localhost 전용 개발 도구
 - API 없이 실행되는 발표용 데모와 자동 종료 리포트
 
 ## 시스템 작동 구조
@@ -121,12 +121,16 @@ API 키와 Google 인증정보는 브라우저에 전달하지 않고 서버 환
 | `POST` | `/api/analyze` | PDF 페이지 텍스트를 받아 자동 용어집 생성 |
 | `GET` | `/api/dev/audio-fixtures` | 개발용 고정 실험 문장과 로컬 녹음 목록 반환 |
 | `POST` | `/api/dev/audio-fixtures` | 검증된 16kHz mono PCM WAV를 로컬 fixture로 저장 |
-| `GET` | `/api/dev/stt-comparisons` | 유효한 로컬 STT 결과 수와 가장 최근 v3/legacy 리포트 반환 |
+| `POST` | `/api/dev/stt-comparison-jobs` | `recordingId`와 유료 STT 스트림 3회 명시적 동의를 받아 A/B/C 작업 시작 |
+| `GET` | `/api/dev/stt-comparison-jobs/current` | 이 서버의 현재 작업 또는 CLI·다른 개발 서버가 보유한 공유 lock 상태 조회 |
+| `GET` | `/api/dev/stt-comparison-jobs/:jobId` | 이 서버 프로세스 메모리에 있는 작업의 A/B/C 진행 상태 조회 |
+| `GET` | `/api/dev/stt-comparisons?offset=<n>&limit=<n>` | 수정 시각 최신순 결과 기록과 페이지 정보 조회(기본 25개, 최대 100개) |
+| `GET` | `/api/dev/stt-comparisons/:fileName` | 검증된 결과 파일 하나의 상세 리포트 조회 |
 | WebSocket | `/ws` | 마이크 오디오 업로드와 자막 이벤트 스트리밍 |
 
 WebSocket은 `start` 메시지로 `live` 또는 `demo` 모드를 시작합니다. 이 메시지에는 자동 용어집과 검증된 전체 `phraseSet`이 함께 포함되며, 실시간 모드에서는 이후 오디오 바이너리를 전송합니다. 서버는 정규화된 용어 표기와 ID를 각각 중복 제거하고 중복 ID에는 첫 번째 유효 용어만 사용합니다. 서버는 `ready`, `interim`, `final`, `error`, `ended` 이벤트를 반환합니다. `interim.text`는 STT 원문이며 자동 정정하지 않습니다. `final`은 표시용 `text`, 원본 `rawText`, 위치가 포함된 `corrections`, 실제 출현 순서와 반복을 보존한 `detectedTerms`를 함께 반환합니다. 화면은 이를 최신순 설명 피드에 쌓고 `ended`를 받으면 자막과 정정 근거를 보존한 채 결과 리포트로 이동합니다.
 
-`pnpm dev`는 Vite와 백엔드를 모두 `127.0.0.1`에 bind해 LAN 연결 자체를 받지 않습니다. `/api/dev/audio-fixtures`와 `/api/dev/stt-comparisons`는 여기에 더해 `NODE_ENV=development`와 요청의 socket·Host·Origin을 검사하는 개발 전용 경계입니다. 프로덕션의 개발 API 요청은 SPA HTML로 fallback하지 않고 JSON 404를 반환합니다.
+`pnpm dev`는 Vite와 백엔드를 모두 `127.0.0.1`에 bind해 LAN 연결 자체를 받지 않습니다. `/api/dev/*`는 여기에 더해 `NODE_ENV=development`와 요청의 socket·Host·Origin을 검사하는 개발 전용 경계입니다. 프로덕션의 개발 API 요청은 SPA HTML로 fallback하지 않고 JSON 404를 반환합니다.
 
 ## 폴더 구조
 
@@ -145,7 +149,10 @@ server/
   src/index.ts                HTTP listen·WebSocket 서버
   src/services/audio-fixtures.ts  WAV 검증·원자적 저장·오프라인 PCM 로드
   src/services/stt-comparison.ts  고정 A/B/C 조건·출현 단위 점수·v3 결과 스키마
-  src/services/stt-comparison-results.ts  최신 로컬 결과의 제한적·검증된 조회
+  src/services/stt-comparison-runner.ts  CLI·UI 공용 A/B/C 실행과 immutable 결과 저장
+  src/services/stt-comparison-jobs.ts  UI 작업의 프로세스 메모리 상태·진행률
+  src/services/stt-comparison-lock.ts  CLI·UI 공용 cross-process 비교 lock
+  src/services/stt-comparison-results.ts  로컬 결과 기록의 페이지별 목록·상세 검증 조회
   src/services/glossary.ts    Gemini·원문 검증·PhraseSet 생성
   src/services/spoken-aliases.ts  발음 별칭 제한·충돌 제거·알려진 별칭 보완
   src/services/caption.ts     확정 자막 용어 연결·원문 보존·안전한 위치 기반 정정
@@ -185,7 +192,18 @@ pnpm dev
 
 저장 시 `.writer.lock`을 짧게 획득해 같은 fixture root를 연 복수 개발 서버의 manifest 갱신을 직렬화합니다. 비정상 종료로 60초 이상 남은 lock은 다음 저장이 회수합니다. 저장 모듈은 PCM을 15,000바이트 이하의 짝수 길이 청크로 바이트 손실 없이 다시 읽습니다.
 
-개발 서버를 실행한 상태에서 아래 명령을 사용하면 가장 최근 녹음을 실시간 속도로 세 번 재생합니다. 특정 녹음을 비교하려면 명령 뒤에 manifest의 녹음 ID를 붙입니다.
+### localhost UI에서 A/B/C 비교
+
+개발 서버와 Google ADC를 준비한 뒤 같은 카드의 `A/B/C STT 비교 실행`에서 다음 순서로 실행합니다.
+
+1. 저장된 녹음을 명시적으로 선택합니다.
+2. **유료 Google STT 스트림이 정확히 3회 호출됨**을 확인하는 동의란을 선택합니다.
+3. `유료 비교 시작`을 한 번 누릅니다. 서버는 선택한 WAV로 A, B, C를 각각 한 번 실행하고 화면은 job API를 폴링해 진행률과 조건별 상태를 표시합니다.
+4. 완료되면 결과 기록 첫 페이지가 갱신되고 방금 생성된 상세 리포트가 선택됩니다.
+
+실행 중인 조건을 자동 재시도하지 않으며 취소 API나 취소 버튼도 없습니다. 조건 하나가 오류로 끝나도 같은 job 안에서 나머지 조건을 각각 한 번만 실행하고, 오류를 포함한 완전한 v3 리포트를 저장합니다. 따라서 시작 전에 녹음, ADC, Google STT 설정을 확인해야 합니다. 테스트나 브라우저 QA에서는 `유료 비교 시작`을 누르거나 `POST /api/dev/stt-comparison-jobs`를 호출하지 않습니다.
+
+동일한 실행기를 CLI에서도 사용할 수 있습니다. 가장 최근 녹음 또는 지정한 녹음을 실행합니다.
 
 ```bash
 pnpm stt:compare
@@ -198,15 +216,19 @@ pnpm stt:compare -- <recording-id>
 | B · `canonical-phrase-set` | canonical 표기 + English 표기 | 없음 |
 | C · `spoken-alias-phrase-set` | canonical 표기 + English 표기 + 검토된 한국어 발음 | 검토된 별칭만 canonical 용어로 정정 |
 
-명령 한 번은 A/B/C 각각에 대해 실제 Google STT 스트림을 열므로 **유료 API 실행이 세 번 발생합니다.** `pnpm test`는 저장 음원을 Google에 보내지 않고 스키마·조건 생성·점수 계산·파일 저장 경계만 검증하므로 유료 API를 호출하지 않습니다.
+UI 또는 CLI 실행 한 번은 A/B/C 각각에 대해 실제 Google STT 스트림을 열므로 **유료 API 실행이 정확히 세 번 발생합니다.** `pnpm test`는 저장 음원을 Google에 보내지 않고 스키마·조건 생성·점수 계산·파일 저장 경계만 검증하므로 유료 API를 호출하지 않습니다.
 
-실행 결과는 `test-fixtures/stt/results/*.json`의 버전 3 리포트로 저장되며 Git·Docker에서 제외됩니다. 표시용 정정 자막, STT 원문 `rawText`, 정정 내역과 함께 정답 대본의 각 출현을 기준으로 직접 인식, 별칭 정정 성공, 누락, 잘못된 정정, 말하지 않은 용어 삽입, 제품 용어 연결률 `(직접 인식 + 별칭 정정 성공) / 기준 출현 수`를 기록합니다. A/B에서는 별칭 정정을 성공으로 인정하지 않습니다.
+실행 결과는 `test-fixtures/stt/results/comparison-<recordingId>-<jobId>.json`의 버전 3 리포트로 새 파일에 원자적으로 저장되며 Git·Docker에서 제외됩니다. job ID가 파일명에 포함되므로 같은 녹음을 반복해도 기존 결과를 덮어쓰지 않습니다. 이전의 `comparison-<recordingId>.json` 파일도 삭제하거나 이름을 바꾸지 않고 legacy/v3 검증 규칙에 따라 기록에 남깁니다. 리포트는 표시용 정정 자막, STT 원문 `rawText`, 정정 내역과 함께 정답 대본의 각 출현을 기준으로 직접 인식, 별칭 정정 성공, 누락, 잘못된 정정, 말하지 않은 용어 삽입, 제품 용어 연결률 `(직접 인식 + 별칭 정정 성공) / 기준 출현 수`를 기록합니다. A/B에서는 별칭 정정을 성공으로 인정하지 않습니다.
 
-정확도 수치는 녹음 메타데이터에 **“기준 문장을 그대로 읽었습니다”**라는 명시적 선언이 있는 경우에만 유효합니다. 선언하지 않은 녹음과 기존 manifest v1 녹음은 자동으로 smoke 전용이며, 누락과 연결률이 계산되어도 논문 정확도로 해석하지 않습니다. 현재 106초 녹음은 예전 소개 대본을 읽어 현재 기준 문장과 일치하지 않으므로 계속 smoke 전용입니다. 논문 수치를 만들려면 화면의 새 기준 문장을 그대로 읽은 음원을 새로 녹음해야 합니다.
+정확도 수치는 녹음 메타데이터에 **“기준 문장을 그대로 읽었습니다”**라는 명시적 선언이 있는 경우에만 유효합니다. 선언하지 않은 녹음과 기존 manifest v1 녹음은 자동으로 smoke 전용이며, 누락과 연결률이 계산되어도 논문 정확도로 해석하지 않습니다. 106초 legacy 녹음은 예전 소개 대본을 읽어 현재 기준 문장과 일치하지 않으므로 계속 smoke 전용입니다. 별도의 exact-script 녹음으로 완전한 accuracy 리포트 하나를 만들었지만, 논문 근거로 쓰려면 같은 WAV의 반복 실행이 더 필요합니다.
 
-`pnpm stt:compare`가 결과를 저장한 뒤 localhost 개발 화면의 `저장된 STT 비교 결과`에서 `새로고침`을 누르면 가장 최근의 유효한 파일을 읽습니다. v3는 조건 비교 차트, A/B/C별 STT 원문과 정정·표시 문장, 용어별 출현 표와 논문용 요약 표를 보여줍니다. TSV 복사는 정확도 모드이면서 세 조건이 모두 오류 없이 완료된 결과에서만 활성화되고, smoke 결과는 화면에서 관찰할 수 있어도 TSV 복사가 비활성화됩니다. 결과 API와 화면은 개발 모드의 localhost에서만 열립니다. 가장 최근 결과가 버전 1·2이면 `레거시 스모크 결과` 안내만 표시하고 지표를 추정하거나 v3 차트·표·TSV로 승격하지 않습니다.
+localhost 개발 화면의 `저장된 STT 비교 결과`는 유효 파일을 수정 시각 최신순으로 5개씩 페이지 이동하고, 선택한 파일의 상세 리포트를 별도 API로 읽습니다. 새로고침·페이지 이동·상세 선택은 Google STT를 호출하지 않습니다. v3 상세는 조건 비교 차트, A/B/C별 STT 원문과 정정·표시 문장, 용어별 출현 표와 논문용 요약 표를 보여줍니다. TSV 복사는 정확도 모드이면서 세 조건이 모두 오류 없이 완료된 결과에서만 활성화되고, smoke 결과는 화면에서 관찰할 수 있어도 TSV 복사가 비활성화됩니다. 버전 1·2는 `레거시 스모크 결과` 안내만 표시하고 지표를 추정하거나 v3 차트·표·TSV로 승격하지 않습니다.
 
-같은 음원을 한 번씩 실행한 A/B/C 한 세트는 오디오 입력을 고정하지만 Google STT의 API 비결정성까지 제거하지는 않습니다. 최종 논문 표에는 같은 음원으로 조건별 반복 실행을 수행하고 반복 수와 요약 방식을 함께 기록하는 것을 권장합니다.
+UI job 상태는 서버 프로세스 메모리에만 있어 서버를 재시작하면 조회할 수 없습니다. 완료되어 `results/`에 저장된 파일은 서버 재시작 뒤에도 기록·상세 화면에서 다시 읽을 수 있습니다. 실행 중 재시작으로 파일 쓰기 전에 중단된 job은 결과가 없으며 자동 재개하거나 재시도하지 않습니다.
+
+CLI와 UI는 fixture root의 `.stt-comparison.lock`을 함께 사용해 프로세스가 달라도 비교 job을 하나만 허용합니다. 살아 있는 PID가 소유한 lock은 중복 시작을 막습니다. 종료된 PID의 stale lock은 내용·파일 identity를 다시 검증한 뒤에만 회수합니다. 손상된 JSON, symlink, 잘못된 권한·크기처럼 안전성을 확인할 수 없는 lock은 자동 삭제하지 않고 시작을 차단하므로 사람이 원인을 확인해야 합니다.
+
+정확도 선언이 있고 A/B/C가 모두 오류 없이 끝난 리포트 하나는 **한 번의 완전한 정확도 실행**일 뿐입니다. 같은 음원을 한 번씩 실행한 A/B/C 한 세트는 오디오 입력을 고정하지만 Google STT의 API 비결정성까지 제거하지 않습니다. publication-grade 근거에는 같은 WAV의 반복 실행, 사전에 정한 반복 수와 요약 방식, 개별 결과 보존이 추가로 필요합니다.
 
 이 경계는 동일 사용자가 제어하는 로컬 개발 환경을 대상으로 합니다. 서버가 직접 사용하는 fixture root·audio·파일의 symlink와 생성 경로 이탈은 거부하지만, 악의적인 동일 사용자 프로세스와 모든 ancestor symlink/TOCTOU를 격리하는 보안 sandbox는 아닙니다.
 
@@ -285,7 +307,7 @@ gcloud run deploy lecture-context-ai \
 - Google STT API 연결과 한국어 음성 응답은 검증했지만, 실제 발표에 사용할 브라우저·마이크 조합의 권한과 음질은 별도 현장 확인이 필요합니다.
 - 긴 강연을 위한 STT 스트림 자동 재연결은 아직 구현하지 않았습니다.
 - 실제 발화 시작 시점을 신뢰성 있게 추적하지 않으므로 결과 화면에서 실시간 표시 지연을 추정해 보여주지 않습니다.
-- 개발용 고정음원 A/B/C v3 점수는 기준 문장 그대로 읽기 선언이 있는 새 exact-script 녹음에서만 정확도로 유효합니다. 현재 106초 legacy 음원은 대본 불일치 smoke 전용이며, 한 번의 A/B/C 결과만으로 Google STT 비결정성이 사라지지 않습니다.
+- 개발용 고정음원 A/B/C v3 점수는 기준 문장 그대로 읽기 선언이 있는 exact-script 녹음에서만 정확도로 유효합니다. 106초 legacy 음원은 대본 불일치 smoke 전용입니다. 별도의 exact-script 단일 accuracy 리포트가 있어도 Google STT 비결정성을 다룬 publication-grade 근거에는 같은 WAV의 반복 실행이 필요합니다.
 - 쉬운 용어 정의는 제공하지만 `이 용어가 지금 등장한 이유`를 설명하는 맥락 문장은 다음 버전 작업입니다.
 
 현재 상태와 후속 작업은 [인수인계 문서](docs/HANDOFF.md)를 참고하세요. 기존 106초 smoke 관찰, 현재 A/B/C v3 프로토콜과 논문 해석 경계는 [STT PhraseSet 파일럿 실험 기록](docs/STT_PHRASESET_PILOT.md), 논문 연구문제·평가 설계·발표 흐름은 [논문·발표 구성안](docs/PAPER_PRESENTATION_PLAN.md)에 정리되어 있습니다.

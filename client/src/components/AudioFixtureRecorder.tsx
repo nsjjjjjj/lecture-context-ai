@@ -24,6 +24,10 @@ export function snapshotFixtureMetadata(metadata: FixtureCaptureMetadata): Reado
   return Object.freeze({ ...metadata });
 }
 
+export function comparisonRecordings(catalog: AudioFixtureCatalog | null): AudioFixtureRecording[] {
+  return catalog?.recordings ?? [];
+}
+
 function formatDuration(durationMs: number): string {
   return `${(durationMs / 1_000).toFixed(1)}초`;
 }
@@ -325,7 +329,7 @@ export function AudioFixtureRecorder() {
       ) : (
         <div role="alert" className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-amber-100">{error || "고정 실험 문장을 불러오지 못했습니다."}</div>
       )}
-      <SttComparisonResults />
+      <SttComparisonResults recordings={comparisonRecordings(catalog)} />
     </section>
   );
 }
