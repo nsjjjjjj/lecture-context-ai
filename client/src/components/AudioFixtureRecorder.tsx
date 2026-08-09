@@ -7,6 +7,7 @@ import {
   type AudioFixtureRecording
 } from "../lib/api";
 import { AudioFixtureCapture } from "../lib/audio-fixture-capture";
+import { SttComparisonResults } from "./SttComparisonResults";
 
 const MAX_RECORDING_MS = 120_000;
 
@@ -15,6 +16,7 @@ export type FixtureCaptureMetadata = {
   scriptId: string;
   speakerLabel: "speaker-a" | "speaker-b";
   environment: "quiet" | "noisy";
+  speakerReadReferenceScriptVerbatim: boolean;
 };
 type PreparedRecording = FixtureCaptureMetadata & { blob: Blob; url: string; durationMs: number };
 
@@ -52,6 +54,7 @@ export function AudioFixtureRecorder() {
   const [scriptId, setScriptId] = useState("");
   const [speakerLabel, setSpeakerLabel] = useState<"speaker-a" | "speaker-b">("speaker-a");
   const [environment, setEnvironment] = useState<"quiet" | "noisy">("quiet");
+  const [speakerReadReferenceScriptVerbatim, setSpeakerReadReferenceScriptVerbatim] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [prepared, setPrepared] = useState<PreparedRecording | null>(null);
   const [saved, setSaved] = useState<AudioFixtureRecording | null>(null);
@@ -151,7 +154,8 @@ export function AudioFixtureRecorder() {
     captureMetadataRef.current = snapshotFixtureMetadata({
       scriptId: selectedScript.id,
       speakerLabel,
-      environment
+      environment,
+      speakerReadReferenceScriptVerbatim
     });
     try {
       const session = await controllerRef.current?.start();
@@ -181,6 +185,7 @@ export function AudioFixtureRecorder() {
     setError("");
     setNotice("");
     setElapsedMs(0);
+    setSpeakerReadReferenceScriptVerbatim(false);
     captureMetadataRef.current = null;
     setPhase("idle");
   };
@@ -195,7 +200,8 @@ export function AudioFixtureRecorder() {
       wav: current.blob,
       scriptId: current.scriptId,
       speakerLabel: current.speakerLabel,
-      environment: current.environment
+      environment: current.environment,
+      speakerReadReferenceScriptVerbatim: current.speakerReadReferenceScriptVerbatim
     })
       .then(({ recording }) => {
         if (!mountedRef.current) return;
@@ -223,7 +229,7 @@ export function AudioFixtureRecorder() {
     <section data-testid="audio-fixture-recorder" className="mt-4 rounded-[1.6rem] border border-amber-300/15 bg-[#0b1727]/95 p-5 shadow-xl shadow-black/20 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-sm font-extrabold text-white"><FlaskConical className="size-4 text-amber-300" /> 개발용 고정음원 녹음</div>
+          <h2 className="flex items-center gap-2 text-sm font-extrabold text-white"><FlaskConical className="size-4 text-amber-300" /> 개발용 고정음원 녹음</h2>
           <p className="mt-1 text-xs leading-5 text-slate-500">실제 Google API를 호출하지 않고, 같은 음원을 반복 실험할 수 있도록 로컬 WAV를 만듭니다.</p>
         </div>
         <span className="shrink-0 rounded-full bg-amber-300/10 px-2.5 py-1 text-[10px] font-black text-amber-200">DEV ONLY</span>
@@ -250,13 +256,30 @@ export function AudioFixtureRecorder() {
 
           <label className="mt-3 block text-[11px] font-bold text-slate-500">
             고정 실험 문장
-            <select value={selectedScript.id} onChange={(event) => setScriptId(event.target.value)} disabled={busy || phase === "recording" || Boolean(prepared)} className="mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 outline-none focus:border-cyan-300">
+            <select value={selectedScript.id} onChange={(event) => {
+              setScriptId(event.target.value);
+              setSpeakerReadReferenceScriptVerbatim(false);
+            }} disabled={busy || phase === "recording" || Boolean(prepared)} className="mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 outline-none focus:border-cyan-300">
               {catalog?.scripts.map((script) => <option key={script.id} value={script.id}>{script.title}</option>)}
             </select>
           </label>
           <div className="mt-3 max-h-44 overflow-y-auto rounded-2xl border border-white/[0.07] bg-[#07111f]/70 p-4 text-xs leading-6 text-slate-300">
             {selectedScript.text}
           </div>
+
+          <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 text-xs leading-5 text-slate-300">
+            <input
+              type="checkbox"
+              checked={speakerReadReferenceScriptVerbatim}
+              onChange={(event) => setSpeakerReadReferenceScriptVerbatim(event.target.checked)}
+              disabled={busy || phase === "recording" || Boolean(prepared)}
+              className="mt-0.5 size-4 shrink-0 accent-cyan-300"
+            />
+            <span>
+              <strong className="block text-slate-100">기준 문장을 그대로 읽었습니다</strong>
+              <span className="text-[11px] text-slate-500">체크한 상태로 녹음을 시작한 경우에만 비교 결과를 정확도 평가로 사용할 수 있습니다.</span>
+            </span>
+          </label>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {phase === "recording" ? (
@@ -302,6 +325,7 @@ export function AudioFixtureRecorder() {
       ) : (
         <div role="alert" className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-amber-100">{error || "고정 실험 문장을 불러오지 못했습니다."}</div>
       )}
+      <SttComparisonResults />
     </section>
   );
 }

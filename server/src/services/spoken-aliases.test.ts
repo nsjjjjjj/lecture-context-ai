@@ -30,6 +30,7 @@ describe("spoken alias validation", () => {
     const result = withValidatedSpokenAliases([
       term(),
       term({ id: "transformer", term: "Transformer", english: "Transformer" }),
+      term({ id: "attention", term: "Attention", english: "Attention" }),
       term({ id: "fine-tuning", term: "Fine-tuning", english: "Fine-tuning" }),
       term({ id: "phrase-set", term: "PhraseSet", english: "PhraseSet" })
     ]);
@@ -37,17 +38,30 @@ describe("spoken alias validation", () => {
     expect(result.map((candidate) => candidate.spokenAliases)).toEqual([
       ["래그", "레그", "알에이지"],
       ["트랜스포머"],
-      ["파인 튜닝"],
+      ["어텐션"],
+      ["파인튜닝", "파인 튜닝"],
       ["프레이즈셋", "프레이즈 세트", "프레이저스 셋"]
     ]);
+  });
+
+  it("accepts only the reviewed spoken forms used by the v2 fixed script", () => {
+    expect(sanitizeSpokenAliases("Prompt Engineering", "", ["프롬프트 엔지니어링", "프롬프트 설계"])).toEqual([
+      "프롬프트 엔지니어링"
+    ]);
+    expect(sanitizeSpokenAliases("Vector Database", "", ["벡터 데이터베이스"])).toEqual(["벡터 데이터베이스"]);
   });
 
   it("rejects non-Hangul forms, unsafe common words, and every alias for Korean-only terms", () => {
     expect(sanitizeSpokenAliases("전문용어", "", ["alias", "모델", "용어", "충분한별칭"])).toEqual([]);
   });
 
-  it("rejects plausible-looking aliases that are not a reviewed term-pronunciation pair", () => {
-    expect(sanitizeSpokenAliases("API", "Application Programming Interface", ["사과", "에이피아이"])).toEqual([]);
+  it("accepts reviewed API pronunciation while rejecting unrelated plausible-looking aliases", () => {
+    expect(sanitizeSpokenAliases("API", "Application Programming Interface", ["사과", "에이피아이"])).toEqual([
+      "에이피아이"
+    ]);
+    expect(sanitizeSpokenAliases("Large Language Model", "LLM", ["엘엘엠", "거대 언어 모델"])).toEqual([
+      "엘엘엠"
+    ]);
   });
 
   it("drops aliases shared by different terms or equal to another canonical term", () => {

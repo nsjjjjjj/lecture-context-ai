@@ -12,6 +12,7 @@ import {
   fixtureEnvironmentSchema,
   fixtureSpeakerLabelSchema
 } from "./services/audio-fixtures.js";
+import { readSttComparisonResults } from "./services/stt-comparison-results.js";
 import { analyzeRequestSchema } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -21,7 +22,11 @@ const defaultFixtureRoot = path.resolve(__dirname, "../../test-fixtures/stt");
 const fixtureRequestSchema = z.object({
   scriptId: z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/),
   speakerLabel: fixtureSpeakerLabelSchema,
-  environment: fixtureEnvironmentSchema
+  environment: fixtureEnvironmentSchema,
+  speakerReadReferenceScriptVerbatim: z.enum(["true", "false"])
+    .optional()
+    .default("false")
+    .transform((value) => value === "true")
 }).strict();
 
 type AppOptions = {
@@ -141,7 +146,7 @@ export function createApp(options: AppOptions = {}) {
     const store = new AudioFixtureStore(options.fixtureRoot ?? defaultFixtureRoot);
     const localOnly = (request: Request, response: express.Response, next: express.NextFunction): void => {
       if (!requestIsLocal(request)) {
-        response.status(403).json({ error: "개발용 녹음 저장은 이 컴퓨터의 localhost에서만 사용할 수 있습니다." });
+        response.status(403).json({ error: "개발용 fixture API는 이 컴퓨터의 localhost에서만 사용할 수 있습니다." });
         return;
       }
       next();
@@ -150,6 +155,16 @@ export function createApp(options: AppOptions = {}) {
     app.get("/api/dev/audio-fixtures", localOnly, async (_request, response, next) => {
       try {
         response.json(await store.getCatalog());
+      } catch (error) {
+        next(error);
+      }
+    });
+
+    // Response contract: { latest: ComparisonReportFile | null, reportCount }.
+    // `latest.version` classifies v3 versus opaque v1/v2 legacy data without inferred metrics.
+    app.get("/api/dev/stt-comparisons", localOnly, async (_request, response, next) => {
+      try {
+        response.json(await readSttComparisonResults(options.fixtureRoot ?? defaultFixtureRoot));
       } catch (error) {
         next(error);
       }
@@ -171,7 +186,8 @@ export function createApp(options: AppOptions = {}) {
         const parsed = fixtureRequestSchema.safeParse({
           scriptId: request.query.scriptId,
           speakerLabel: request.query.speakerLabel,
-          environment: request.query.environment
+          environment: request.query.environment,
+          speakerReadReferenceScriptVerbatim: request.query.speakerReadReferenceScriptVerbatim
         });
         if (!parsed.success || !Buffer.isBuffer(request.body)) {
           response.status(400).json({ error: "녹음 fixture 메타데이터 또는 WAV 본문 형식이 올바르지 않습니다." });

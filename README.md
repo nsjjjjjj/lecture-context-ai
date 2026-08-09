@@ -21,7 +21,7 @@ Google API 자격증명이 없어도 내장된 샘플 강연으로 전체 발표
 - 분석된 전체 용어 객체와 PhraseSet을 브라우저에 자동 저장하고 다시 불러오기
 - 이 브라우저의 저장 용어집 목록, 이름 변경, 삭제
 - 실시간 강연 음성과 PDF를 서버에 저장하지 않는 휘발성 처리
-- 같은 음원으로 STT를 반복 비교하기 위한 localhost 전용 개발 녹음 fixture
+- 같은 음원을 A/B/C 세 조건으로 비교하고 저장 결과의 차트·조건별 자막·용어별 표·TSV를 확인하는 localhost 전용 개발 도구
 - API 없이 실행되는 발표용 데모와 자동 종료 리포트
 
 ## 시스템 작동 구조
@@ -121,11 +121,12 @@ API 키와 Google 인증정보는 브라우저에 전달하지 않고 서버 환
 | `POST` | `/api/analyze` | PDF 페이지 텍스트를 받아 자동 용어집 생성 |
 | `GET` | `/api/dev/audio-fixtures` | 개발용 고정 실험 문장과 로컬 녹음 목록 반환 |
 | `POST` | `/api/dev/audio-fixtures` | 검증된 16kHz mono PCM WAV를 로컬 fixture로 저장 |
+| `GET` | `/api/dev/stt-comparisons` | 유효한 로컬 STT 결과 수와 가장 최근 v3/legacy 리포트 반환 |
 | WebSocket | `/ws` | 마이크 오디오 업로드와 자막 이벤트 스트리밍 |
 
 WebSocket은 `start` 메시지로 `live` 또는 `demo` 모드를 시작합니다. 이 메시지에는 자동 용어집과 검증된 전체 `phraseSet`이 함께 포함되며, 실시간 모드에서는 이후 오디오 바이너리를 전송합니다. 서버는 정규화된 용어 표기와 ID를 각각 중복 제거하고 중복 ID에는 첫 번째 유효 용어만 사용합니다. 서버는 `ready`, `interim`, `final`, `error`, `ended` 이벤트를 반환합니다. `interim.text`는 STT 원문이며 자동 정정하지 않습니다. `final`은 표시용 `text`, 원본 `rawText`, 위치가 포함된 `corrections`, 실제 출현 순서와 반복을 보존한 `detectedTerms`를 함께 반환합니다. 화면은 이를 최신순 설명 피드에 쌓고 `ended`를 받으면 자막과 정정 근거를 보존한 채 결과 리포트로 이동합니다.
 
-`pnpm dev`는 Vite와 백엔드를 모두 `127.0.0.1`에 bind해 LAN 연결 자체를 받지 않습니다. `/api/dev/audio-fixtures`는 여기에 더해 `NODE_ENV=development`와 요청의 socket·Host·Origin을 검사합니다. 프로덕션의 개발 API 요청은 SPA HTML로 fallback하지 않고 JSON 404를 반환합니다.
+`pnpm dev`는 Vite와 백엔드를 모두 `127.0.0.1`에 bind해 LAN 연결 자체를 받지 않습니다. `/api/dev/audio-fixtures`와 `/api/dev/stt-comparisons`는 여기에 더해 `NODE_ENV=development`와 요청의 socket·Host·Origin을 검사하는 개발 전용 경계입니다. 프로덕션의 개발 API 요청은 SPA HTML로 fallback하지 않고 JSON 404를 반환합니다.
 
 ## 폴더 구조
 
@@ -133,6 +134,7 @@ WebSocket은 `start` 메시지로 `live` 또는 `demo` 모드를 시작합니다
 client/
   src/App.tsx                 전체 화면과 사용자 흐름
   src/components/AudioFixtureRecorder.tsx  개발용 고정음원 녹음 UI
+  src/components/SttComparisonResults.tsx  저장된 A/B/C 결과 차트·자막·표·TSV UI
   src/components/TransparentCaption.tsx  원문 확인이 가능한 자동 정정 자막 UI
   src/hooks/useLectureStream.ts  WebSocket·자막 상태 관리
   src/lib/glossary-storage.ts 브라우저 용어집 v3 검증·v1/v2 이전·저장·로드
@@ -142,6 +144,8 @@ server/
   src/app.ts                  주입 가능한 HTTP 앱·개발용 API 경계
   src/index.ts                HTTP listen·WebSocket 서버
   src/services/audio-fixtures.ts  WAV 검증·원자적 저장·오프라인 PCM 로드
+  src/services/stt-comparison.ts  고정 A/B/C 조건·출현 단위 점수·v3 결과 스키마
+  src/services/stt-comparison-results.ts  최신 로컬 결과의 제한적·검증된 조회
   src/services/glossary.ts    Gemini·원문 검증·PhraseSet 생성
   src/services/spoken-aliases.ts  발음 별칭 제한·충돌 제거·알려진 별칭 보완
   src/services/caption.ts     확정 자막 용어 연결·원문 보존·안전한 위치 기반 정정
@@ -169,24 +173,40 @@ pnpm dev
 
 ### 개발용 고정음원 녹음
 
-`pnpm dev`로 `http://localhost:5173`을 열면 첫 화면 아래에 `개발용 고정음원 녹음` 카드가 나타납니다. 고정 문장을 한 번 읽어 저장하면 다음 파일이 만들어집니다.
+`pnpm dev`로 `http://localhost:5173`을 열면 첫 화면 아래에 `개발용 고정음원 녹음` 카드가 나타납니다. 현재 기준 문장은 발화와 정답 표기가 어긋나지 않도록 `엘엘엠`, `래그`, `에이피아이`, `프레이즈셋`처럼 실제로 읽을 한국어 발음을 본문에 명시합니다. 문장을 처음부터 끝까지 그대로 읽은 경우에만 녹음 화면의 선언 **“기준 문장을 그대로 읽었습니다”**를 선택해 저장합니다.
+
+고정 문장을 한 번 읽어 저장하면 다음 파일이 만들어집니다.
 
 - 오디오: `test-fixtures/stt/audio/*.wav`
 - 로컬 메타데이터: `test-fixtures/stt/manifest.local.json`
 - 형식: canonical RIFF/WAVE, PCM1, mono, 16kHz, 16-bit, 최대 120초·3,840,000 PCM 바이트
 
-두 파일은 Git과 Docker build context에서 제외되며 자동 만료되지 않습니다. 화자 label은 실제 이름이 아닌 `speaker-a`, `speaker-b` 가명만 사용하고, 필요 없어진 파일은 직접 삭제합니다. 녹음 시작 시 화자·환경·실험문장을 snapshot하므로 준비된 WAV의 메타데이터가 이후 화면 선택과 섞이지 않습니다. 브라우저 timer가 지연돼도 capture 계층이 PCM을 3,840,000바이트에서 hard cap합니다.
+두 파일은 Git과 Docker build context에서 제외되며 자동 만료되지 않습니다. 화자 label은 실제 이름이 아닌 `speaker-a`, `speaker-b` 가명만 사용하고, 필요 없어진 파일은 직접 삭제합니다. 녹음 시작 시 화자·환경·실험문장과 기준 문장 그대로 읽기 선언을 snapshot하므로 준비된 WAV의 메타데이터가 이후 화면 선택과 섞이지 않습니다. 브라우저 timer가 지연돼도 capture 계층이 PCM을 3,840,000바이트에서 hard cap합니다.
 
-저장 시 `.writer.lock`을 짧게 획득해 같은 fixture root를 연 복수 개발 서버의 manifest 갱신을 직렬화합니다. 비정상 종료로 60초 이상 남은 lock은 다음 저장이 회수합니다. 저장 모듈은 PCM을 15,000바이트 이하의 짝수 길이 청크로 바이트 손실 없이 다시 읽을 수 있지만 실제 Google STT 호출과 정확도 평가는 이번 기능에 포함하지 않습니다.
+저장 시 `.writer.lock`을 짧게 획득해 같은 fixture root를 연 복수 개발 서버의 manifest 갱신을 직렬화합니다. 비정상 종료로 60초 이상 남은 lock은 다음 저장이 회수합니다. 저장 모듈은 PCM을 15,000바이트 이하의 짝수 길이 청크로 바이트 손실 없이 다시 읽습니다.
 
-개발 서버를 실행한 상태에서 아래 명령을 사용하면 가장 최근 녹음을 실시간 속도로 두 번 재생합니다. 첫 번째 실행은 PhraseSet이 없고, 두 번째 실행은 `scripts.json`의 `targetTerms`를 인라인 PhraseSet으로 사용합니다. 특정 녹음을 비교하려면 명령 뒤에 manifest의 녹음 ID를 붙입니다.
+개발 서버를 실행한 상태에서 아래 명령을 사용하면 가장 최근 녹음을 실시간 속도로 세 번 재생합니다. 특정 녹음을 비교하려면 명령 뒤에 manifest의 녹음 ID를 붙입니다.
 
 ```bash
 pnpm stt:compare
 pnpm stt:compare -- <recording-id>
 ```
 
-실행 결과는 `test-fixtures/stt/results/*.json`에 저장되며 Git·Docker에서 제외됩니다. 새 결과 형식은 표시용 정정 자막과 STT 원문 `rawText`, 정정 내역을 함께 보존합니다. 각 조건의 영문 기준 표기 집계는 자동 정정된 문장이 아니라 원문 STT를 기준으로 하며, 실행 시간과 오류도 기록합니다. 두 조건 모두 실제 Google STT 사용량이 발생합니다. `targetTerms`는 비교 후보이므로 발화자가 화면의 기준 문장을 그대로 읽었다고 확인된 경우에만 미일치 항목을 인식 실패로 계산합니다.
+| 조건 | PhraseSet | 별칭 정정 |
+|---|---|---|
+| A · `without-phrase-set` | 없음 | 없음 |
+| B · `canonical-phrase-set` | canonical 표기 + English 표기 | 없음 |
+| C · `spoken-alias-phrase-set` | canonical 표기 + English 표기 + 검토된 한국어 발음 | 검토된 별칭만 canonical 용어로 정정 |
+
+명령 한 번은 A/B/C 각각에 대해 실제 Google STT 스트림을 열므로 **유료 API 실행이 세 번 발생합니다.** `pnpm test`는 저장 음원을 Google에 보내지 않고 스키마·조건 생성·점수 계산·파일 저장 경계만 검증하므로 유료 API를 호출하지 않습니다.
+
+실행 결과는 `test-fixtures/stt/results/*.json`의 버전 3 리포트로 저장되며 Git·Docker에서 제외됩니다. 표시용 정정 자막, STT 원문 `rawText`, 정정 내역과 함께 정답 대본의 각 출현을 기준으로 직접 인식, 별칭 정정 성공, 누락, 잘못된 정정, 말하지 않은 용어 삽입, 제품 용어 연결률 `(직접 인식 + 별칭 정정 성공) / 기준 출현 수`를 기록합니다. A/B에서는 별칭 정정을 성공으로 인정하지 않습니다.
+
+정확도 수치는 녹음 메타데이터에 **“기준 문장을 그대로 읽었습니다”**라는 명시적 선언이 있는 경우에만 유효합니다. 선언하지 않은 녹음과 기존 manifest v1 녹음은 자동으로 smoke 전용이며, 누락과 연결률이 계산되어도 논문 정확도로 해석하지 않습니다. 현재 106초 녹음은 예전 소개 대본을 읽어 현재 기준 문장과 일치하지 않으므로 계속 smoke 전용입니다. 논문 수치를 만들려면 화면의 새 기준 문장을 그대로 읽은 음원을 새로 녹음해야 합니다.
+
+`pnpm stt:compare`가 결과를 저장한 뒤 localhost 개발 화면의 `저장된 STT 비교 결과`에서 `새로고침`을 누르면 가장 최근의 유효한 파일을 읽습니다. v3는 조건 비교 차트, A/B/C별 STT 원문과 정정·표시 문장, 용어별 출현 표와 논문용 요약 표를 보여줍니다. TSV 복사는 정확도 모드이면서 세 조건이 모두 오류 없이 완료된 결과에서만 활성화되고, smoke 결과는 화면에서 관찰할 수 있어도 TSV 복사가 비활성화됩니다. 결과 API와 화면은 개발 모드의 localhost에서만 열립니다. 가장 최근 결과가 버전 1·2이면 `레거시 스모크 결과` 안내만 표시하고 지표를 추정하거나 v3 차트·표·TSV로 승격하지 않습니다.
+
+같은 음원을 한 번씩 실행한 A/B/C 한 세트는 오디오 입력을 고정하지만 Google STT의 API 비결정성까지 제거하지는 않습니다. 최종 논문 표에는 같은 음원으로 조건별 반복 실행을 수행하고 반복 수와 요약 방식을 함께 기록하는 것을 권장합니다.
 
 이 경계는 동일 사용자가 제어하는 로컬 개발 환경을 대상으로 합니다. 서버가 직접 사용하는 fixture root·audio·파일의 symlink와 생성 경로 이탈은 거부하지만, 악의적인 동일 사용자 프로세스와 모든 ancestor symlink/TOCTOU를 격리하는 보안 sandbox는 아닙니다.
 
@@ -265,7 +285,7 @@ gcloud run deploy lecture-context-ai \
 - Google STT API 연결과 한국어 음성 응답은 검증했지만, 실제 발표에 사용할 브라우저·마이크 조합의 권한과 음질은 별도 현장 확인이 필요합니다.
 - 긴 강연을 위한 STT 스트림 자동 재연결은 아직 구현하지 않았습니다.
 - 실제 발화 시작 시점을 신뢰성 있게 추적하지 않으므로 결과 화면에서 실시간 표시 지연을 추정해 보여주지 않습니다.
-- 개발용 고정음원은 `pnpm stt:compare`로 PhraseSet 적용 전후 실제 Google STT A/B 재생까지 지원합니다. 정답 대본 기반 정확도 평가는 후속 실험입니다.
+- 개발용 고정음원 A/B/C v3 점수는 기준 문장 그대로 읽기 선언이 있는 새 exact-script 녹음에서만 정확도로 유효합니다. 현재 106초 legacy 음원은 대본 불일치 smoke 전용이며, 한 번의 A/B/C 결과만으로 Google STT 비결정성이 사라지지 않습니다.
 - 쉬운 용어 정의는 제공하지만 `이 용어가 지금 등장한 이유`를 설명하는 맥락 문장은 다음 버전 작업입니다.
 
-현재 상태와 후속 작업은 [인수인계 문서](docs/HANDOFF.md)를 참고하세요. 실제 고정음원 A/B 관찰과 발음 별칭 기반 A/B/C 후속 계획은 [STT PhraseSet 파일럿 실험 기록](docs/STT_PHRASESET_PILOT.md), 논문 연구문제·평가 설계·발표 흐름은 [논문·발표 구성안](docs/PAPER_PRESENTATION_PLAN.md)에 정리되어 있습니다.
+현재 상태와 후속 작업은 [인수인계 문서](docs/HANDOFF.md)를 참고하세요. 기존 106초 smoke 관찰, 현재 A/B/C v3 프로토콜과 논문 해석 경계는 [STT PhraseSet 파일럿 실험 기록](docs/STT_PHRASESET_PILOT.md), 논문 연구문제·평가 설계·발표 흐름은 [논문·발표 구성안](docs/PAPER_PRESENTATION_PLAN.md)에 정리되어 있습니다.

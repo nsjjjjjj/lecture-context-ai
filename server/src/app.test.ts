@@ -56,7 +56,7 @@ afterEach(async () => {
 });
 
 describe("production API boundary", () => {
-  it("returns JSON 404 for development fixture GET and POST before the SPA fallback", async () => {
+  it("returns JSON 404 for development fixture APIs before the SPA fallback", async () => {
     const clientDist = await mkdtemp(path.join(os.tmpdir(), "lecture-client-dist-"));
     temporaryRoots.push(clientDist);
     await writeFile(path.join(clientDist, "index.html"), "<html>SPA</html>");
@@ -64,7 +64,8 @@ describe("production API boundary", () => {
 
     for (const request of [
       fetch(`${baseUrl}/api/dev/audio-fixtures`),
-      fetch(`${baseUrl}/api/dev/audio-fixtures`, { method: "POST", headers: { "Content-Type": "audio/wav" }, body: canonicalWav() })
+      fetch(`${baseUrl}/api/dev/audio-fixtures`, { method: "POST", headers: { "Content-Type": "audio/wav" }, body: canonicalWav() }),
+      fetch(`${baseUrl}/api/dev/stt-comparisons`)
     ]) {
       const response = await request;
       expect(response.status).toBe(404);
@@ -82,7 +83,12 @@ describe("development audio fixture API", () => {
     expect(catalogResponse.status).toBe(200);
     expect((await catalogResponse.json() as { scripts: unknown[] }).scripts).toHaveLength(1);
 
-    const query = new URLSearchParams({ scriptId: "baseline-v1", speakerLabel: "speaker-a", environment: "quiet" });
+    const query = new URLSearchParams({
+      scriptId: "baseline-v1",
+      speakerLabel: "speaker-a",
+      environment: "quiet",
+      speakerReadReferenceScriptVerbatim: "true"
+    });
     const saveResponse = await fetch(`${baseUrl}/api/dev/audio-fixtures?${query}`, {
       method: "POST",
       headers: { "Content-Type": "audio/wav", Origin: baseUrl },
@@ -90,7 +96,20 @@ describe("development audio fixture API", () => {
     });
     expect(saveResponse.status).toBe(201);
     expect(saveResponse.headers.get("content-type")).toContain("application/json");
-    expect((await saveResponse.json() as { recording: { relativePath: string } }).recording.relativePath).toMatch(/^audio\/.*\.wav$/);
+    expect((await saveResponse.json() as { recording: { relativePath: string; speakerReadReferenceScriptVerbatim: boolean } }).recording).toMatchObject({
+      relativePath: expect.stringMatching(/^audio\/.*\.wav$/),
+      speakerReadReferenceScriptVerbatim: true
+    });
+
+    const compatibilityQuery = new URLSearchParams({ scriptId: "baseline-v1", speakerLabel: "speaker-b", environment: "noisy" });
+    const compatibilityResponse = await fetch(`${baseUrl}/api/dev/audio-fixtures?${compatibilityQuery}`, {
+      method: "POST",
+      headers: { "Content-Type": "audio/x-wav", Origin: baseUrl },
+      body: canonicalWav()
+    });
+    expect(compatibilityResponse.status).toBe(201);
+    expect((await compatibilityResponse.json() as { recording: { speakerReadReferenceScriptVerbatim: boolean } }).recording)
+      .toMatchObject({ speakerReadReferenceScriptVerbatim: false });
   });
 
   it("rejects LAN origins, wrong content types, and invalid WAV as JSON", async () => {
@@ -103,14 +122,55 @@ describe("development audio fixture API", () => {
       await fetch(url, { method: "POST", headers: { "Content-Type": "audio/wav", Origin: "http://192.168.0.22:5173" }, body: canonicalWav() }),
       await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", Origin: baseUrl }, body: canonicalWav() }),
       await fetch(url, { method: "POST", headers: { "Content-Type": "audio/wav", Origin: baseUrl }, body: Buffer.from("not wav") }),
-      await fetch(url, { method: "POST", headers: { "Content-Type": "audio/wav", Origin: baseUrl }, body: Buffer.alloc(FIXTURE_MAX_WAV_BYTES + 1) })
+      await fetch(url, { method: "POST", headers: { "Content-Type": "audio/wav", Origin: baseUrl }, body: Buffer.alloc(FIXTURE_MAX_WAV_BYTES + 1) }),
+      await fetch(`${url}&speakerReadReferenceScriptVerbatim=yes`, {
+        method: "POST",
+        headers: { "Content-Type": "audio/wav", Origin: baseUrl },
+        body: canonicalWav()
+      })
     ];
 
-    expect(cases.map((response) => response.status)).toEqual([403, 415, 400, 413]);
+    expect(cases.map((response) => response.status)).toEqual([403, 415, 400, 413, 400]);
     for (const response of cases) {
       expect(response.headers.get("content-type")).toContain("application/json");
       expect(await response.json()).toHaveProperty("error");
     }
+  });
+});
+
+describe("development STT comparison result API", () => {
+  it("documents GET /api/dev/stt-comparisons with empty and legacy response states", async () => {
+    const fixtureRoot = await createFixtureRoot();
+    const baseUrl = await listen(createApp({ nodeEnv: "development", fixtureRoot }));
+
+    const emptyResponse = await fetch(`${baseUrl}/api/dev/stt-comparisons`);
+    expect(emptyResponse.status).toBe(200);
+    expect(await emptyResponse.json()).toEqual({ latest: null, reportCount: 0 });
+
+    await mkdir(path.join(fixtureRoot, "results"));
+    await writeFile(path.join(fixtureRoot, "results/comparison-legacy.json"), JSON.stringify({
+      version: 2,
+      runs: [{ transcript: "complete legacy transcript" }]
+    }));
+    const legacyResponse = await fetch(`${baseUrl}/api/dev/stt-comparisons`);
+    expect(legacyResponse.status).toBe(200);
+    expect(await legacyResponse.json()).toMatchObject({
+      reportCount: 1,
+      latest: { version: 2, runs: [{ transcript: "complete legacy transcript" }] }
+    });
+  });
+
+  it("rejects non-loopback origins with JSON 403", async () => {
+    const fixtureRoot = await createFixtureRoot();
+    const baseUrl = await listen(createApp({ nodeEnv: "development", fixtureRoot }));
+
+    const response = await fetch(`${baseUrl}/api/dev/stt-comparisons`, {
+      headers: { Origin: "http://192.168.0.22:5173" }
+    });
+
+    expect(response.status).toBe(403);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    expect(await response.json()).toHaveProperty("error");
   });
 });
 

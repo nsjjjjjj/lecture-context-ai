@@ -1,11 +1,19 @@
-import type { AnalysisResult, PageText, ServiceStatus } from "../types";
+import type { AnalysisResult, GlossaryTerm, PageText, ServiceStatus } from "../types";
+
+export type AudioFixtureTargetTerm = {
+  id: string;
+  canonicalTerm: string;
+  english: string;
+  spokenAliases: string[];
+  expectedOccurrences: number[];
+};
 
 export type AudioFixtureScript = {
   id: string;
   title: string;
   languageCode: "ko-KR";
   text: string;
-  targetTerms: string[];
+  targetTerms: AudioFixtureTargetTerm[];
 };
 
 export type AudioFixtureRecording = {
@@ -21,12 +29,115 @@ export type AudioFixtureRecording = {
   channels: 1;
   bitsPerSample: 16;
   dataBytes: number;
+  speakerReadReferenceScriptVerbatim: boolean;
 };
 
 export type AudioFixtureCatalog = {
   scripts: AudioFixtureScript[];
   recordings: AudioFixtureRecording[];
   storageDirectory: string;
+};
+
+export const comparisonRunLabels = [
+  "without-phrase-set",
+  "canonical-phrase-set",
+  "spoken-alias-phrase-set"
+] as const;
+
+export type ComparisonRunLabel = typeof comparisonRunLabels[number];
+export type ComparisonEvaluationMode = "accuracy" | "smoke";
+export type ComparisonOccurrenceOutcome = "direct-recognition" | "alias-correction" | "miss";
+export type ComparisonUnexpectedKind = "false-correction" | "false-insertion";
+
+export type ComparisonRunMetrics = {
+  evaluationMode: ComparisonEvaluationMode;
+  accuracyValid: boolean;
+  directRecognitions: number;
+  aliasCorrectionSuccesses: number;
+  misses: number;
+  falseCorrections: number;
+  falseInsertions: number;
+  expectedOccurrenceCount: number;
+  productLinkRate: number;
+};
+
+export type ComparisonOccurrenceResult = {
+  sequence: number;
+  targetTermId: string;
+  canonicalTerm: string;
+  outcome: ComparisonOccurrenceOutcome;
+  finalTranscriptIndex: number | null;
+  rawText: string | null;
+};
+
+export type ComparisonUnexpectedObservation = {
+  kind: ComparisonUnexpectedKind;
+  reason: "invalid-correction" | "unexpected-alias-correction" | "unexpected-direct-match";
+  targetTermId: string | null;
+  finalTranscriptIndex: number;
+  rawText: string;
+};
+
+export type ComparisonTranscriptCorrection = {
+  originalText: string;
+  correctedText: string;
+  termId: string;
+  displayStart: number;
+  displayEnd: number;
+  reason: "spokenAlias";
+};
+
+export type ComparisonFinalTranscript = {
+  text: string;
+  rawText: string;
+  detectedTermIds: string[];
+  corrections: ComparisonTranscriptCorrection[];
+};
+
+export type ComparisonRunResult = {
+  label: ComparisonRunLabel;
+  status: "completed" | "error";
+  phraseSet: string[];
+  terms: GlossaryTerm[];
+  startedAt: string;
+  readyAfterMs: number | null;
+  audioDurationMs: number;
+  wallClockMs: number;
+  interimCount: number;
+  finalTranscripts: ComparisonFinalTranscript[];
+  transcript: string;
+  rawTranscript: string;
+  metrics: ComparisonRunMetrics;
+  occurrenceResults: ComparisonOccurrenceResult[];
+  unexpectedObservations: ComparisonUnexpectedObservation[];
+  errors: string[];
+};
+
+export type ComparisonReportV3 = {
+  version: 3;
+  createdAt: string;
+  recording: {
+    id: string;
+    scriptId: string;
+    speakerReadReferenceScriptVerbatim: boolean;
+    evaluationMode: ComparisonEvaluationMode;
+  };
+  script: AudioFixtureScript;
+  websocketUrl: string;
+  measurementNote: string;
+  runs: ComparisonRunResult[];
+};
+
+export type LegacyComparisonReport = {
+  version: 1 | 2;
+  [key: string]: unknown;
+};
+
+export type ComparisonReportFile = ComparisonReportV3 | LegacyComparisonReport;
+
+export type SttComparisonCatalog = {
+  latest: ComparisonReportFile | null;
+  reportCount: number;
 };
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -65,11 +176,13 @@ export async function saveAudioFixture(input: {
   scriptId: string;
   speakerLabel: "speaker-a" | "speaker-b";
   environment: "quiet" | "noisy";
+  speakerReadReferenceScriptVerbatim: boolean;
 }): Promise<{ recording: AudioFixtureRecording; storageDirectory: string }> {
   const query = new URLSearchParams({
     scriptId: input.scriptId,
     speakerLabel: input.speakerLabel,
-    environment: input.environment
+    environment: input.environment,
+    speakerReadReferenceScriptVerbatim: String(input.speakerReadReferenceScriptVerbatim)
   });
   const response = await fetch(`/api/dev/audio-fixtures?${query.toString()}`, {
     method: "POST",
@@ -77,4 +190,9 @@ export async function saveAudioFixture(input: {
     body: input.wav
   });
   return readJson<{ recording: AudioFixtureRecording; storageDirectory: string }>(response);
+}
+
+export async function getSttComparisons(): Promise<SttComparisonCatalog> {
+  const response = await fetch("/api/dev/stt-comparisons", { cache: "no-store" });
+  return readJson<SttComparisonCatalog>(response);
 }
