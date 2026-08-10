@@ -1,0 +1,16 @@
+--- a
++++ b
+@@ -113,7 +113,7 @@
+ 4. 결론 및 향후 활용
+ 본 연구는 전문용어의 표현 장벽과 지식 장벽을 함께 줄이고자 강연 자료 기반 실시간 자막 시스템을 설계하고 구현하였다. PDF에서 용어와 설명을 생성하는 데 머물지 않고, 원문 검증과 발음 별칭 안전 규칙을 거쳐 강연별 PhraseSet을 직접 구성한 뒤 STT 인식 요청에 적용하였다. 전문용어 인식·연결률은 기본 STT 28.2%, 정식 용어 PhraseSet 54.9%, 한국어 발음 별칭과 확정 자막 정정을 결합한 조건 84.5%로 나타났다. 본 실험 범위에서는 강연 자료를 음성인식 문맥으로 의도적으로 적용하고 한국어식 발음까지 연결하는 과정이 전문용어 누락을 줄였다. 임시 자막은 즉시 표시하되 용어 연결은 확정 자막에서만 수행하고, 원래 STT 표기도 남겨 실시간성과 정정 근거의 투명성을 함께 고려하였다.
+ 알파벳 약어와 복합어가 집중된 test03에서는 발음 별칭을 추가한 조건이 정식 용어 PhraseSet만 사용한 조건보다 낮았다. 고정된 별칭 목록을 늘리는 것만으로는 충분하지 않으며, 한글·영문 혼합 발화와 서로 겹치는 약어의 매칭 순서를 함께 설계해야 한다. 후속 실험에서는 혼합 표기 자동 생성과 용어별 별칭 검수, 긴 용어 우선 매칭을 적용하고 다양한 화자와 소음 환경에서도 효과를 다시 확인할 필요가 있다.
+-이 구조에서 중요한 것은 PDF라는 형식 자체가 아니라, 콘텐츠 공개 전에 확보할 수 있는 문서와 메타데이터를 음성인식 문맥과 쉬운 설명으로 바꾸는 과정이다. 강의안과 교재가 있는 인터넷 강의, 제목·설명·대본을 활용할 수 있는 지식형 유튜브, 발표자료와 초록을 사전에 받는 학술대회와 웨비나에도 같은 방식을 적용할 수 있다. 영상의 메타데이터를 희귀 고유명사 인식 문맥으로 활용한 연구도 이러한 확장 방향을 뒷받침한다[6]. YouTube 역시 자동 자막이 발음과 억양, 배경 소음 때문에 실제 발화를 잘못 표현할 수 있어 검토와 수정이 필요하다고 안내한다[7].
++이 구조에서 중요한 것은 PDF라는 형식 자체가 아니라, 콘텐츠 공개 전에 확보할 수 있는 문서와 메타데이터를 음성인식 문맥과 쉬운 설명으로 바꾸는 과정이다. 강의안과 교재가 있는 인터넷 강의, 제목·설명·대본을 활용할 수 있는 지식형 유튜브, 발표자료와 초록을 사전에 받는 학술대회와 웨비나에도 같은 방식을 적용할 수 있다. 영상의 메타데이터를 희귀 고유명사 인식 문맥으로 활용한 연구도 이러한 확장 방향을 뒷받침한다[6].
+ 기사 원고와 보도자료가 있다면 뉴스나 공공 브리핑의 인명, 지명, 정책용어에도 같은 개념을 적용할 수 있다. 오류의 영향이 큰 공공정보는 자동 정정만으로 확정하지 않고 사람의 검수와 출처 확인을 함께 거쳐야 한다. 앞으로는 스캔 PDF를 위한 OCR과 강연자 용어 검수 기능을 보완하고, 다중 화자·소음 환경과 장시간 스트림 재연결을 평가할 예정이다. 설명 난이도 조절과 실제 사용자의 이해도·사용성 평가는 별도의 사용자 연구로 다뤄야 한다.
+ 참고문헌
+ [1] W3C Web Accessibility Initiative, “Cognitive Accessibility Design Pattern: Use Clear Words,” accessed Aug. 9, 2026, https://www.w3.org/WAI/WCAG2/supplemental/patterns/o3p01-clear-words/.
+@@ -122,4 +122,3 @@
+ [4] Google Cloud, “Improve transcription results with model adaptation,” accessed Aug. 9, 2026, https://docs.cloud.google.com/speech-to-text/docs/adaptation-model.
+ [5] J. D. Fox and N. Delworth, “Improving Contextual Recognition of Rare Words with an Alternate Spelling Prediction Model,” Proceedings of INTERSPEECH 2022, pp. 3914-3918, 2022, https://doi.org/10.21437/Interspeech.2022-10991.
+ [6] M. Jain et al., “Contextual RNN-T for Open Domain ASR,” Proceedings of INTERSPEECH 2020, pp. 11-15, 2020, https://doi.org/10.21437/Interspeech.2020-2986.
+-[7] YouTube Help, “Use automatic captioning,” accessed Aug. 9, 2026, https://support.google.com/youtube/answer/6373554.

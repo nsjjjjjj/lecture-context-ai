@@ -37,13 +37,16 @@ async function createFixtureRoot(): Promise<string> {
   temporaryRoots.push(root);
   await mkdir(path.join(root, "audio"));
   await writeFile(path.join(root, "scripts.json"), JSON.stringify({
-    version: 1,
+    version: 2,
     scripts: [{
       id: "baseline-v1",
       title: "기준 문장",
       languageCode: "ko-KR",
       text: "RAG와 Transformer를 설명합니다.",
-      targetTerms: ["RAG", "Transformer"]
+      targetTerms: [
+        { id: "rag", canonicalTerm: "RAG", english: "", spokenAliases: ["래그"], expectedOccurrences: [1] },
+        { id: "transformer", canonicalTerm: "Transformer", english: "", spokenAliases: ["트랜스포머"], expectedOccurrences: [2] }
+      ]
     }]
   }));
   return root;
@@ -103,6 +106,7 @@ describe("audio fixture store", () => {
       scriptId: "baseline-v1",
       speakerLabel: "speaker-a",
       environment: "quiet",
+      speakerReadReferenceScriptVerbatim: true,
       wav
     });
     const loaded = await store.loadPcm(recording.id);
@@ -110,9 +114,54 @@ describe("audio fixture store", () => {
 
     expect(recording.relativePath).toBe(`audio/${recording.fileName}`);
     expect(recording.fileName).not.toContain("speaker-a");
+    expect(recording.speakerReadReferenceScriptVerbatim).toBe(true);
     expect(chunks.every((chunk) => chunk.length <= 15_000 && chunk.length % 2 === 0)).toBe(true);
     expect(Buffer.concat(chunks)).toEqual(wav.subarray(44));
-    expect(JSON.parse(await readFile(path.join(root, "manifest.local.json"), "utf8"))).toEqual({ version: 1, recordings: [recording] });
+    expect(JSON.parse(await readFile(path.join(root, "manifest.local.json"), "utf8"))).toEqual({ version: 2, recordings: [recording] });
+  });
+
+  it("loads legacy v1 recordings as explicitly unverified smoke fixtures", async () => {
+    const root = await createFixtureRoot();
+    const legacyRecording = {
+      id: "123e4567-e89b-42d3-a456-426614174020",
+      fileName: "20260809123456-123e4567-e89b-42d3-a456-426614174020.wav",
+      relativePath: "audio/20260809123456-123e4567-e89b-42d3-a456-426614174020.wav",
+      scriptId: "baseline-v1",
+      speakerLabel: "speaker-a",
+      environment: "quiet",
+      createdAt: "2026-08-09T12:34:56.000Z",
+      durationMs: 1_000,
+      sampleRate: 16_000,
+      channels: 1,
+      bitsPerSample: 16,
+      dataBytes: 32_000
+    };
+    await writeFile(path.join(root, "manifest.local.json"), JSON.stringify({ version: 1, recordings: [legacyRecording] }));
+
+    const catalog = await new AudioFixtureStore(root).getCatalog();
+
+    expect(catalog.recordings).toEqual([{ ...legacyRecording, speakerReadReferenceScriptVerbatim: false }]);
+  });
+
+  it("migrates legacy flat-string scripts to structured one-occurrence targets", async () => {
+    const root = await createFixtureRoot();
+    await writeFile(path.join(root, "scripts.json"), JSON.stringify({
+      version: 1,
+      scripts: [{
+        id: "baseline-v1",
+        title: "기준 문장",
+        languageCode: "ko-KR",
+        text: "RAG와 Transformer를 설명합니다.",
+        targetTerms: ["RAG", "Transformer"]
+      }]
+    }));
+
+    const catalog = await new AudioFixtureStore(root).getCatalog();
+
+    expect(catalog.scripts[0]?.targetTerms).toEqual([
+      { id: "legacy-term-01", canonicalTerm: "RAG", english: "", spokenAliases: [], expectedOccurrences: [1] },
+      { id: "legacy-term-02", canonicalTerm: "Transformer", english: "", spokenAliases: [], expectedOccurrences: [2] }
+    ]);
   });
 
   it("rolls back a renamed WAV after manifest failure and recovers the queue for the next save", async () => {

@@ -25,7 +25,7 @@ export const demoTerms: GlossaryTerm[] = [
     term: "RAG",
     english: "Retrieval-Augmented Generation",
     spokenAliases: ["래그", "레그", "알에이지"],
-    easyExplanation: "외부 문서를 먼저 검색한 뒤 근거를 바탕으로 답변을 만드는 방식입니다.",
+    easyExplanation: "외부 문서를 먼저 검색한 뒤 근거를 바탕으로 답변을 만드는 방식",
     pageNumber: 3,
     occurrences: 1,
     source: "demo"
@@ -35,7 +35,7 @@ export const demoTerms: GlossaryTerm[] = [
     term: "LLM",
     english: "Large Language Model",
     spokenAliases: ["엘엘엠"],
-    easyExplanation: "대량의 텍스트를 학습해 사람의 언어를 이해하고 생성하는 모델입니다.",
+    easyExplanation: "대량의 텍스트를 학습해 사람의 언어를 이해하고 생성하는 모델",
     pageNumber: 2,
     occurrences: 2,
     source: "demo"
@@ -45,7 +45,7 @@ export const demoTerms: GlossaryTerm[] = [
     term: "Transformer",
     english: "Transformer",
     spokenAliases: ["트랜스포머"],
-    easyExplanation: "문장 속 단어들의 관계를 한 번에 살펴 문맥을 이해하는 신경망 구조입니다.",
+    easyExplanation: "문장 속 단어들의 관계를 한 번에 살펴 문맥을 이해하는 신경망 구조",
     pageNumber: 2,
     occurrences: 2,
     source: "demo"
@@ -55,7 +55,7 @@ export const demoTerms: GlossaryTerm[] = [
     term: "파인튜닝",
     english: "Fine-tuning",
     spokenAliases: ["파인 튜닝"],
-    easyExplanation: "이미 학습된 AI를 특정 목적에 맞게 추가로 학습하는 방법입니다.",
+    easyExplanation: "이미 학습된 AI를 특정 목적에 맞게 추가로 학습하는 방법",
     pageNumber: 4,
     occurrences: 1,
     source: "demo"
@@ -65,7 +65,7 @@ export const demoTerms: GlossaryTerm[] = [
     term: "환각",
     english: "Hallucination",
     spokenAliases: [],
-    easyExplanation: "AI가 사실이 아닌 내용을 그럴듯하게 생성하는 현상입니다.",
+    easyExplanation: "AI가 사실이 아닌 내용을 그럴듯하게 생성하는 현상",
     pageNumber: 3,
     occurrences: 1,
     source: "demo"

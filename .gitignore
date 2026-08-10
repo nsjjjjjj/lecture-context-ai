@@ -11,5 +11,9 @@ test-fixtures/stt/audio/*.wav
 test-fixtures/stt/audio/.*.tmp-*
 test-fixtures/stt/manifest.local.json
 test-fixtures/stt/manifest.local.json.tmp-*
+test-fixtures/stt/studies.local.json
+test-fixtures/stt/studies.local.json.tmp-*
 test-fixtures/stt/.writer.lock
+test-fixtures/stt/.stt-comparison.lock
 test-fixtures/stt/results/*.json
+test-fixtures/stt/results/.*.tmp-*

@@ -1,0 +1,172 @@
+{
+  "input": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/deliverables/ABC_\ud574\ucee4\ud1a4_\ub17c\ubb38_\uc2e4\ud5d8\uacb0\uacfc_\ubc18\uc601\ubcf8.docx",
+  "fonts_by_char_count": {
+    "NanumMyeongjo": 12205,
+    "Apple SD Gothic Neo": 183,
+    "\uad74\ub9bc": 2
+  },
+  "direct_run_formatting_runs": 130,
+  "direct_paragraph_formatting_paragraphs": 176,
+  "heading_like_paragraphs_not_heading_style": [
+    {
+      "para_index": 2,
+      "text": "1. \uc11c\ub860",
+      "style": "1."
+    },
+    {
+      "para_index": 7,
+      "text": "2. \uc2dc\uc2a4\ud15c \uc124\uacc4 \ubc0f \uad6c\ud604",
+      "style": "1."
+    },
+    {
+      "para_index": 8,
+      "text": "2.1 \uc804\uccb4 \ud30c\uc774\ud504\ub77c\uc778",
+      "style": "1."
+    },
+    {
+      "para_index": 12,
+      "text": "<\ud45c 1> \uc2dc\uc2a4\ud15c \ucc98\ub9ac \ub2e8\uacc4\uc640 \ub370\uc774\ud130\ubcc4 \uc5ed\ud560",
+      "style": "\uadf8\ub9bc"
+    },
+    {
+      "para_index": 14,
+      "text": "2.2 PDF \uae30\ubc18 \uc6a9\uc5b4\uc9d1 \uc0dd\uc131\uacfc \uac80\uc99d",
+      "style": "1."
+    },
+    {
+      "para_index": 17,
+      "text": "2.3 PhraseSet\uc744 \uc801\uc6a9\ud55c \uc2e4\uc2dc\uac04 STT",
+      "style": "1."
+    },
+    {
+      "para_index": 21,
+      "text": "2.4 \uc601\ubb38 \uc6a9\uc5b4\uc758 \ud55c\uad6d\uc5b4 \ubc1c\uc74c \ucc98\ub9ac\uc640 \ud22c\uba85\ud55c \uc815\uc815",
+      "style": "1."
+    },
+    {
+      "para_index": 25,
+      "text": "2.5 \uc0ac\uc6a9\uc790 \ud654\uba74\uacfc \ub370\uc774\ud130 \ucc98\ub9ac",
+      "style": "1."
+    },
+    {
+      "para_index": 27,
+      "text": "3. \uc2e4\ud5d8 \uc124\uacc4 \ubc0f \uacb0\uacfc",
+      "style": "1."
+    },
+    {
+      "para_index": 28,
+      "text": "3.1 \ube44\uad50 \uc870\uac74\uacfc \uc2e4\ud5d8 \uc808\ucc28",
+      "style": "1."
+    },
+    {
+      "para_index": 31,
+      "text": "<\ud45c 2> STT \ube44\uad50 \uc2e4\ud5d8 \uc870\uac74",
+      "style": "\uadf8\ub9bc"
+    },
+    {
+      "para_index": 33,
+      "text": "3.2 \ud3c9\uac00 \uc9c0\ud45c",
+      "style": "1."
+    },
+    {
+      "para_index": 35,
+      "text": "3.3 \uc2e4\ud5d8 \uacb0\uacfc",
+      "style": "1."
+    },
+    {
+      "para_index": 36,
+      "text": "<\ud45c 3> \ud14c\uc2a4\ud2b8 \ucf00\uc774\uc2a4\ubcc4 \uc804\ubb38\uc6a9\uc5b4 \uc778\uc2dd\u00b7\uc5f0\uacb0\ub960",
+      "style": "\uadf8\ub9bc"
+    },
+    {
+      "para_index": 40,
+      "text": "3.4 \uacb0\uacfc \ud574\uc124 \ubc0f \ubd84\uc11d",
+      "style": "1."
+    },
+    {
+      "para_index": 45,
+      "text": "4. \uacb0\ub860 \ubc0f \ud5a5\ud6c4 \ud65c\uc6a9",
+      "style": "1."
+    },
+    {
+      "para_index": 51,
+      "text": "\ucc38\uace0\ubb38\ud5cc",
+      "style": "1."
+    },
+    {
+      "para_index": 61,
+      "text": "\uc804\ubb38\uc6a9\uc5b4 \uc815\ubcf4 \uc811\uadfc\uc131 \ud5a5\uc0c1\uc744 \uc704\ud55c \uac15\uc5f0 \uc790\ub8cc \uae30\ubc18\n \uc2e4\uc2dc\uac04 \uc790\ub9c9 \uc2dc\uc2a4\ud15c\uc758 \uc124\uacc4 \ubc0f \uad6c\ud604",
+      "style": "\uad6d\ubb38\uc81c\ubaa9"
+    },
+    {
+      "para_index": 71,
+      "text": "[\uc800\uc790\uba85]",
+      "style": "\uc800\uc790"
+    },
+    {
+      "para_index": 93,
+      "text": "[Author Name]",
+      "style": "\uc800\uc790"
+    }
+  ],
+  "examples": {
+    "direct_paragraph_formatting": [
+      {
+        "para_index": 2,
+        "text": "1. \uc11c\ub860",
+        "style": "1."
+      },
+      {
+        "para_index": 3,
+        "text": "\uc778\uacf5\uc9c0\ub2a5 \uae30\uc220\uc758 \ubc1c\uc804\uc740 \uad50\uc721\uacfc \uc815\ubcf4 \uc11c\ube44\uc2a4\uc758 \uc811\uadfc \ubc94\uc704\ub97c \ub113\ud788\uace0 \uc788\uc9c0\ub9cc, \uadf8 \ud61c\ud0dd\uc774 \ud2b9\uc815 \uc9d1\ub2e8\uc774\ub098 \ub192\uc740 \uae30\uc220 \uc774\ud574\ub3c4\ub97c \uac00\uc9c4 \uc0ac\uc6a9\uc790\uc5d0\uac8c\ub9cc \uc9d1\uc911\ub418\uc9c0 \uc54a\ub3c4\ub85d \ud558\ub294 \ud3ec\uc6a9\uc801 \uc124\uacc4\uac00 \ud544\uc694\ud558\ub2e4. \ud3ec\uc6a9\uc131\uc740 \uc11c\ube44\uc2a4\ub97c \uc0ac\uc6a9\ud560 \uc218 \uc788\ub294",
+        "style": "\ubc14\ud0d5\uae00"
+      },
+      {
+        "para_index": 4,
+        "text": "\ud2b9\ud788 AI, \uc758\ub8cc, \ubc95\ub960, \uacbd\uc81c\uc640 \uac19\uc740 \uc8fc\uc81c\uc758 \uac15\uc5f0\uc5d0\uc11c\ub294 \uc0c8\ub85c\uc6b4 \uc57d\uc5b4\uc640 \uc601\ubb38 \uae30\uc220\uba85\uc774 \uc5f0\uc18d\ud574\uc11c \ub4f1\uc7a5\ud55c\ub2e4. \ube44\uc804\ubb38\uac00\ub294 \ud558\ub098\uc758 \uc6a9\uc5b4\ub97c \ub193\uce5c \ub4a4 \uc774\uc5b4\uc9c0\ub294 \uc124\uba85\uc744 \ub530\ub77c\uac00\uae30 \uc5b4\ub824\uc6b8 \uc218 \uc788\ub2e4. \uc774 \ubb38\uc81c\ub294 \ub450 \ub2e8\uacc4\ub85c \ub098\ub20c \uc218 \uc788",
+        "style": "\ubc14\ud0d5\uae00"
+      },
+      {
+        "para_index": 5,
+        "text": "\ubcf8 \uc5f0\uad6c\ub294 \ud574\ucee4\ud1a4\uc758 \ud3ec\uc6a9\uc801 AI \uc8fc\uc81c\uc5d0\uc11c \ucd9c\ubc1c\ud558\uc5ec \uc804\ubb38\uc9c0\uc2dd\uc5d0 \uc775\uc219\ud558\uc9c0 \uc54a\uc740 \uccad\uc911\uc758 \uc6a9\uc5b4 \uc7a5\ubcbd\uc744 \uc904\uc774\ub294 \uac83\uc744 \ubaa9\ud45c\ub85c \ud558\uc600\ub2e4. \uc774\ub97c \uc704\ud574 \uac15\uc5f0\uc790\uac00 \uc774\ubbf8 \uc900\ube44\ud55c PDF\ub97c \uc0ac\uc804 \ubb38\ub9e5\uc73c\ub85c \uc0ac\uc6a9\ud558\uc5ec \uac15\uc5f0\ubcc4 \uc6a9\uc5b4\uc9d1\uc744 \ub9cc\ub4e4\uace0, \ud574",
+        "style": "\ubc14\ud0d5\uae00"
+      },
+      {
+        "para_index": 6,
+        "text": "\uc885\ub2e8\uac04 \uc74c\uc131\uc778\uc2dd \uc2dc\uc2a4\ud15c\uc740 \ud559\uc2b5 \ub370\uc774\ud130\uc5d0 \uc790\uc8fc \ub4f1\uc7a5\ud558\uc9c0 \uc54a\uc740 \uc778\uba85, \uae30\uad00\uba85 \ubc0f \uc804\ubb38\uc6a9\uc5b4\ub97c \uc778\uc2dd\ud558\ub294 \ub370 \uc5b4\ub824\uc6c0\uc744 \ubcf4\uc77c \uc218 \uc788\ub2e4. \uc774\ub7ec\ud55c \ubb38\uc81c\ub97c \uc644\ud654\ud558\uae30 \uc704\ud574 \uc678\ubd80\uc758 \uc6a9\uc5b4 \ubaa9\ub85d\uc774\ub098 \uba54\ud0c0\ub370\uc774\ud130\ub97c \uc778\uc2dd \ubb38\ub9e5\uc73c\ub85c \uc0ac\uc6a9\ud558\ub294 co",
+        "style": "\ubc14\ud0d5\uae00"
+      }
+    ],
+    "direct_run_formatting": [
+      {
+        "para_index": 2,
+        "run_text": "1. \uc11c\ub860",
+        "style": "1."
+      },
+      {
+        "para_index": 3,
+        "run_text": "\uc778\uacf5\uc9c0\ub2a5 \uae30\uc220\uc758 \ubc1c\uc804\uc740 \uad50\uc721\uacfc \uc815\ubcf4 \uc11c\ube44\uc2a4\uc758 \uc811\uadfc \ubc94\uc704\ub97c \ub113\ud788\uace0 \uc788\uc9c0\ub9cc, \uadf8 \ud61c\ud0dd\uc774 \ud2b9\uc815 \uc9d1\ub2e8\uc774\ub098 \ub192\uc740 \uae30\uc220 \uc774\ud574\ub3c4\ub97c \uac00\uc9c4 \uc0ac\uc6a9\uc790\uc5d0\uac8c\ub9cc \uc9d1\uc911\ub418\uc9c0",
+        "style": "\ubc14\ud0d5\uae00"
+      },
+      {
+        "para_index": 4,
+        "run_text": "\ud2b9\ud788 AI, \uc758\ub8cc, \ubc95\ub960, \uacbd\uc81c\uc640 \uac19\uc740 \uc8fc\uc81c\uc758 \uac15\uc5f0\uc5d0\uc11c\ub294 \uc0c8\ub85c\uc6b4 \uc57d\uc5b4\uc640 \uc601\ubb38 \uae30\uc220\uba85\uc774 \uc5f0\uc18d\ud574\uc11c \ub4f1\uc7a5\ud55c\ub2e4. \ube44\uc804\ubb38\uac00\ub294 \ud558\ub098\uc758 \uc6a9\uc5b4\ub97c \ub193\uce5c \ub4a4 \uc774\uc5b4",
+        "style": "\ubc14\ud0d5\uae00"
+      },
+      {
+        "para_index": 5,
+        "run_text": "\ubcf8 \uc5f0\uad6c\ub294 \ud574\ucee4\ud1a4\uc758 \ud3ec\uc6a9\uc801 AI \uc8fc\uc81c\uc5d0\uc11c \ucd9c\ubc1c\ud558\uc5ec \uc804\ubb38\uc9c0\uc2dd\uc5d0 \uc775\uc219\ud558\uc9c0 \uc54a\uc740 \uccad\uc911\uc758 \uc6a9\uc5b4 \uc7a5\ubcbd\uc744 \uc904\uc774\ub294 \uac83\uc744 \ubaa9\ud45c\ub85c \ud558\uc600\ub2e4. \uc774\ub97c \uc704\ud574 \uac15\uc5f0\uc790\uac00 ",
+        "style": "\ubc14\ud0d5\uae00"
+      },
+      {
+        "para_index": 6,
+        "run_text": "\uc885\ub2e8\uac04 \uc74c\uc131\uc778\uc2dd \uc2dc\uc2a4\ud15c\uc740 \ud559\uc2b5 \ub370\uc774\ud130\uc5d0 \uc790\uc8fc \ub4f1\uc7a5\ud558\uc9c0 \uc54a\uc740 \uc778\uba85, \uae30\uad00\uba85 \ubc0f \uc804\ubb38\uc6a9\uc5b4\ub97c \uc778\uc2dd\ud558\ub294 \ub370 \uc5b4\ub824\uc6c0\uc744 \ubcf4\uc77c \uc218 \uc788\ub2e4. \uc774\ub7ec\ud55c \ubb38\uc81c\ub97c \uc644\ud654",
+        "style": "\ubc14\ud0d5\uae00"
+      }
+    ]
+  },
+  "notes": [
+    "Direct formatting is not always wrong, but it often causes inconsistent output when templates change.",
+    "Heading-like paragraphs not using Heading styles can break TOC and accessibility."
+  ]
+}

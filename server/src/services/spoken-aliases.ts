@@ -18,6 +18,7 @@ const UNSAFE_ALIASES = new Set([
   "모델",
   "문서",
   "방식",
+  "사과",
   "생성",
   "서비스",
   "사용자",
@@ -47,8 +48,19 @@ const KNOWN_ALIAS_GROUPS: Array<{ labels: string[]; aliases: string[] }> = [
   { labels: ["RAG", "Retrieval-Augmented Generation"], aliases: ["래그", "레그", "알에이지"] },
   { labels: ["LLM", "Large Language Model"], aliases: ["엘엘엠"] },
   { labels: ["AI", "Artificial Intelligence"], aliases: ["에이아이"] },
+  { labels: ["API", "Application Programming Interface"], aliases: ["에이피아이"] },
   { labels: ["Transformer"], aliases: ["트랜스포머"] },
-  { labels: ["Fine-tuning", "파인튜닝"], aliases: ["파인 튜닝"] },
+  { labels: ["Attention"], aliases: ["어텐션"] },
+  { labels: ["Prompt"], aliases: ["프롬프트"] },
+  { labels: ["Token"], aliases: ["토큰"] },
+  { labels: ["Vector Database"], aliases: ["벡터 데이터베이스"] },
+  { labels: ["Embedding"], aliases: ["임베딩"] },
+  { labels: ["Pipeline"], aliases: ["파이프라인"] },
+  { labels: ["Fine-tuning", "파인튜닝"], aliases: ["파인튜닝", "파인 튜닝"] },
+  { labels: ["Prompt Engineering"], aliases: ["프롬프트 엔지니어링"] },
+  { labels: ["Latency"], aliases: ["레이턴시"] },
+  { labels: ["Hallucination"], aliases: ["할루시네이션"] },
+  { labels: ["Guardrail"], aliases: ["가드레일"] },
   { labels: ["PhraseSet"], aliases: ["프레이즈셋", "프레이즈 세트", "프레이저스 셋"] },
   { labels: ["LangChain"], aliases: ["랭체인", "랑체인"] },
   { labels: ["PDF.js"], aliases: ["피디에프 제이에스"] },
@@ -74,11 +86,6 @@ export function knownSpokenAliases(term: string, english: string): string[] {
     .flatMap((group) => group.aliases);
 }
 
-export function isKnownSpokenAlias(term: string, english: string, alias: string): boolean {
-  const aliasKey = spokenFormKey(alias);
-  return aliasKey.length > 0 && knownSpokenAliases(term, english).some((candidate) => spokenFormKey(candidate) === aliasKey);
-}
-
 export function isContextAmbiguousSpokenAlias(alias: string): boolean {
   return spokenFormKey(alias) === spokenFormKey("레그");
 }
@@ -102,7 +109,6 @@ export function sanitizeSpokenAliases(term: string, english: string, value: unkn
       hangulCount < 2 ||
       protectedKeys.has(key) ||
       UNSAFE_ALIASES.has(key) ||
-      !isKnownSpokenAlias(term, english, alias) ||
       seen.has(key)
     ) continue;
     seen.add(key);

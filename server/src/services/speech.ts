@@ -1,4 +1,5 @@
 import { protos, v2 } from "@google-cloud/speech";
+import { MAX_PHRASE_SET_FORMS } from "./phrase-set-limits.js";
 
 type StreamingRecognizeRequest = protos.google.cloud.speech.v2.IStreamingRecognizeRequest;
 type StreamingRecognizeResponse = protos.google.cloud.speech.v2.IStreamingRecognizeResponse;
@@ -129,7 +130,7 @@ export function buildStreamingRecognizeRequest(
       phraseSets: [
         {
           inlinePhraseSet: {
-            phrases: phraseSet.slice(0, 50).map((value) => ({ value }))
+            phrases: phraseSet.slice(0, MAX_PHRASE_SET_FORMS).map((value) => ({ value }))
           }
         }
       ]

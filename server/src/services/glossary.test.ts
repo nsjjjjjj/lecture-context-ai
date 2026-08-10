@@ -1,6 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GlossaryTerm, PageText } from "../types.js";
-import { buildPhraseSet, matchTerms } from "./glossary.js";
+import { analyzeGlossary, buildPhraseSet, matchTerms } from "./glossary.js";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
 
 const pages: PageText[] = [
   { pageNumber: 1, text: "오늘은 생성형 AI와 RAG를 소개합니다." },
@@ -41,7 +46,14 @@ describe("buildPhraseSet", () => {
     ]);
   });
 
-  it("직접 주입된 미검토 별칭은 PhraseSet에 포함하지 않는다", () => {
+  it("안전한 자동 생성 발음은 허용하고 차단된 일반 단어는 PhraseSet에서 제외한다", () => {
+    const bert = {
+      ...terms[0],
+      id: "bert",
+      term: "BERT",
+      english: "Bidirectional Encoder Representations from Transformers",
+      spokenAliases: ["버트"]
+    };
     const api = {
       ...terms[0],
       id: "api",
@@ -49,9 +61,63 @@ describe("buildPhraseSet", () => {
       english: "Application Programming Interface",
       spokenAliases: ["사과"]
     };
-    const apiPages = [{ pageNumber: 1, text: "API를 소개합니다." }];
+    const apiPages = [{ pageNumber: 1, text: "BERT와 API를 소개합니다." }];
 
-    expect(buildPhraseSet([api], apiPages)).toEqual(["API"]);
+    expect(buildPhraseSet([bert, api], apiPages)).toEqual(["BERT", "버트", "API"]);
+  });
+
+  it("원본 용어 50개 제한과 별개로 영문·한글 발음 표기를 모두 보존한다", () => {
+    const manyTerms = Array.from({ length: 20 }, (_, index): GlossaryTerm => ({
+      id: `term-${index}`,
+      term: `Term${index}`,
+      english: `English${index}`,
+      spokenAliases: [`${String.fromCharCode(0xac00 + index)}음`],
+      easyExplanation: `용어 ${index} 설명`,
+      pageNumber: 1,
+      occurrences: 1,
+      source: "gemini"
+    }));
+    const manyPages = [{
+      pageNumber: 1,
+      text: manyTerms.flatMap((term) => [term.term, term.english]).join(" ")
+    }];
+
+    const phraseSet = buildPhraseSet(manyTerms, manyPages);
+
+    expect(phraseSet).toHaveLength(60);
+    expect(phraseSet).toContain("Term19");
+    expect(phraseSet).toContain("English19");
+    expect(phraseSet).toContain(`${String.fromCharCode(0xac00 + 19)}음`);
+  });
+});
+
+describe("analyzeGlossary", () => {
+  it("검증된 Gemini 용어가 3개 미만이어도 보존하고 휴리스틱 용어로 보완한다", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      candidates: [{ content: { parts: [{ text: JSON.stringify({
+        terms: [{
+          term: "BERT",
+          english: "",
+          spokenAliases: ["버트"],
+          easyExplanation: "문맥을 양방향으로 이해하는 언어 모델입니다."
+        }]
+      }) }] } }]
+    }), { status: 200, headers: { "Content-Type": "application/json" } })));
+
+    const result = await analyzeGlossary("소규모 PDF", [{ pageNumber: 1, text: "BERT와 Transformer를 비교합니다." }]);
+
+    expect(result.terms).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        term: "BERT",
+        spokenAliases: ["버트"],
+        easyExplanation: "문맥을 양방향으로 이해하는 언어 모델",
+        source: "gemini"
+      }),
+      expect.objectContaining({ term: "Transformer", spokenAliases: ["트랜스포머"], source: "heuristic" })
+    ]));
+    expect(result.phraseSet).toEqual(expect.arrayContaining(["BERT", "버트", "Transformer", "트랜스포머"]));
+    expect(result.warning).toContain("1개만 반환해");
   });
 });
 

@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "name": "Lecture Context AI Presentation Design System",
+  "id": "lecture-context-meta-editorial",
+  "version": "0.1",
+  "status": "adopted",
+  "slide": {
+    "ratio": "16:9",
+    "widthInches": 13.333,
+    "heightInches": 7.5,
+    "safeMarginInches": {
+      "left": 0.65,
+      "right": 0.65,
+      "top": 0.5,
+      "bottom": 0.5
+    },
+    "columns": 12,
+    "gutterPt": 20
+  },
+  "colors": {
+    "canvas": "#FFFFFF",
+    "canvasSoft": "#F1F4F7",
+    "boardGray": "#EDF1F4",
+    "inkDeep": "#0A1317",
+    "ink": "#1C1E21",
+    "slate": "#5D6C7B",
+    "hairline": "#CED0D4",
+    "hairlineSoft": "#DEE3E9",
+    "cobalt": "#0064E0",
+    "cobaltSoft": "#0091FF",
+    "darkMuted": "#9AA8B5"
+  },
+  "chartSeries": {
+    "conditionAWithoutPhraseSet": "#B8C1CA",
+    "conditionBCanonicalPhraseSet": "#718494",
+    "conditionCSpokenAliasPhraseSet": "#0064E0"
+  },
+  "fonts": {
+    "preferred": "Pretendard",
+    "openFallback": "Noto Sans KR",
+    "powerPointFallback": "맑은 고딕",
+    "macFallback": "Apple SD Gothic Neo",
+    "latinFallback": "Arial"
+  },
+  "typographyPt": {
+    "deckTitle": {
+      "min": 56,
+      "max": 68,
+      "weight": 700,
+      "lineHeight": 1.07
+    },
+    "slideTitle": {
+      "min": 36,
+      "max": 44,
+      "weight": 700,
+      "lineHeight": 1.14
+    },
+    "sectionTitle": {
+      "min": 44,
+      "max": 56,
+      "weight": 700,
+      "lineHeight": 1.1
+    },
+    "metricXL": {
+      "min": 76,
+      "max": 112,
+      "weight": 600,
+      "lineHeight": 0.98
+    },
+    "subhead": {
+      "min": 24,
+      "max": 28,
+      "weight": 600,
+      "lineHeight": 1.25
+    },
+    "body": {
+      "min": 18,
+      "max": 22,
+      "weight": 400,
+      "lineHeight": 1.48
+    },
+    "label": {
+      "min": 16,
+      "max": 18,
+      "weight": 700,
+      "lineHeight": 1.2
+    },
+    "caption": {
+      "min": 14,
+      "max": 16,
+      "weight": 400,
+      "lineHeight": 1.3
+    }
+  },
+  "spacingPt": {
+    "1": 8,
+    "2": 16,
+    "3": 24,
+    "4": 32,
+    "5": 48,
+    "6": 64,
+    "7": 96
+  },
+  "radiusPt": {
+    "productFrame": 30,
+    "conclusionStrip": 26,
+    "dataSurface": 8,
+    "circle": 999
+  },
+  "linesPt": {
+    "hairline": 1,
+    "connector": 1.5,
+    "activeProcess": 2.5
+  },
+  "layoutDefaults": {
+    "textImageSplit": "5/7",
+    "coverTextPercent": 42,
+    "coverImagePercent": 58,
+    "maxPrimaryImagesPerSlide": 1,
+    "maxProcessSteps": 5,
+    "maxDiagramNodes": 5,
+    "maxChartSeries": 3
+  },
+  "components": {
+    "eyebrow": {
+      "fontSizePt": 17,
+      "fontWeight": 700,
+      "color": "{colors.cobalt}",
+      "letterSpacingEm": 0.08
+    },
+    "productFrame": {
+      "radiusPt": "{radiusPt.productFrame}",
+      "borderPt": 1,
+      "borderColor": "{colors.hairlineSoft}",
+      "shadow": "none-or-subtle"
+    },
+    "darkConclusionStrip": {
+      "background": "{colors.inkDeep}",
+      "textColor": "{colors.canvas}",
+      "radiusPt": "{radiusPt.conclusionStrip}"
+    }
+  },
+  "rules": {
+    "oneClaimPerSlide": true,
+    "preferTakeawayTitles": true,
+    "preferActualProductScreenshots": true,
+    "reusePrimaryImage": false,
+    "repeatRoundedCards": false,
+    "useMetaLogo": false,
+    "useOptimisticVF": false,
+    "inventUnmeasuredMetrics": false,
+    "requireSourcesInSpeakerNotes": true,
+    "renderAndInspectEverySlide": true
+  }
+}

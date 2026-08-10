@@ -1,0 +1,17 @@
+--- a
++++ b
+@@ -117,9 +117,9 @@
+ 기사 원고와 보도자료가 있다면 뉴스나 공공 브리핑의 인명, 지명, 정책용어에도 같은 개념을 적용할 수 있다. 오류의 영향이 큰 공공정보는 자동 정정만으로 확정하지 않고 사람의 검수와 출처 확인을 함께 거쳐야 한다. 앞으로는 스캔 PDF를 위한 OCR과 강연자 용어 검수 기능을 보완하고, 다중 화자·소음 환경과 장시간 스트림 재연결을 평가할 예정이다. 설명 난이도 조절과 실제 사용자의 이해도·사용성 평가는 별도의 사용자 연구로 다뤄야 한다.
+ 참고문헌
+ [1] W3C Web Accessibility Initiative, “Cognitive Accessibility Design Pattern: Use Clear Words,” accessed Aug. 9, 2026, https://www.w3.org/WAI/WCAG2/supplemental/patterns/o3p01-clear-words/.
+-[2] I. S. Robert, A. De Meulder, and I. Schrijver, “Live subtitling for access to education: A pilot study of university students’ reception of intralingual live subtitles,” The Journal of Specialised Translation, no. 36, pp. 53-78, 2021.
+-[3] Y. Li et al., “CB-Whisper: Contextual Biasing Whisper Using Open-Vocabulary Keyword-Spotting,” Proceedings of LREC-COLING 2024, pp. 2941-2946, 2024.
++[2] I. S. Robert, A. De Meulder, and I. Schrijver, “Live subtitling for access to education: A pilot study of university students’ reception of intralingual live subtitles,” The Journal of Specialised Translation, no. 36, pp. 53-78, 2021, https://doi.org/10.26034/cm.jostrans.2021.056.
++[3] Y. Li et al., “CB-Whisper: Contextual Biasing Whisper Using Open-Vocabulary Keyword-Spotting,” Proceedings of LREC-COLING 2024, pp. 2941-2946, 2024, https://aclanthology.org/2024.lrec-main.262/.
+ [4] Google Cloud, “Improve transcription results with model adaptation,” accessed Aug. 9, 2026, https://docs.cloud.google.com/speech-to-text/docs/adaptation-model.
+-[5] J. D. Fox and N. Delworth, “Improving Contextual Recognition of Rare Words with an Alternate Spelling Prediction Model,” Proceedings of INTERSPEECH 2022, pp. 3914-3918, 2022.
+-[6] M. Jain et al., “Contextual RNN-T for Open Domain ASR,” Proceedings of INTERSPEECH 2020, pp. 11-15, 2020.
+-[7] YouTube Help, “Use automatic captioning,” accessed Aug. 9, 2026.
++[5] J. D. Fox and N. Delworth, “Improving Contextual Recognition of Rare Words with an Alternate Spelling Prediction Model,” Proceedings of INTERSPEECH 2022, pp. 3914-3918, 2022, https://doi.org/10.21437/Interspeech.2022-10991.
++[6] M. Jain et al., “Contextual RNN-T for Open Domain ASR,” Proceedings of INTERSPEECH 2020, pp. 11-15, 2020, https://doi.org/10.21437/Interspeech.2020-2986.
++[7] YouTube Help, “Use automatic captioning,” accessed Aug. 9, 2026, https://support.google.com/youtube/answer/6373554.

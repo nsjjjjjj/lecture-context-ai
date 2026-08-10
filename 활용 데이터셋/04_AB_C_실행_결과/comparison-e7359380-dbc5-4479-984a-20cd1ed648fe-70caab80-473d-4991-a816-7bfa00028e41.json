@@ -1,0 +1,2227 @@
+{
+  "version": 4,
+  "createdAt": "2026-08-09T12:16:22.590Z",
+  "recording": {
+    "id": "e7359380-dbc5-4479-984a-20cd1ed648fe",
+    "scriptId": "case-0631d607-e4c0-496c-a4ba-8ec1a54d43b2",
+    "speakerReadReferenceScriptVerbatim": true,
+    "evaluationMode": "accuracy",
+    "experimentIdentity": {
+      "studyId": "study-1004034b-19b3-42ec-b55c-3514b45d102c",
+      "caseId": "case-0631d607-e4c0-496c-a4ba-8ec1a54d43b2",
+      "caseSnapshotId": "snapshot-2e0ff116802d448ba6faff71",
+      "glossaryId": "8994387d-594d-48b3-8800-b25a7f624f65",
+      "glossaryName": "4",
+      "glossaryHash": "750847b8005a7e68526802f8c2748a2ff3561b2d4cf6de696c685078b25078b4",
+      "scriptHash": "2a27cf0ba7d03f5850206ad80b1d5b98563708d7cf97b8b8292dd6d939ec8d1e"
+    }
+  },
+  "script": {
+    "id": "case-0631d607-e4c0-496c-a4ba-8ec1a54d43b2",
+    "title": "test 04",
+    "languageCode": "ko-KR",
+    "text": "오늘은 로 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 로넷은 수작업 음향 특징 대신 원시 파형에서 스피커 임베딩을 추출해 처리 파이프라인을 단순화합니다. 이 연구는 로넷의 피처 맵을 조절하기 위해 피처 맵 스케일링, 줄여서 에프엠에스를 제안합니다.\n\n에프엠에스는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다. 스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케일링을 적용하거나, 애디티블리 스케일링하거나, 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체해 학습 가능한 필터를 구성할 수 있습니다. 이후 지알유가 프레임 정보를 모아 코드 벡터를 생성합니다.\n\n실험은 복스셀렙 원 평가 데이터셋에서 진행하고, 시스템의 이퀄 에러 레이트 인 이이알을 비교합니다. 로넷, 로 웨이브폼, 에프엠에스, 싱크 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다. 특히 로넷이 일반 단어로 바뀌지 않고 RawNet으로 표기되는지 확인하겠습니다.",
+    "targetTerms": [
+      {
+        "id": "gold-01",
+        "canonicalTerm": "FMS",
+        "english": "FMS",
+        "spokenAliases": [
+          "에프엠에스"
+        ],
+        "expectedOccurrences": [
+          3,
+          4,
+          10
+        ]
+      },
+      {
+        "id": "gold-02",
+        "canonicalTerm": "EER",
+        "english": "EER",
+        "spokenAliases": [
+          "이이알"
+        ],
+        "expectedOccurrences": [
+          9
+        ]
+      },
+      {
+        "id": "gold-03",
+        "canonicalTerm": "GRU",
+        "english": "GRU",
+        "spokenAliases": [
+          "지알유"
+        ],
+        "expectedOccurrences": [
+          7
+        ]
+      },
+      {
+        "id": "gold-04",
+        "canonicalTerm": "RawNet",
+        "english": "RawNet",
+        "spokenAliases": [
+          "로우넷",
+          "라우넷"
+        ],
+        "expectedOccurrences": [
+          13
+        ]
+      },
+      {
+        "id": "gold-05",
+        "canonicalTerm": "speaker verification",
+        "english": "speaker verification",
+        "spokenAliases": [
+          "스피커 베리피케이션"
+        ],
+        "expectedOccurrences": [
+          1
+        ]
+      },
+      {
+        "id": "gold-06",
+        "canonicalTerm": "SincNet",
+        "english": "SincNet",
+        "spokenAliases": [
+          "싱크넷"
+        ],
+        "expectedOccurrences": [
+          5,
+          12
+        ]
+      },
+      {
+        "id": "gold-07",
+        "canonicalTerm": "Feature Map Scaling",
+        "english": "Feature Map Scaling",
+        "spokenAliases": [
+          "피처 맵 스케일링",
+          "피쳐 맵 스케일링"
+        ],
+        "expectedOccurrences": [
+          2
+        ]
+      },
+      {
+        "id": "gold-08",
+        "canonicalTerm": "sinc-convolution",
+        "english": "sinc-convolution",
+        "spokenAliases": [
+          "싱크 컨볼루션",
+          "싱크 합성곱"
+        ],
+        "expectedOccurrences": [
+          6,
+          11
+        ]
+      },
+      {
+        "id": "gold-09",
+        "canonicalTerm": "equal error rate",
+        "english": "equal error rate",
+        "spokenAliases": [
+          "이퀄 에러 레이트"
+        ],
+        "expectedOccurrences": [
+          8
+        ]
+      }
+    ],
+    "adaptationTerms": [
+      {
+        "id": "pdf-01",
+        "canonicalTerm": "FMS",
+        "english": "FMS",
+        "spokenAliases": [
+          "에프엠에스"
+        ]
+      },
+      {
+        "id": "pdf-02",
+        "canonicalTerm": "EER",
+        "english": "EER",
+        "spokenAliases": [
+          "이이알"
+        ]
+      },
+      {
+        "id": "pdf-03",
+        "canonicalTerm": "GRU",
+        "english": "GRU",
+        "spokenAliases": [
+          "지알유"
+        ]
+      },
+      {
+        "id": "pdf-04",
+        "canonicalTerm": "TTA",
+        "english": "TTA",
+        "spokenAliases": [
+          "티티에이"
+        ]
+      },
+      {
+        "id": "pdf-05",
+        "canonicalTerm": "CBAM",
+        "english": "CBAM",
+        "spokenAliases": [
+          "씨비에이엠",
+          "시비에이엠"
+        ]
+      },
+      {
+        "id": "pdf-06",
+        "canonicalTerm": "RawNet",
+        "english": "RawNet",
+        "spokenAliases": [
+          "로우넷",
+          "라우넷"
+        ]
+      },
+      {
+        "id": "pdf-07",
+        "canonicalTerm": "speaker verification",
+        "english": "speaker verification",
+        "spokenAliases": [
+          "스피커 베리피케이션"
+        ]
+      },
+      {
+        "id": "pdf-08",
+        "canonicalTerm": "raw waveform",
+        "english": "raw waveform",
+        "spokenAliases": [
+          "로우 웨이브폼",
+          "라우 웨이브폼"
+        ]
+      },
+      {
+        "id": "pdf-09",
+        "canonicalTerm": "VoxCeleb1",
+        "english": "VoxCeleb1",
+        "spokenAliases": [
+          "복스셀렙원"
+        ]
+      },
+      {
+        "id": "pdf-10",
+        "canonicalTerm": "sinc-conv",
+        "english": "sinc-conv",
+        "spokenAliases": [
+          "싱크 컨브",
+          "싱크 콘브"
+        ]
+      },
+      {
+        "id": "pdf-11",
+        "canonicalTerm": "RawNet2",
+        "english": "RawNet2",
+        "spokenAliases": [
+          "로우넷투",
+          "라우넷투"
+        ]
+      },
+      {
+        "id": "pdf-12",
+        "canonicalTerm": "DNNs",
+        "english": "DNNs",
+        "spokenAliases": [
+          "디엔엔즈",
+          "디엔엔"
+        ]
+      },
+      {
+        "id": "pdf-13",
+        "canonicalTerm": "spectrogram",
+        "english": "spectrogram",
+        "spokenAliases": [
+          "스펙트로그램"
+        ]
+      },
+      {
+        "id": "pdf-14",
+        "canonicalTerm": "residual block",
+        "english": "residual block",
+        "spokenAliases": [
+          "레지듀얼 블록"
+        ]
+      },
+      {
+        "id": "pdf-15",
+        "canonicalTerm": "VoxCeleb2",
+        "english": "VoxCeleb2",
+        "spokenAliases": [
+          "복스셀렙투"
+        ]
+      },
+      {
+        "id": "pdf-16",
+        "canonicalTerm": "attention mechanism",
+        "english": "attention mechanism",
+        "spokenAliases": [
+          "어텐션 메커니즘"
+        ]
+      },
+      {
+        "id": "pdf-17",
+        "canonicalTerm": "self-attentive pooling",
+        "english": "self-attentive pooling",
+        "spokenAliases": [
+          "셀프 어텐티브 풀링"
+        ]
+      },
+      {
+        "id": "pdf-18",
+        "canonicalTerm": "SincNet",
+        "english": "SincNet",
+        "spokenAliases": [
+          "싱크넷"
+        ]
+      },
+      {
+        "id": "pdf-19",
+        "canonicalTerm": "Feature Map Scaling",
+        "english": "Feature Map Scaling",
+        "spokenAliases": [
+          "피처 맵 스케일링",
+          "피쳐 맵 스케일링"
+        ]
+      },
+      {
+        "id": "pdf-20",
+        "canonicalTerm": "deep neural networks",
+        "english": "deep neural networks",
+        "spokenAliases": [
+          "딥 뉴럴 네트워크"
+        ]
+      },
+      {
+        "id": "pdf-21",
+        "canonicalTerm": "LeakyReLU",
+        "english": "LeakyReLU",
+        "spokenAliases": [
+          "리키리루",
+          "리키 리루"
+        ]
+      },
+      {
+        "id": "pdf-22",
+        "canonicalTerm": "GhostVLAD",
+        "english": "GhostVLAD",
+        "spokenAliases": [
+          "고스트블래드"
+        ]
+      },
+      {
+        "id": "pdf-23",
+        "canonicalTerm": "sinc-convolution",
+        "english": "sinc-convolution",
+        "spokenAliases": [
+          "싱크 컨볼루션",
+          "싱크 합성곱"
+        ]
+      },
+      {
+        "id": "pdf-24",
+        "canonicalTerm": "equal error rate",
+        "english": "equal error rate",
+        "spokenAliases": [
+          "이퀄 에러 레이트"
+        ]
+      },
+      {
+        "id": "pdf-25",
+        "canonicalTerm": "gated recurrent unit",
+        "english": "gated recurrent unit",
+        "spokenAliases": [
+          "게이티드 리커런트 유닛"
+        ]
+      },
+      {
+        "id": "pdf-26",
+        "canonicalTerm": "Mel-frequency cepstral coefficients",
+        "english": "Mel-frequency cepstral coefficients",
+        "spokenAliases": [
+          "멜 프리퀀시 셉스트럴 코에피셔츠"
+        ]
+      },
+      {
+        "id": "pdf-27",
+        "canonicalTerm": "cosine similarity",
+        "english": "cosine similarity",
+        "spokenAliases": [
+          "코사인 시밀러리티",
+          "코사인 유사도"
+        ]
+      },
+      {
+        "id": "pdf-28",
+        "canonicalTerm": "test time augmentation",
+        "english": "test time augmentation",
+        "spokenAliases": [
+          "테스트 타임 오그멘테이션"
+        ]
+      },
+      {
+        "id": "pdf-29",
+        "canonicalTerm": "relative error reduction",
+        "english": "relative error reduction",
+        "spokenAliases": [
+          "릴러티브 에러 리덕션"
+        ]
+      },
+      {
+        "id": "pdf-30",
+        "canonicalTerm": "AMSGrad",
+        "english": "AMSGrad",
+        "spokenAliases": [
+          "에이엠에스그래드"
+        ]
+      },
+      {
+        "id": "pdf-31",
+        "canonicalTerm": "squeeze-excitation",
+        "english": "squeeze-excitation",
+        "spokenAliases": [
+          "스퀴즈 엑사이테이션"
+        ]
+      },
+      {
+        "id": "pdf-32",
+        "canonicalTerm": "PyTorch",
+        "english": "PyTorch",
+        "spokenAliases": [
+          "파이토치"
+        ]
+      }
+    ],
+    "experimentIdentity": {
+      "studyId": "study-1004034b-19b3-42ec-b55c-3514b45d102c",
+      "caseId": "case-0631d607-e4c0-496c-a4ba-8ec1a54d43b2",
+      "caseSnapshotId": "snapshot-2e0ff116802d448ba6faff71",
+      "glossaryId": "8994387d-594d-48b3-8800-b25a7f624f65",
+      "glossaryName": "4",
+      "glossaryHash": "750847b8005a7e68526802f8c2748a2ff3561b2d4cf6de696c685078b25078b4",
+      "scriptHash": "2a27cf0ba7d03f5850206ad80b1d5b98563708d7cf97b8b8292dd6d939ec8d1e"
+    }
+  },
+  "websocketUrl": "ws://127.0.0.1:8787/ws",
+  "measurementNote": "화자가 기준 문장을 그대로 읽었다고 명시적으로 선언한 녹음입니다. occurrence-level 지표를 정확도 비교에 사용할 수 있습니다.",
+  "runs": [
+    {
+      "label": "without-phrase-set",
+      "status": "completed",
+      "phraseSet": [],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "FMS",
+          "english": "FMS",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "EER",
+          "english": "EER",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "GRU",
+          "english": "GRU",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "TTA",
+          "english": "TTA",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "CBAM",
+          "english": "CBAM",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "RawNet",
+          "english": "RawNet",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "speaker verification",
+          "english": "speaker verification",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "raw waveform",
+          "english": "raw waveform",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "VoxCeleb1",
+          "english": "VoxCeleb1",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "sinc-conv",
+          "english": "sinc-conv",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "RawNet2",
+          "english": "RawNet2",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "DNNs",
+          "english": "DNNs",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "spectrogram",
+          "english": "spectrogram",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "residual block",
+          "english": "residual block",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "VoxCeleb2",
+          "english": "VoxCeleb2",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "attention mechanism",
+          "english": "attention mechanism",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "self-attentive pooling",
+          "english": "self-attentive pooling",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "SincNet",
+          "english": "SincNet",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Feature Map Scaling",
+          "english": "Feature Map Scaling",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "deep neural networks",
+          "english": "deep neural networks",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "LeakyReLU",
+          "english": "LeakyReLU",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "GhostVLAD",
+          "english": "GhostVLAD",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "sinc-convolution",
+          "english": "sinc-convolution",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "equal error rate",
+          "english": "equal error rate",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "gated recurrent unit",
+          "english": "gated recurrent unit",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-26",
+          "term": "Mel-frequency cepstral coefficients",
+          "english": "Mel-frequency cepstral coefficients",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-27",
+          "term": "cosine similarity",
+          "english": "cosine similarity",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-28",
+          "term": "test time augmentation",
+          "english": "test time augmentation",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-29",
+          "term": "relative error reduction",
+          "english": "relative error reduction",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-30",
+          "term": "AMSGrad",
+          "english": "AMSGrad",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-31",
+          "term": "squeeze-excitation",
+          "english": "squeeze-excitation",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-32",
+          "term": "PyTorch",
+          "english": "PyTorch",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T12:14:56.715Z",
+      "readyAfterMs": 10,
+      "audioDurationMs": 83402,
+      "wallClockMs": 85875,
+      "interimCount": 13,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 로우 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 론엣은 수작업 음영 특징 대신 원시 파형에서 스피커 인베딩을 추출해 처리 파이프라인을 단순화합니다.",
+          "rawText": "오늘은 로우 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 론엣은 수작업 음영 특징 대신 원시 파형에서 스피커 인베딩을 추출해 처리 파이프라인을 단순화합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "연구는 로넷의 피처맵을 조절하기 위해 피처맵 스케일링 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다.",
+          "rawText": "연구는 로넷의 피처맵을 조절하기 위해 피처맵 스케일링 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다.",
+          "detectedTermIds": [
+            "pdf-01",
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케일링을 적용하거나",
+          "rawText": "스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케일링을 적용하거나",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "애디티브리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체해 학습 가능한 필터를 구성할 수 있습니다.",
+          "rawText": "애디티브리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체해 학습 가능한 필터를 구성할 수 있습니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 복수 셀렉션 평가 데이터 데이터셋에서 진행하고, 시스템의 이퀄 에러 레이트인 EER로 비교합니다. Raw net, Raw waveform, FMS, 싱커 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다.",
+          "rawText": "이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 복수 셀렉션 평가 데이터 데이터셋에서 진행하고, 시스템의 이퀄 에러 레이트인 EER로 비교합니다. Raw net, Raw waveform, FMS, 싱커 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다.",
+          "detectedTermIds": [
+            "pdf-03",
+            "pdf-02",
+            "pdf-08",
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "특길 로넷이 일반 단어로 바뀌지 않고 로넷으로 표기되는지 확인하겠습니다.",
+          "rawText": "특길 로넷이 일반 단어로 바뀌지 않고 로넷으로 표기되는지 확인하겠습니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        }
+      ],
+      "transcript": "오늘은 로우 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 론엣은 수작업 음영 특징 대신 원시 파형에서 스피커 인베딩을 추출해 처리 파이프라인을 단순화합니다. 연구는 로넷의 피처맵을 조절하기 위해 피처맵 스케일링 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다. 스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케일링을 적용하거나 애디티브리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체해 학습 가능한 필터를 구성할 수 있습니다. 이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 복수 셀렉션 평가 데이터 데이터셋에서 진행하고, 시스템의 이퀄 에러 레이트인 EER로 비교합니다. Raw net, Raw waveform, FMS, 싱커 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다. 특길 로넷이 일반 단어로 바뀌지 않고 로넷으로 표기되는지 확인하겠습니다.",
+      "rawTranscript": "오늘은 로우 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 론엣은 수작업 음영 특징 대신 원시 파형에서 스피커 인베딩을 추출해 처리 파이프라인을 단순화합니다. 연구는 로넷의 피처맵을 조절하기 위해 피처맵 스케일링 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다. 스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케일링을 적용하거나 애디티브리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체해 학습 가능한 필터를 구성할 수 있습니다. 이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 복수 셀렉션 평가 데이터 데이터셋에서 진행하고, 시스템의 이퀄 에러 레이트인 EER로 비교합니다. Raw net, Raw waveform, FMS, 싱커 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다. 특길 로넷이 일반 단어로 바뀌지 않고 로넷으로 표기되는지 확인하겠습니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 5,
+        "aliasCorrectionSuccesses": 0,
+        "misses": 8,
+        "falseCorrections": 0,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 13,
+        "productLinkRate": 0.38461538461538464
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "speaker verification",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Feature Map Scaling",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "FMS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "FMS"
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "FMS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "FMS"
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "SincNet",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "sinc-convolution",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "GRU",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "GRU"
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "equal error rate",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "EER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "EER"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "FMS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "FMS"
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "sinc-convolution",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "SincNet",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "RawNet",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        }
+      ],
+      "unexpectedObservations": [],
+      "errors": []
+    },
+    {
+      "label": "canonical-phrase-set",
+      "status": "completed",
+      "phraseSet": [
+        "FMS",
+        "EER",
+        "GRU",
+        "TTA",
+        "CBAM",
+        "RawNet",
+        "speaker verification",
+        "raw waveform",
+        "VoxCeleb1",
+        "sinc-conv",
+        "RawNet2",
+        "DNNs",
+        "spectrogram",
+        "residual block",
+        "VoxCeleb2",
+        "attention mechanism",
+        "self-attentive pooling",
+        "SincNet",
+        "Feature Map Scaling",
+        "deep neural networks",
+        "LeakyReLU",
+        "GhostVLAD",
+        "sinc-convolution",
+        "equal error rate",
+        "gated recurrent unit",
+        "Mel-frequency cepstral coefficients",
+        "cosine similarity",
+        "test time augmentation",
+        "relative error reduction",
+        "AMSGrad",
+        "squeeze-excitation",
+        "PyTorch"
+      ],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "FMS",
+          "english": "FMS",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "EER",
+          "english": "EER",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "GRU",
+          "english": "GRU",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "TTA",
+          "english": "TTA",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "CBAM",
+          "english": "CBAM",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "RawNet",
+          "english": "RawNet",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "speaker verification",
+          "english": "speaker verification",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "raw waveform",
+          "english": "raw waveform",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "VoxCeleb1",
+          "english": "VoxCeleb1",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "sinc-conv",
+          "english": "sinc-conv",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "RawNet2",
+          "english": "RawNet2",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "DNNs",
+          "english": "DNNs",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "spectrogram",
+          "english": "spectrogram",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "residual block",
+          "english": "residual block",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "VoxCeleb2",
+          "english": "VoxCeleb2",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "attention mechanism",
+          "english": "attention mechanism",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "self-attentive pooling",
+          "english": "self-attentive pooling",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "SincNet",
+          "english": "SincNet",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Feature Map Scaling",
+          "english": "Feature Map Scaling",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "deep neural networks",
+          "english": "deep neural networks",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "LeakyReLU",
+          "english": "LeakyReLU",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "GhostVLAD",
+          "english": "GhostVLAD",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "sinc-convolution",
+          "english": "sinc-convolution",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "equal error rate",
+          "english": "equal error rate",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "gated recurrent unit",
+          "english": "gated recurrent unit",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-26",
+          "term": "Mel-frequency cepstral coefficients",
+          "english": "Mel-frequency cepstral coefficients",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-27",
+          "term": "cosine similarity",
+          "english": "cosine similarity",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-28",
+          "term": "test time augmentation",
+          "english": "test time augmentation",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-29",
+          "term": "relative error reduction",
+          "english": "relative error reduction",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-30",
+          "term": "AMSGrad",
+          "english": "AMSGrad",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-31",
+          "term": "squeeze-excitation",
+          "english": "squeeze-excitation",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-32",
+          "term": "PyTorch",
+          "english": "PyTorch",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T12:14:56.717Z",
+      "readyAfterMs": 10,
+      "audioDurationMs": 83402,
+      "wallClockMs": 85775,
+      "interimCount": 12,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 로우 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 런넷은 수작업 음향 특징 대신 원시 파형에서 스피커 인베딩을 추출해 처리 파이프라인을 단순화합니다.",
+          "rawText": "오늘은 로우 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 런넷은 수작업 음향 특징 대신 원시 파형에서 스피커 인베딩을 추출해 처리 파이프라인을 단순화합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "연구는 로넷의 피처 맵을 조절하기 위해 피처 맵 스케일링, 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다.",
+          "rawText": "연구는 로넷의 피처 맵을 조절하기 위해 피처 맵 스케일링, 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다.",
+          "detectedTermIds": [
+            "pdf-01",
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케일링을 적용하거나",
+          "rawText": "스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케일링을 적용하거나",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "애디티블리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체 학습 가능한 필터를 구성할 수 있습니다.",
+          "rawText": "애디티블리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체 학습 가능한 필터를 구성할 수 있습니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 복스셀렙 1 평가 데이터 데이터셋에서 진행하고 시스템의 이퀄 에러 레이트인 EER로 비교합니다. 로넷, 로우 웨이브폼, FMS, 싱커 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다.",
+          "rawText": "이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 복스셀렙 1 평가 데이터 데이터셋에서 진행하고 시스템의 이퀄 에러 레이트인 EER로 비교합니다. 로넷, 로우 웨이브폼, FMS, 싱커 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다.",
+          "detectedTermIds": [
+            "pdf-03",
+            "pdf-02",
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "특히 로넷이 일반 단어로 바뀌지 않고 로넷으로 표기되는지 확인하겠습니다.",
+          "rawText": "특히 로넷이 일반 단어로 바뀌지 않고 로넷으로 표기되는지 확인하겠습니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        }
+      ],
+      "transcript": "오늘은 로우 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 런넷은 수작업 음향 특징 대신 원시 파형에서 스피커 인베딩을 추출해 처리 파이프라인을 단순화합니다. 연구는 로넷의 피처 맵을 조절하기 위해 피처 맵 스케일링, 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다. 스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케일링을 적용하거나 애디티블리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체 학습 가능한 필터를 구성할 수 있습니다. 이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 복스셀렙 1 평가 데이터 데이터셋에서 진행하고 시스템의 이퀄 에러 레이트인 EER로 비교합니다. 로넷, 로우 웨이브폼, FMS, 싱커 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다. 특히 로넷이 일반 단어로 바뀌지 않고 로넷으로 표기되는지 확인하겠습니다.",
+      "rawTranscript": "오늘은 로우 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 런넷은 수작업 음향 특징 대신 원시 파형에서 스피커 인베딩을 추출해 처리 파이프라인을 단순화합니다. 연구는 로넷의 피처 맵을 조절하기 위해 피처 맵 스케일링, 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다. 스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케일링을 적용하거나 애디티블리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체 학습 가능한 필터를 구성할 수 있습니다. 이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 복스셀렙 1 평가 데이터 데이터셋에서 진행하고 시스템의 이퀄 에러 레이트인 EER로 비교합니다. 로넷, 로우 웨이브폼, FMS, 싱커 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다. 특히 로넷이 일반 단어로 바뀌지 않고 로넷으로 표기되는지 확인하겠습니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 5,
+        "aliasCorrectionSuccesses": 0,
+        "misses": 8,
+        "falseCorrections": 0,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 13,
+        "productLinkRate": 0.38461538461538464
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "speaker verification",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Feature Map Scaling",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "FMS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "FMS"
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "FMS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "FMS"
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "SincNet",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "sinc-convolution",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "GRU",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "GRU"
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "equal error rate",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "EER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "EER"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "FMS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "FMS"
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "sinc-convolution",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "SincNet",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "RawNet",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        }
+      ],
+      "unexpectedObservations": [],
+      "errors": []
+    },
+    {
+      "label": "spoken-alias-phrase-set",
+      "status": "completed",
+      "phraseSet": [
+        "FMS",
+        "에프엠에스",
+        "EER",
+        "이이알",
+        "GRU",
+        "지알유",
+        "TTA",
+        "티티에이",
+        "CBAM",
+        "씨비에이엠",
+        "시비에이엠",
+        "RawNet",
+        "로우넷",
+        "라우넷",
+        "speaker verification",
+        "스피커 베리피케이션",
+        "raw waveform",
+        "로우 웨이브폼",
+        "라우 웨이브폼",
+        "VoxCeleb1",
+        "복스셀렙원",
+        "sinc-conv",
+        "싱크 컨브",
+        "싱크 콘브",
+        "RawNet2",
+        "로우넷투",
+        "라우넷투",
+        "DNNs",
+        "디엔엔즈",
+        "디엔엔",
+        "spectrogram",
+        "스펙트로그램",
+        "residual block",
+        "레지듀얼 블록",
+        "VoxCeleb2",
+        "복스셀렙투",
+        "attention mechanism",
+        "어텐션 메커니즘",
+        "self-attentive pooling",
+        "셀프 어텐티브 풀링",
+        "SincNet",
+        "싱크넷",
+        "Feature Map Scaling",
+        "피처 맵 스케일링",
+        "피쳐 맵 스케일링",
+        "deep neural networks",
+        "딥 뉴럴 네트워크",
+        "LeakyReLU",
+        "리키리루",
+        "리키 리루",
+        "GhostVLAD",
+        "고스트블래드",
+        "sinc-convolution",
+        "싱크 컨볼루션",
+        "싱크 합성곱",
+        "equal error rate",
+        "이퀄 에러 레이트",
+        "gated recurrent unit",
+        "게이티드 리커런트 유닛",
+        "Mel-frequency cepstral coefficients",
+        "멜 프리퀀시 셉스트럴 코에피셔츠",
+        "cosine similarity",
+        "코사인 시밀러리티",
+        "코사인 유사도",
+        "test time augmentation",
+        "테스트 타임 오그멘테이션",
+        "relative error reduction",
+        "릴러티브 에러 리덕션",
+        "AMSGrad",
+        "에이엠에스그래드",
+        "squeeze-excitation",
+        "스퀴즈 엑사이테이션",
+        "PyTorch",
+        "파이토치"
+      ],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "FMS",
+          "english": "FMS",
+          "spokenAliases": [
+            "에프엠에스"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "EER",
+          "english": "EER",
+          "spokenAliases": [
+            "이이알"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "GRU",
+          "english": "GRU",
+          "spokenAliases": [
+            "지알유"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "TTA",
+          "english": "TTA",
+          "spokenAliases": [
+            "티티에이"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "CBAM",
+          "english": "CBAM",
+          "spokenAliases": [
+            "씨비에이엠",
+            "시비에이엠"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "RawNet",
+          "english": "RawNet",
+          "spokenAliases": [
+            "로우넷",
+            "라우넷"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "speaker verification",
+          "english": "speaker verification",
+          "spokenAliases": [
+            "스피커 베리피케이션"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "raw waveform",
+          "english": "raw waveform",
+          "spokenAliases": [
+            "로우 웨이브폼",
+            "라우 웨이브폼"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "VoxCeleb1",
+          "english": "VoxCeleb1",
+          "spokenAliases": [
+            "복스셀렙원"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "sinc-conv",
+          "english": "sinc-conv",
+          "spokenAliases": [
+            "싱크 컨브",
+            "싱크 콘브"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "RawNet2",
+          "english": "RawNet2",
+          "spokenAliases": [
+            "로우넷투",
+            "라우넷투"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "DNNs",
+          "english": "DNNs",
+          "spokenAliases": [
+            "디엔엔즈",
+            "디엔엔"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "spectrogram",
+          "english": "spectrogram",
+          "spokenAliases": [
+            "스펙트로그램"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "residual block",
+          "english": "residual block",
+          "spokenAliases": [
+            "레지듀얼 블록"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "VoxCeleb2",
+          "english": "VoxCeleb2",
+          "spokenAliases": [
+            "복스셀렙투"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "attention mechanism",
+          "english": "attention mechanism",
+          "spokenAliases": [
+            "어텐션 메커니즘"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "self-attentive pooling",
+          "english": "self-attentive pooling",
+          "spokenAliases": [
+            "셀프 어텐티브 풀링"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "SincNet",
+          "english": "SincNet",
+          "spokenAliases": [
+            "싱크넷"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Feature Map Scaling",
+          "english": "Feature Map Scaling",
+          "spokenAliases": [
+            "피처 맵 스케일링",
+            "피쳐 맵 스케일링"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "deep neural networks",
+          "english": "deep neural networks",
+          "spokenAliases": [
+            "딥 뉴럴 네트워크"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "LeakyReLU",
+          "english": "LeakyReLU",
+          "spokenAliases": [
+            "리키리루",
+            "리키 리루"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "GhostVLAD",
+          "english": "GhostVLAD",
+          "spokenAliases": [
+            "고스트블래드"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "sinc-convolution",
+          "english": "sinc-convolution",
+          "spokenAliases": [
+            "싱크 컨볼루션",
+            "싱크 합성곱"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "equal error rate",
+          "english": "equal error rate",
+          "spokenAliases": [
+            "이퀄 에러 레이트"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "gated recurrent unit",
+          "english": "gated recurrent unit",
+          "spokenAliases": [
+            "게이티드 리커런트 유닛"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-26",
+          "term": "Mel-frequency cepstral coefficients",
+          "english": "Mel-frequency cepstral coefficients",
+          "spokenAliases": [
+            "멜 프리퀀시 셉스트럴 코에피셔츠"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-27",
+          "term": "cosine similarity",
+          "english": "cosine similarity",
+          "spokenAliases": [
+            "코사인 시밀러리티",
+            "코사인 유사도"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-28",
+          "term": "test time augmentation",
+          "english": "test time augmentation",
+          "spokenAliases": [
+            "테스트 타임 오그멘테이션"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-29",
+          "term": "relative error reduction",
+          "english": "relative error reduction",
+          "spokenAliases": [
+            "릴러티브 에러 리덕션"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-30",
+          "term": "AMSGrad",
+          "english": "AMSGrad",
+          "spokenAliases": [
+            "에이엠에스그래드"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-31",
+          "term": "squeeze-excitation",
+          "english": "squeeze-excitation",
+          "spokenAliases": [
+            "스퀴즈 엑사이테이션"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-32",
+          "term": "PyTorch",
+          "english": "PyTorch",
+          "spokenAliases": [
+            "파이토치"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T12:14:56.717Z",
+      "readyAfterMs": 18,
+      "audioDurationMs": 83402,
+      "wallClockMs": 85792,
+      "interimCount": 13,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 raw waveform을 직접 입력하는 텍스트 인디펜던트 speaker verification 모델을 설명하겠습니다. 로넷은 수작업 음향 특징 대신 원시 파형에서 스피커 임베딩을 추출해 처리 파이프라인을 단순화합니다.",
+          "rawText": "오늘은 로우 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 로넷은 수작업 음향 특징 대신 원시 파형에서 스피커 임베딩을 추출해 처리 파이프라인을 단순화합니다.",
+          "detectedTermIds": [
+            "pdf-08",
+            "pdf-07"
+          ],
+          "corrections": [
+            {
+              "originalText": "로우 웨이브폼",
+              "correctedText": "raw waveform",
+              "termId": "pdf-08",
+              "displayStart": 4,
+              "displayEnd": 16,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "스피커 베리피케이션",
+              "correctedText": "speaker verification",
+              "termId": "pdf-07",
+              "displayStart": 36,
+              "displayEnd": 56,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "연구는 RawNet의 피처 맵을 조절하기 위해 Feature Map Scaling, 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다.",
+          "rawText": "연구는 로우넷의 피처 맵을 조절하기 위해 피처 맵 스케일링, 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다.",
+          "detectedTermIds": [
+            "pdf-06",
+            "pdf-19",
+            "pdf-01",
+            "pdf-01"
+          ],
+          "corrections": [
+            {
+              "originalText": "로우넷",
+              "correctedText": "RawNet",
+              "termId": "pdf-06",
+              "displayStart": 4,
+              "displayEnd": 10,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "피처 맵 스케일링",
+              "correctedText": "Feature Map Scaling",
+              "termId": "pdf-19",
+              "displayStart": 26,
+              "displayEnd": 45,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케이링을 적용하거나",
+          "rawText": "스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케이링을 적용하거나",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "애디티블리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 SincNet의 sinc-convolution 레이어로 교체해 학습 가능한 필터를 구성할 수 있습니다.",
+          "rawText": "애디티블리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체해 학습 가능한 필터를 구성할 수 있습니다.",
+          "detectedTermIds": [
+            "pdf-18",
+            "pdf-23"
+          ],
+          "corrections": [
+            {
+              "originalText": "싱크넷",
+              "correctedText": "SincNet",
+              "termId": "pdf-18",
+              "displayStart": 46,
+              "displayEnd": 53,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "싱크 컨볼루션",
+              "correctedText": "sinc-convolution",
+              "termId": "pdf-23",
+              "displayStart": 55,
+              "displayEnd": 71,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 VoxCeleb1 평가 데이터 데이터셋에서 진행하고 시스템의 이퀄 에러 레이트인 EER로 비교합니다. 로넷, raw waveform, FMS, sinc-convolution, SincNet이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다.",
+          "rawText": "이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 복스셀렙원 평가 데이터 데이터셋에서 진행하고 시스템의 이퀄 에러 레이트인 EER로 비교합니다. 로넷, 로우 웨이브폼, FMS, 싱크 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다.",
+          "detectedTermIds": [
+            "pdf-03",
+            "pdf-09",
+            "pdf-02",
+            "pdf-08",
+            "pdf-01",
+            "pdf-23",
+            "pdf-18"
+          ],
+          "corrections": [
+            {
+              "originalText": "복스셀렙원",
+              "correctedText": "VoxCeleb1",
+              "termId": "pdf-09",
+              "displayStart": 37,
+              "displayEnd": 46,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "로우 웨이브폼",
+              "correctedText": "raw waveform",
+              "termId": "pdf-08",
+              "displayStart": 98,
+              "displayEnd": 110,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "싱크 컨볼루션",
+              "correctedText": "sinc-convolution",
+              "termId": "pdf-23",
+              "displayStart": 117,
+              "displayEnd": 133,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "싱크넷",
+              "correctedText": "SincNet",
+              "termId": "pdf-18",
+              "displayStart": 135,
+              "displayEnd": 142,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "특히 로넷이 일반 단어로 바뀌지 않고 RawNet으로 표기되는지 확인하겠습니다.",
+          "rawText": "특히 로넷이 일반 단어로 바뀌지 않고 로우넷으로 표기되는지 확인하겠습니다.",
+          "detectedTermIds": [
+            "pdf-06"
+          ],
+          "corrections": [
+            {
+              "originalText": "로우넷",
+              "correctedText": "RawNet",
+              "termId": "pdf-06",
+              "displayStart": 21,
+              "displayEnd": 27,
+              "reason": "spokenAlias"
+            }
+          ]
+        }
+      ],
+      "transcript": "오늘은 raw waveform을 직접 입력하는 텍스트 인디펜던트 speaker verification 모델을 설명하겠습니다. 로넷은 수작업 음향 특징 대신 원시 파형에서 스피커 임베딩을 추출해 처리 파이프라인을 단순화합니다. 연구는 RawNet의 피처 맵을 조절하기 위해 Feature Map Scaling, 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다. 스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케이링을 적용하거나 애디티블리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 SincNet의 sinc-convolution 레이어로 교체해 학습 가능한 필터를 구성할 수 있습니다. 이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 VoxCeleb1 평가 데이터 데이터셋에서 진행하고 시스템의 이퀄 에러 레이트인 EER로 비교합니다. 로넷, raw waveform, FMS, sinc-convolution, SincNet이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다. 특히 로넷이 일반 단어로 바뀌지 않고 RawNet으로 표기되는지 확인하겠습니다.",
+      "rawTranscript": "오늘은 로우 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 로넷은 수작업 음향 특징 대신 원시 파형에서 스피커 임베딩을 추출해 처리 파이프라인을 단순화합니다. 연구는 로우넷의 피처 맵을 조절하기 위해 피처 맵 스케일링, 줄여서 FMS를 제안합니다. FMS는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다. 스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케이링을 적용하거나 애디티블리 스케일링을 하거나 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체해 학습 가능한 필터를 구성할 수 있습니다. 이후 GRU가 프레임 정보를 모아 코드 벡터를 생성합니다. 실험은 복스셀렙원 평가 데이터 데이터셋에서 진행하고 시스템의 이퀄 에러 레이트인 EER로 비교합니다. 로넷, 로우 웨이브폼, FMS, 싱크 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다. 특히 로넷이 일반 단어로 바뀌지 않고 로우넷으로 표기되는지 확인하겠습니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 5,
+        "aliasCorrectionSuccesses": 7,
+        "misses": 1,
+        "falseCorrections": 4,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 13,
+        "productLinkRate": 0.9230769230769231
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "speaker verification",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 0,
+          "rawText": "스피커 베리피케이션"
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Feature Map Scaling",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 1,
+          "rawText": "피처 맵 스케일링"
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "FMS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "FMS"
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "FMS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "FMS"
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "SincNet",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 3,
+          "rawText": "싱크넷"
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "sinc-convolution",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 3,
+          "rawText": "싱크 컨볼루션"
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "GRU",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "GRU"
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "equal error rate",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "EER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "EER"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "FMS",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "FMS"
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "sinc-convolution",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 4,
+          "rawText": "싱크 컨볼루션"
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "SincNet",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 4,
+          "rawText": "싱크넷"
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "RawNet",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 5,
+          "rawText": "로우넷"
+        }
+      ],
+      "unexpectedObservations": [
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 0,
+          "rawText": "로우 웨이브폼"
+        },
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 4,
+          "rawText": "복스셀렙원"
+        },
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 4,
+          "rawText": "로우 웨이브폼"
+        },
+        {
+          "kind": "false-correction",
+          "reason": "unexpected-alias-correction",
+          "targetTermId": "gold-04",
+          "finalTranscriptIndex": 1,
+          "rawText": "로우넷"
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

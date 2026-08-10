@@ -1,0 +1,13 @@
+{
+  "a_docx": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/.codex_tmp/abc_paper_draft/reference.docx",
+  "b_docx": "/Users/nohsungbeen/dev/project/2026-2-ABC-hackathon/deliverables/ABC_\ud574\ucee4\ud1a4_\ub17c\ubb38_\ucd08\uc548.docx",
+  "pages_a": 4,
+  "pages_b": 3,
+  "changed_pages": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "num_changed_pages": 4
+}

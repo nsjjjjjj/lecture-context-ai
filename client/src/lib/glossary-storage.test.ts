@@ -79,6 +79,83 @@ describe("browser glossary storage v3", () => {
     expect(JSON.parse(raw || "{}")).toEqual({ version: 3, glossaries: [saved] });
   });
 
+  it("원본 용어 개수만 제한하고 50개를 넘는 영문·한글 발음 표기를 저장한다", () => {
+    const storage = new MemoryStorage();
+    const terms = Array.from({ length: 20 }, (_, index): GlossaryTerm => ({
+      ...term(),
+      id: `term-${index}`,
+      term: `Term ${index}`,
+      english: `English ${index}`,
+      spokenAliases: [`${String.fromCharCode(0xac00 + index)}음`]
+    }));
+    const phraseSet = terms.flatMap((candidate) => [
+      candidate.term,
+      candidate.english,
+      ...candidate.spokenAliases
+    ]);
+
+    const saved = saveAnalyzedGlossary(storage, analysis({ terms, phraseSet }), "파생 표기 용어집", {
+      id: "glossary-derived-forms",
+      now: "2026-08-08T01:30:00.000Z"
+    });
+
+    expect(saved.terms).toHaveLength(20);
+    expect(saved.phraseSet).toHaveLength(60);
+    expect(saved.phraseSet).toContain(terms[19]!.spokenAliases[0]);
+  });
+
+  it("기존 50개에서 잘린 저장 PhraseSet의 원본·발음 표기를 API 재호출 없이 복원한다", () => {
+    const storage = new MemoryStorage();
+    const terms = Array.from({ length: 20 }, (_, index): GlossaryTerm => ({
+      ...term(),
+      id: `legacy-term-${index}`,
+      term: `Legacy ${index}`,
+      english: `Legacy English ${index}`,
+      spokenAliases: [`${String.fromCharCode(0xac00 + index)}음`]
+    }));
+    const completePhraseSet = terms.flatMap((candidate) => [
+      candidate.term,
+      candidate.english,
+      ...candidate.spokenAliases
+    ]);
+    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({
+      version: 3,
+      glossaries: [{
+        id: "legacy-capped-glossary",
+        name: "기존 50개 제한 용어집",
+        createdAt: "2026-08-08T01:00:00.000Z",
+        updatedAt: "2026-08-08T01:00:00.000Z",
+        terms,
+        phraseSet: completePhraseSet.slice(0, 50)
+      }]
+    }));
+
+    const [loaded] = listStoredGlossaries(storage);
+
+    expect(loaded?.phraseSet.length).toBeGreaterThan(50);
+    expect(loaded?.phraseSet).toContain(terms[19]!.term);
+    expect(loaded?.phraseSet).toContain(terms[19]!.spokenAliases[0]);
+  });
+
+  it("roundtrips a safe generated pronunciation outside the fallback list", () => {
+    const storage = new MemoryStorage();
+    const bert = term({
+      id: "term-bert",
+      term: "BERT",
+      english: "",
+      spokenAliases: ["버트"],
+      easyExplanation: "문맥을 양방향으로 이해하는 언어 모델"
+    });
+    const saved = saveAnalyzedGlossary(storage, analysis({ terms: [bert], phraseSet: ["BERT", "버트"] }), "BERT 용어집", {
+      id: "glossary-bert",
+      now: "2026-08-08T01:10:00.000Z"
+    });
+
+    expect(saved.terms[0]?.spokenAliases).toEqual(["버트"]);
+    expect(saved.phraseSet).toEqual(["BERT", "버트"]);
+    expect(listStoredGlossaries(storage)).toEqual([saved]);
+  });
+
   it("rejects malformed JSON and strict-shape violations", () => {
     const storage = new MemoryStorage();
     storage.setItem(GLOSSARY_STORAGE_KEY, "{");
@@ -149,7 +226,7 @@ describe("browser glossary storage v3", () => {
     });
   });
 
-  it("migrates v2 by retaining reviewed aliases and dropping unsafe aliases and their PhraseSet entries", () => {
+  it("migrates v2 by retaining safe aliases and dropping unsafe aliases and their PhraseSet entries", () => {
     const storage = new MemoryStorage();
     storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({
       version: 2,
@@ -180,7 +257,7 @@ describe("browser glossary storage v3", () => {
     expect(() => saveAnalyzedGlossary(storage, analysis({
       terms: [term({ term: "API", english: "Application Programming Interface", spokenAliases: ["사과"] })],
       phraseSet: ["API", "사과"]
-    }), "미검토 별칭")).toThrowError(expect.objectContaining({ code: "invalid" }));
+    }), "위험 일반 단어 별칭")).toThrowError(expect.objectContaining({ code: "invalid" }));
 
     expect(() => saveAnalyzedGlossary(storage, analysis({
       terms: [

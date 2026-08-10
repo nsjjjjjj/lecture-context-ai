@@ -1,13 +1,12 @@
 import type { GlossaryTerm, StartMessage } from "../types.js";
 import { glossaryTermSchema } from "../types.js";
 import { demoTerms } from "./demo.js";
+import { MAX_GLOSSARY_TERMS, MAX_PHRASE_SET_FORMS } from "./phrase-set-limits.js";
 import { withSanitizedSpokenAliases } from "./spoken-aliases.js";
 
-const MAX_TERMS = 50;
-const MAX_PHRASES = 50;
 const MAX_PHRASE_LENGTH = 120;
 const MAX_RAW_PHRASE_LENGTH = MAX_PHRASE_LENGTH * 2;
-const MAX_INSPECTED_PHRASES = MAX_PHRASES * 4;
+const MAX_INSPECTED_PHRASES = MAX_PHRASE_SET_FORMS * 4;
 
 function canonicalize(value: string): string {
   return value.normalize("NFKC").replace(/\s+/g, " ").trim();
@@ -37,7 +36,7 @@ export function sanitizeGlossaryTerms(value: unknown): GlossaryTerm[] {
     seenIds.add(id);
     seenTerms.add(key);
     terms.push({ ...parsed.data, id, term, english });
-    if (terms.length === MAX_TERMS) break;
+    if (terms.length === MAX_GLOSSARY_TERMS) break;
   }
   return withSanitizedSpokenAliases(terms);
 }
@@ -63,7 +62,7 @@ export function sanitizePhraseSet(value: unknown, terms: GlossaryTerm[]): string
 
     seen.add(key);
     phrases.push(canonical);
-    if (phrases.length === MAX_PHRASES) break;
+    if (phrases.length === MAX_PHRASE_SET_FORMS) break;
   }
   return phrases;
 }

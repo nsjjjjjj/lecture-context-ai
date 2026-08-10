@@ -1,0 +1,4813 @@
+{
+  "version": 1,
+  "studies": [
+    {
+      "id": "study-ba251409-1edb-40fc-85bf-878459a5723b",
+      "title": "강연 맥락 AI 샘플 논문",
+      "createdAt": "2026-08-09T09:19:16.466Z",
+      "cases": []
+    },
+    {
+      "id": "study-7dd8170d-d100-4ee8-bf56-a5db3f321026",
+      "title": "테스트 01 논문",
+      "createdAt": "2026-08-09T09:23:07.046Z",
+      "cases": [
+        {
+          "id": "case-1b9a2c32-2831-4434-b5c7-50fc3f91c23c",
+          "studyId": "study-7dd8170d-d100-4ee8-bf56-a5db3f321026",
+          "snapshotId": "snapshot-407513fea9b088af7905558f",
+          "title": "test 01",
+          "createdAt": "2026-08-09T10:09:43.306Z",
+          "glossary": {
+            "id": "0cf34f69-00ea-4c6d-ab62-fc6f90c99994",
+            "name": "1",
+            "updatedAt": "2026-08-09T09:40:44.497Z",
+            "hash": "a60cf18f4abd73a778064ba5125f35f420410b68cc9a61c8a5f2afc4217e46e6",
+            "terms": [
+              {
+                "id": "1294692e88bc",
+                "term": "ASR",
+                "english": "ASR",
+                "spokenAliases": [
+                  "에이에스알"
+                ],
+                "easyExplanation": "사람의 음성 신호를 텍스트로 자동 변환하는 기술입니다.",
+                "pageNumber": 1,
+                "occurrences": 9,
+                "source": "gemini"
+              },
+              {
+                "id": "826c91db8203",
+                "term": "MHSA",
+                "english": "MHSA",
+                "spokenAliases": [
+                  "엠에이치에스에이"
+                ],
+                "easyExplanation": "여러 관점에서 입력을 주의 깊게 참조하는 핵심 연산입니다.",
+                "pageNumber": 2,
+                "occurrences": 9,
+                "source": "gemini"
+              },
+              {
+                "id": "e19150aa8382",
+                "term": "CNN",
+                "english": "CNN",
+                "spokenAliases": [
+                  "씨엔엔"
+                ],
+                "easyExplanation": "국소적 특징을 효과적으로 추출하는 합성곱 신경망 기술입니다.",
+                "pageNumber": 1,
+                "occurrences": 6,
+                "source": "gemini"
+              },
+              {
+                "id": "e3eaee01f47f",
+                "term": "WER",
+                "english": "WER",
+                "spokenAliases": [
+                  "더블유이알"
+                ],
+                "easyExplanation": "음성 인식 정확도를 평가하는 대표적인 단어 에러율 지표입니다.",
+                "pageNumber": 1,
+                "occurrences": 6,
+                "source": "gemini"
+              },
+              {
+                "id": "2b84447c790f",
+                "term": "RNN",
+                "english": "RNN",
+                "spokenAliases": [
+                  "알엔엔"
+                ],
+                "easyExplanation": "순차적 데이터를 다루는 데 특화된 순환 신경망 구조입니다.",
+                "pageNumber": 1,
+                "occurrences": 5,
+                "source": "gemini"
+              },
+              {
+                "id": "03b0f06e5e12",
+                "term": "LSTM",
+                "english": "LSTM",
+                "spokenAliases": [
+                  "엘에스티엠"
+                ],
+                "easyExplanation": "장기 기억을 유지하도록 개선된 순환 신경망의 일종입니다.",
+                "pageNumber": 3,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "a146f11ed1a6",
+                "term": "GLU",
+                "english": "GLU",
+                "spokenAliases": [
+                  "지엘유",
+                  "글루"
+                ],
+                "easyExplanation": "정보의 흐름을 게이트 구조로 제어하는 활성화 함수입니다.",
+                "pageNumber": 2,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "d1c6bcab4014",
+                "term": "Conformer",
+                "english": "Conformer",
+                "spokenAliases": [
+                  "컨포머"
+                ],
+                "easyExplanation": "합성곱 신경망과 트랜스포머를 결합한 음성 인식 모델입니다.",
+                "pageNumber": 1,
+                "occurrences": 49,
+                "source": "gemini"
+              },
+              {
+                "id": "9236e026cc17",
+                "term": "Transformer",
+                "english": "Transformer",
+                "spokenAliases": [
+                  "트랜스포머"
+                ],
+                "easyExplanation": "데이터 요소 간의 관계를 파악하여 시퀀스를 처리하는 모델입니다.",
+                "pageNumber": 1,
+                "occurrences": 42,
+                "source": "gemini"
+              },
+              {
+                "id": "3b85d77ca985",
+                "term": "Depthwise Conv",
+                "english": "Depthwise Conv",
+                "spokenAliases": [
+                  "뎁스와이즈 콘브"
+                ],
+                "easyExplanation": "채널별로 독자 연산을 수행해 계산량을 줄인 합성곱입니다.",
+                "pageNumber": 2,
+                "occurrences": 9,
+                "source": "gemini"
+              },
+              {
+                "id": "27a6b39fffb3",
+                "term": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치",
+                  "리브리 스피치"
+                ],
+                "easyExplanation": "오디오북 기반의 음성 인식 연구용 오픈소스 데이터셋입니다.",
+                "pageNumber": 1,
+                "occurrences": 8,
+                "source": "gemini"
+              },
+              {
+                "id": "c5865bf5ead0",
+                "term": "Swish",
+                "english": "Swish",
+                "spokenAliases": [
+                  "스위시"
+                ],
+                "easyExplanation": "구글이 개발한 우수한 성능의 인공신경망 활성화 함수입니다.",
+                "pageNumber": 2,
+                "occurrences": 8,
+                "source": "gemini"
+              },
+              {
+                "id": "8a18c29ad716",
+                "term": "Layernorm",
+                "english": "Layernorm",
+                "spokenAliases": [
+                  "레이어놈"
+                ],
+                "easyExplanation": "신경망 계층 출력을 정규화하여 학습을 안정화하는 기술입니다.",
+                "pageNumber": 1,
+                "occurrences": 7,
+                "source": "gemini"
+              },
+              {
+                "id": "9f1d10d6a283",
+                "term": "ContextNet",
+                "english": "ContextNet",
+                "spokenAliases": [
+                  "컨텍스트넷"
+                ],
+                "easyExplanation": "전역 맥락 정보를 활용하여 음성을 인식하는 합성곱 모델입니다.",
+                "pageNumber": 3,
+                "occurrences": 6,
+                "source": "gemini"
+              },
+              {
+                "id": "9d3cc937339f",
+                "term": "Macaron-Net",
+                "english": "Macaron-Net",
+                "spokenAliases": [
+                  "마카롱넷"
+                ],
+                "easyExplanation": "순방향 신경망 층을 앞뒤로 배치하여 성능을 높인 구조입니다.",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "bdb6fdb981c7",
+                "term": "Pointwise Conv",
+                "english": "Pointwise Conv",
+                "spokenAliases": [
+                  "포인트와이즈 콘브"
+                ],
+                "easyExplanation": "1x1 크기 필터로 채널 간 정보를 융합하는 합성곱 연산입니다.",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "1eb308aefa8a",
+                "term": "BatchNorm",
+                "english": "BatchNorm",
+                "spokenAliases": [
+                  "배치놈"
+                ],
+                "easyExplanation": "미니배치 단위로 정규화하여 학습 속도를 높이는 기법입니다.",
+                "pageNumber": 2,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "e816bd9dabfe",
+                "term": "SpecAugment",
+                "english": "SpecAugment",
+                "spokenAliases": [
+                  "스펙어그멘트"
+                ],
+                "easyExplanation": "음성 스펙트로그램에 마스킹을 적용하는 데이터 증강 기법입니다.",
+                "pageNumber": 3,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "bafb7ce26cff",
+                "term": "QuartzNet",
+                "english": "QuartzNet",
+                "spokenAliases": [
+                  "쿼츠넷"
+                ],
+                "easyExplanation": "1차원 분리 합성곱을 활용하여 경량화한 음성 인식 신경망입니다.",
+                "pageNumber": 3,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "b489ed0e3914",
+                "term": "Transformer-XL",
+                "english": "Transformer-XL",
+                "spokenAliases": [
+                  "트랜스포머 엑스엘"
+                ],
+                "easyExplanation": "긴 문맥의 음성 및 텍스트 시퀀스를 학습할 수 있는 모델입니다.",
+                "pageNumber": 2,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "9e9189041ed5",
+                "term": "Lingvo",
+                "english": "Lingvo",
+                "spokenAliases": [
+                  "링보"
+                ],
+                "easyExplanation": "구글에서 개발한 시퀀스 모델용 딥러닝 프레임워크입니다.",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "0e18f44c1fec",
+                "term": "Adam",
+                "english": "Adam",
+                "spokenAliases": [
+                  "아담"
+                ],
+                "easyExplanation": "딥러닝 모델의 가중치를 효율적으로 최적화하는 학습 알고리즘입니다.",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "eae642880189",
+                "term": "Anmol Gulati",
+                "english": "Anmol Gulati",
+                "spokenAliases": [
+                  "앤몰 구라티"
+                ],
+                "easyExplanation": "Conformer 논문의 제1저자인 인공지능 연구원입니다.",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "a08670ff00ab",
+                "term": "Jasper",
+                "english": "Jasper",
+                "spokenAliases": [
+                  "재스퍼"
+                ],
+                "easyExplanation": "합성곱 레이어로만 구성된 음성인식 신경망 모델입니다.",
+                "pageNumber": 5,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "a08d986f97d3",
+                "term": "QANet",
+                "english": "QANet",
+                "spokenAliases": [
+                  "큐에이넷"
+                ],
+                "easyExplanation": "합성곱과 자가 주의 집중 구조를 결합한 언어 이해 모델입니다.",
+                "pageNumber": 5,
+                "occurrences": 1,
+                "source": "gemini"
+              }
+            ]
+          },
+          "scriptHash": "9841dfbe8aca32b80683b334d0ddc02532a7aa68992cc310c7dca5e4724adc43",
+          "snapshotHash": "407513fea9b088af7905558fd8c277c68ccb9bdbc8b4ef21da24e704ef2238ae",
+          "script": {
+            "id": "case-1b9a2c32-2831-4434-b5c7-50fc3f91c23c",
+            "title": "test 01",
+            "languageCode": "ko-KR",
+            "text": "오늘은 컨포머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다. 컨포머는 컨볼루션 어그멘티드 트랜스포머로, 트랜스포머가 포착하는 글로벌 인터랙션과 씨엔엔이 찾는 로컬 피처를 하나의 인코더에서 결합합니다. 입력 음성은 컨볼루션 서브샘플링을 거친 뒤 여러 개의 컨포머 블록으로 전달됩니다.\n\n각 블록에는 맥커론 라이크 피드 포워드 레이어, 멀티 헤디드 셀프 어텐션, 컨볼루션 모듈이 배치됩니다. 컨볼루션 모듈은 포인트와이즈 컨볼루션, 지엘유 액티베이션, 원 디 뎁스와이즈 컨볼루션, 배치 놈, 스위시 액티베이션을 사용합니다. 마지막에는 레이어 놈을 적용해 출력을 안정화합니다.\n\n이 구조는 에이에스알에서 알엔엔보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다. 리브리스피치 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 더블유이알이 달라집니다. 결과를 검토할 때는 컨포머, 에이에스알, 씨엔엔, 알엔엔이 각각 정확한 영문 표기로 기록되는지 보고, 멀티 헤디드 셀프 어텐션과 컨볼루션 서브샘플링의 설명도 함께 확인하겠습니다.",
+            "targetTerms": [
+              {
+                "id": "gold-01",
+                "canonicalTerm": "ASR",
+                "english": "ASR",
+                "spokenAliases": [
+                  "에이에스알"
+                ],
+                "expectedOccurrences": [
+                  9,
+                  14
+                ]
+              },
+              {
+                "id": "gold-02",
+                "canonicalTerm": "CNN",
+                "english": "CNN",
+                "spokenAliases": [
+                  "씨엔엔"
+                ],
+                "expectedOccurrences": [
+                  5,
+                  15
+                ]
+              },
+              {
+                "id": "gold-03",
+                "canonicalTerm": "WER",
+                "english": "WER",
+                "spokenAliases": [
+                  "더블유이알"
+                ],
+                "expectedOccurrences": [
+                  12
+                ]
+              },
+              {
+                "id": "gold-04",
+                "canonicalTerm": "RNN",
+                "english": "RNN",
+                "spokenAliases": [
+                  "알엔엔"
+                ],
+                "expectedOccurrences": [
+                  10,
+                  16
+                ]
+              },
+              {
+                "id": "gold-05",
+                "canonicalTerm": "GLU",
+                "english": "GLU",
+                "spokenAliases": [
+                  "지엘유",
+                  "글루"
+                ],
+                "expectedOccurrences": [
+                  7
+                ]
+              },
+              {
+                "id": "gold-06",
+                "canonicalTerm": "Conformer",
+                "english": "Conformer",
+                "spokenAliases": [
+                  "컨포머"
+                ],
+                "expectedOccurrences": [
+                  1,
+                  2,
+                  6,
+                  13
+                ]
+              },
+              {
+                "id": "gold-07",
+                "canonicalTerm": "Transformer",
+                "english": "Transformer",
+                "spokenAliases": [
+                  "트랜스포머"
+                ],
+                "expectedOccurrences": [
+                  3,
+                  4
+                ]
+              },
+              {
+                "id": "gold-08",
+                "canonicalTerm": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치",
+                  "리브리 스피치"
+                ],
+                "expectedOccurrences": [
+                  11
+                ]
+              },
+              {
+                "id": "gold-09",
+                "canonicalTerm": "Swish",
+                "english": "Swish",
+                "spokenAliases": [
+                  "스위시"
+                ],
+                "expectedOccurrences": [
+                  8
+                ]
+              }
+            ],
+            "adaptationTerms": [
+              {
+                "id": "pdf-01",
+                "canonicalTerm": "ASR",
+                "english": "ASR",
+                "spokenAliases": [
+                  "에이에스알"
+                ]
+              },
+              {
+                "id": "pdf-02",
+                "canonicalTerm": "MHSA",
+                "english": "MHSA",
+                "spokenAliases": [
+                  "엠에이치에스에이"
+                ]
+              },
+              {
+                "id": "pdf-03",
+                "canonicalTerm": "CNN",
+                "english": "CNN",
+                "spokenAliases": [
+                  "씨엔엔"
+                ]
+              },
+              {
+                "id": "pdf-04",
+                "canonicalTerm": "WER",
+                "english": "WER",
+                "spokenAliases": [
+                  "더블유이알"
+                ]
+              },
+              {
+                "id": "pdf-05",
+                "canonicalTerm": "RNN",
+                "english": "RNN",
+                "spokenAliases": [
+                  "알엔엔"
+                ]
+              },
+              {
+                "id": "pdf-06",
+                "canonicalTerm": "LSTM",
+                "english": "LSTM",
+                "spokenAliases": [
+                  "엘에스티엠"
+                ]
+              },
+              {
+                "id": "pdf-07",
+                "canonicalTerm": "GLU",
+                "english": "GLU",
+                "spokenAliases": [
+                  "지엘유",
+                  "글루"
+                ]
+              },
+              {
+                "id": "pdf-08",
+                "canonicalTerm": "Conformer",
+                "english": "Conformer",
+                "spokenAliases": [
+                  "컨포머"
+                ]
+              },
+              {
+                "id": "pdf-09",
+                "canonicalTerm": "Transformer",
+                "english": "Transformer",
+                "spokenAliases": [
+                  "트랜스포머"
+                ]
+              },
+              {
+                "id": "pdf-10",
+                "canonicalTerm": "Depthwise Conv",
+                "english": "Depthwise Conv",
+                "spokenAliases": [
+                  "뎁스와이즈 콘브"
+                ]
+              },
+              {
+                "id": "pdf-11",
+                "canonicalTerm": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치",
+                  "리브리 스피치"
+                ]
+              },
+              {
+                "id": "pdf-12",
+                "canonicalTerm": "Swish",
+                "english": "Swish",
+                "spokenAliases": [
+                  "스위시"
+                ]
+              },
+              {
+                "id": "pdf-13",
+                "canonicalTerm": "Layernorm",
+                "english": "Layernorm",
+                "spokenAliases": [
+                  "레이어놈"
+                ]
+              },
+              {
+                "id": "pdf-14",
+                "canonicalTerm": "ContextNet",
+                "english": "ContextNet",
+                "spokenAliases": [
+                  "컨텍스트넷"
+                ]
+              },
+              {
+                "id": "pdf-15",
+                "canonicalTerm": "Macaron-Net",
+                "english": "Macaron-Net",
+                "spokenAliases": [
+                  "마카롱넷"
+                ]
+              },
+              {
+                "id": "pdf-16",
+                "canonicalTerm": "Pointwise Conv",
+                "english": "Pointwise Conv",
+                "spokenAliases": [
+                  "포인트와이즈 콘브"
+                ]
+              },
+              {
+                "id": "pdf-17",
+                "canonicalTerm": "BatchNorm",
+                "english": "BatchNorm",
+                "spokenAliases": [
+                  "배치놈"
+                ]
+              },
+              {
+                "id": "pdf-18",
+                "canonicalTerm": "SpecAugment",
+                "english": "SpecAugment",
+                "spokenAliases": [
+                  "스펙어그멘트"
+                ]
+              },
+              {
+                "id": "pdf-19",
+                "canonicalTerm": "QuartzNet",
+                "english": "QuartzNet",
+                "spokenAliases": [
+                  "쿼츠넷"
+                ]
+              },
+              {
+                "id": "pdf-20",
+                "canonicalTerm": "Transformer-XL",
+                "english": "Transformer-XL",
+                "spokenAliases": [
+                  "트랜스포머 엑스엘"
+                ]
+              },
+              {
+                "id": "pdf-21",
+                "canonicalTerm": "Lingvo",
+                "english": "Lingvo",
+                "spokenAliases": [
+                  "링보"
+                ]
+              },
+              {
+                "id": "pdf-22",
+                "canonicalTerm": "Adam",
+                "english": "Adam",
+                "spokenAliases": [
+                  "아담"
+                ]
+              },
+              {
+                "id": "pdf-23",
+                "canonicalTerm": "Anmol Gulati",
+                "english": "Anmol Gulati",
+                "spokenAliases": [
+                  "앤몰 구라티"
+                ]
+              },
+              {
+                "id": "pdf-24",
+                "canonicalTerm": "Jasper",
+                "english": "Jasper",
+                "spokenAliases": [
+                  "재스퍼"
+                ]
+              },
+              {
+                "id": "pdf-25",
+                "canonicalTerm": "QANet",
+                "english": "QANet",
+                "spokenAliases": [
+                  "큐에이넷"
+                ]
+              }
+            ],
+            "experimentIdentity": {
+              "studyId": "study-7dd8170d-d100-4ee8-bf56-a5db3f321026",
+              "caseId": "case-1b9a2c32-2831-4434-b5c7-50fc3f91c23c",
+              "caseSnapshotId": "snapshot-407513fea9b088af7905558f",
+              "glossaryId": "0cf34f69-00ea-4c6d-ab62-fc6f90c99994",
+              "glossaryName": "1",
+              "glossaryHash": "a60cf18f4abd73a778064ba5125f35f420410b68cc9a61c8a5f2afc4217e46e6",
+              "scriptHash": "9841dfbe8aca32b80683b334d0ddc02532a7aa68992cc310c7dca5e4724adc43"
+            }
+          }
+        },
+        {
+          "id": "case-a660b752-09cb-4889-a6b8-724507bdd96d",
+          "studyId": "study-7dd8170d-d100-4ee8-bf56-a5db3f321026",
+          "snapshotId": "snapshot-bfb1cba2402afebac7345ef5",
+          "title": "test 01-2",
+          "createdAt": "2026-08-09T11:45:09.495Z",
+          "glossary": {
+            "id": "a5433fbf-add7-4bd4-b1e1-1acc11f1fe98",
+            "name": "생성형 AI 입문 강연",
+            "updatedAt": "2026-08-09T11:33:37.310Z",
+            "hash": "e4f88a96824ffdc53aa87b9ac02e9abe5bc447a7a2634d9a4179b8ff7e846084",
+            "terms": [
+              {
+                "id": "demo-rag",
+                "term": "RAG",
+                "english": "Retrieval-Augmented Generation",
+                "spokenAliases": [
+                  "래그",
+                  "레그",
+                  "알에이지"
+                ],
+                "easyExplanation": "외부 문서를 먼저 검색한 뒤 근거를 바탕으로 답변을 만드는 방식",
+                "pageNumber": 3,
+                "occurrences": 1,
+                "source": "demo"
+              },
+              {
+                "id": "demo-llm",
+                "term": "LLM",
+                "english": "Large Language Model",
+                "spokenAliases": [
+                  "엘엘엠"
+                ],
+                "easyExplanation": "대량의 텍스트를 학습해 사람의 언어를 이해하고 생성하는 모델",
+                "pageNumber": 2,
+                "occurrences": 2,
+                "source": "demo"
+              },
+              {
+                "id": "demo-transformer",
+                "term": "Transformer",
+                "english": "Transformer",
+                "spokenAliases": [
+                  "트랜스포머"
+                ],
+                "easyExplanation": "문장 속 단어들의 관계를 한 번에 살펴 문맥을 이해하는 신경망 구조",
+                "pageNumber": 2,
+                "occurrences": 2,
+                "source": "demo"
+              },
+              {
+                "id": "demo-finetuning",
+                "term": "파인튜닝",
+                "english": "Fine-tuning",
+                "spokenAliases": [
+                  "파인 튜닝"
+                ],
+                "easyExplanation": "이미 학습된 AI를 특정 목적에 맞게 추가로 학습하는 방법",
+                "pageNumber": 4,
+                "occurrences": 1,
+                "source": "demo"
+              },
+              {
+                "id": "demo-hallucination",
+                "term": "환각",
+                "english": "Hallucination",
+                "spokenAliases": [],
+                "easyExplanation": "AI가 사실이 아닌 내용을 그럴듯하게 생성하는 현상",
+                "pageNumber": 3,
+                "occurrences": 1,
+                "source": "demo"
+              }
+            ]
+          },
+          "scriptHash": "9841dfbe8aca32b80683b334d0ddc02532a7aa68992cc310c7dca5e4724adc43",
+          "snapshotHash": "bfb1cba2402afebac7345ef52713e35de41c152dae2a29e98492198e9a9920fe",
+          "script": {
+            "id": "case-a660b752-09cb-4889-a6b8-724507bdd96d",
+            "title": "test 01-2",
+            "languageCode": "ko-KR",
+            "text": "오늘은 컨포머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다. 컨포머는 컨볼루션 어그멘티드 트랜스포머로, 트랜스포머가 포착하는 글로벌 인터랙션과 씨엔엔이 찾는 로컬 피처를 하나의 인코더에서 결합합니다. 입력 음성은 컨볼루션 서브샘플링을 거친 뒤 여러 개의 컨포머 블록으로 전달됩니다.\n\n각 블록에는 맥커론 라이크 피드 포워드 레이어, 멀티 헤디드 셀프 어텐션, 컨볼루션 모듈이 배치됩니다. 컨볼루션 모듈은 포인트와이즈 컨볼루션, 지엘유 액티베이션, 원 디 뎁스와이즈 컨볼루션, 배치 놈, 스위시 액티베이션을 사용합니다. 마지막에는 레이어 놈을 적용해 출력을 안정화합니다.\n\n이 구조는 에이에스알에서 알엔엔보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다. 리브리스피치 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 더블유이알이 달라집니다. 결과를 검토할 때는 컨포머, 에이에스알, 씨엔엔, 알엔엔이 각각 정확한 영문 표기로 기록되는지 보고, 멀티 헤디드 셀프 어텐션과 컨볼루션 서브샘플링의 설명도 함께 확인하겠습니다.",
+            "targetTerms": [
+              {
+                "id": "gold-01",
+                "canonicalTerm": "Transformer",
+                "english": "Transformer",
+                "spokenAliases": [
+                  "트랜스포머"
+                ],
+                "expectedOccurrences": [
+                  1,
+                  2
+                ]
+              }
+            ],
+            "adaptationTerms": [
+              {
+                "id": "pdf-01",
+                "canonicalTerm": "RAG",
+                "english": "Retrieval-Augmented Generation",
+                "spokenAliases": [
+                  "래그",
+                  "레그",
+                  "알에이지"
+                ]
+              },
+              {
+                "id": "pdf-02",
+                "canonicalTerm": "LLM",
+                "english": "Large Language Model",
+                "spokenAliases": [
+                  "엘엘엠"
+                ]
+              },
+              {
+                "id": "pdf-03",
+                "canonicalTerm": "Transformer",
+                "english": "Transformer",
+                "spokenAliases": [
+                  "트랜스포머"
+                ]
+              },
+              {
+                "id": "pdf-04",
+                "canonicalTerm": "파인튜닝",
+                "english": "Fine-tuning",
+                "spokenAliases": [
+                  "파인 튜닝"
+                ]
+              },
+              {
+                "id": "pdf-05",
+                "canonicalTerm": "환각",
+                "english": "Hallucination",
+                "spokenAliases": []
+              }
+            ],
+            "experimentIdentity": {
+              "studyId": "study-7dd8170d-d100-4ee8-bf56-a5db3f321026",
+              "caseId": "case-a660b752-09cb-4889-a6b8-724507bdd96d",
+              "caseSnapshotId": "snapshot-bfb1cba2402afebac7345ef5",
+              "glossaryId": "a5433fbf-add7-4bd4-b1e1-1acc11f1fe98",
+              "glossaryName": "생성형 AI 입문 강연",
+              "glossaryHash": "e4f88a96824ffdc53aa87b9ac02e9abe5bc447a7a2634d9a4179b8ff7e846084",
+              "scriptHash": "9841dfbe8aca32b80683b334d0ddc02532a7aa68992cc310c7dca5e4724adc43"
+            }
+          }
+        },
+        {
+          "id": "case-83e9ea30-f981-40eb-aca5-37eb59dd9f24",
+          "studyId": "study-7dd8170d-d100-4ee8-bf56-a5db3f321026",
+          "snapshotId": "snapshot-9df5eb074c7e514e47404b30",
+          "title": "1 실험",
+          "createdAt": "2026-08-09T11:45:38.920Z",
+          "glossary": {
+            "id": "0cf34f69-00ea-4c6d-ab62-fc6f90c99994",
+            "name": "1",
+            "updatedAt": "2026-08-09T09:40:44.497Z",
+            "hash": "a60cf18f4abd73a778064ba5125f35f420410b68cc9a61c8a5f2afc4217e46e6",
+            "terms": [
+              {
+                "id": "1294692e88bc",
+                "term": "ASR",
+                "english": "ASR",
+                "spokenAliases": [
+                  "에이에스알"
+                ],
+                "easyExplanation": "사람의 음성 신호를 텍스트로 자동 변환하는 기술입니다.",
+                "pageNumber": 1,
+                "occurrences": 9,
+                "source": "gemini"
+              },
+              {
+                "id": "826c91db8203",
+                "term": "MHSA",
+                "english": "MHSA",
+                "spokenAliases": [
+                  "엠에이치에스에이"
+                ],
+                "easyExplanation": "여러 관점에서 입력을 주의 깊게 참조하는 핵심 연산입니다.",
+                "pageNumber": 2,
+                "occurrences": 9,
+                "source": "gemini"
+              },
+              {
+                "id": "e19150aa8382",
+                "term": "CNN",
+                "english": "CNN",
+                "spokenAliases": [
+                  "씨엔엔"
+                ],
+                "easyExplanation": "국소적 특징을 효과적으로 추출하는 합성곱 신경망 기술입니다.",
+                "pageNumber": 1,
+                "occurrences": 6,
+                "source": "gemini"
+              },
+              {
+                "id": "e3eaee01f47f",
+                "term": "WER",
+                "english": "WER",
+                "spokenAliases": [
+                  "더블유이알"
+                ],
+                "easyExplanation": "음성 인식 정확도를 평가하는 대표적인 단어 에러율 지표입니다.",
+                "pageNumber": 1,
+                "occurrences": 6,
+                "source": "gemini"
+              },
+              {
+                "id": "2b84447c790f",
+                "term": "RNN",
+                "english": "RNN",
+                "spokenAliases": [
+                  "알엔엔"
+                ],
+                "easyExplanation": "순차적 데이터를 다루는 데 특화된 순환 신경망 구조입니다.",
+                "pageNumber": 1,
+                "occurrences": 5,
+                "source": "gemini"
+              },
+              {
+                "id": "03b0f06e5e12",
+                "term": "LSTM",
+                "english": "LSTM",
+                "spokenAliases": [
+                  "엘에스티엠"
+                ],
+                "easyExplanation": "장기 기억을 유지하도록 개선된 순환 신경망의 일종입니다.",
+                "pageNumber": 3,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "a146f11ed1a6",
+                "term": "GLU",
+                "english": "GLU",
+                "spokenAliases": [
+                  "지엘유",
+                  "글루"
+                ],
+                "easyExplanation": "정보의 흐름을 게이트 구조로 제어하는 활성화 함수입니다.",
+                "pageNumber": 2,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "d1c6bcab4014",
+                "term": "Conformer",
+                "english": "Conformer",
+                "spokenAliases": [
+                  "컨포머"
+                ],
+                "easyExplanation": "합성곱 신경망과 트랜스포머를 결합한 음성 인식 모델입니다.",
+                "pageNumber": 1,
+                "occurrences": 49,
+                "source": "gemini"
+              },
+              {
+                "id": "9236e026cc17",
+                "term": "Transformer",
+                "english": "Transformer",
+                "spokenAliases": [
+                  "트랜스포머"
+                ],
+                "easyExplanation": "데이터 요소 간의 관계를 파악하여 시퀀스를 처리하는 모델입니다.",
+                "pageNumber": 1,
+                "occurrences": 42,
+                "source": "gemini"
+              },
+              {
+                "id": "3b85d77ca985",
+                "term": "Depthwise Conv",
+                "english": "Depthwise Conv",
+                "spokenAliases": [
+                  "뎁스와이즈 콘브"
+                ],
+                "easyExplanation": "채널별로 독자 연산을 수행해 계산량을 줄인 합성곱입니다.",
+                "pageNumber": 2,
+                "occurrences": 9,
+                "source": "gemini"
+              },
+              {
+                "id": "27a6b39fffb3",
+                "term": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치",
+                  "리브리 스피치"
+                ],
+                "easyExplanation": "오디오북 기반의 음성 인식 연구용 오픈소스 데이터셋입니다.",
+                "pageNumber": 1,
+                "occurrences": 8,
+                "source": "gemini"
+              },
+              {
+                "id": "c5865bf5ead0",
+                "term": "Swish",
+                "english": "Swish",
+                "spokenAliases": [
+                  "스위시"
+                ],
+                "easyExplanation": "구글이 개발한 우수한 성능의 인공신경망 활성화 함수입니다.",
+                "pageNumber": 2,
+                "occurrences": 8,
+                "source": "gemini"
+              },
+              {
+                "id": "8a18c29ad716",
+                "term": "Layernorm",
+                "english": "Layernorm",
+                "spokenAliases": [
+                  "레이어놈"
+                ],
+                "easyExplanation": "신경망 계층 출력을 정규화하여 학습을 안정화하는 기술입니다.",
+                "pageNumber": 1,
+                "occurrences": 7,
+                "source": "gemini"
+              },
+              {
+                "id": "9f1d10d6a283",
+                "term": "ContextNet",
+                "english": "ContextNet",
+                "spokenAliases": [
+                  "컨텍스트넷"
+                ],
+                "easyExplanation": "전역 맥락 정보를 활용하여 음성을 인식하는 합성곱 모델입니다.",
+                "pageNumber": 3,
+                "occurrences": 6,
+                "source": "gemini"
+              },
+              {
+                "id": "9d3cc937339f",
+                "term": "Macaron-Net",
+                "english": "Macaron-Net",
+                "spokenAliases": [
+                  "마카롱넷"
+                ],
+                "easyExplanation": "순방향 신경망 층을 앞뒤로 배치하여 성능을 높인 구조입니다.",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "bdb6fdb981c7",
+                "term": "Pointwise Conv",
+                "english": "Pointwise Conv",
+                "spokenAliases": [
+                  "포인트와이즈 콘브"
+                ],
+                "easyExplanation": "1x1 크기 필터로 채널 간 정보를 융합하는 합성곱 연산입니다.",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "1eb308aefa8a",
+                "term": "BatchNorm",
+                "english": "BatchNorm",
+                "spokenAliases": [
+                  "배치놈"
+                ],
+                "easyExplanation": "미니배치 단위로 정규화하여 학습 속도를 높이는 기법입니다.",
+                "pageNumber": 2,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "e816bd9dabfe",
+                "term": "SpecAugment",
+                "english": "SpecAugment",
+                "spokenAliases": [
+                  "스펙어그멘트"
+                ],
+                "easyExplanation": "음성 스펙트로그램에 마스킹을 적용하는 데이터 증강 기법입니다.",
+                "pageNumber": 3,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "bafb7ce26cff",
+                "term": "QuartzNet",
+                "english": "QuartzNet",
+                "spokenAliases": [
+                  "쿼츠넷"
+                ],
+                "easyExplanation": "1차원 분리 합성곱을 활용하여 경량화한 음성 인식 신경망입니다.",
+                "pageNumber": 3,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "b489ed0e3914",
+                "term": "Transformer-XL",
+                "english": "Transformer-XL",
+                "spokenAliases": [
+                  "트랜스포머 엑스엘"
+                ],
+                "easyExplanation": "긴 문맥의 음성 및 텍스트 시퀀스를 학습할 수 있는 모델입니다.",
+                "pageNumber": 2,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "9e9189041ed5",
+                "term": "Lingvo",
+                "english": "Lingvo",
+                "spokenAliases": [
+                  "링보"
+                ],
+                "easyExplanation": "구글에서 개발한 시퀀스 모델용 딥러닝 프레임워크입니다.",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "0e18f44c1fec",
+                "term": "Adam",
+                "english": "Adam",
+                "spokenAliases": [
+                  "아담"
+                ],
+                "easyExplanation": "딥러닝 모델의 가중치를 효율적으로 최적화하는 학습 알고리즘입니다.",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "eae642880189",
+                "term": "Anmol Gulati",
+                "english": "Anmol Gulati",
+                "spokenAliases": [
+                  "앤몰 구라티"
+                ],
+                "easyExplanation": "Conformer 논문의 제1저자인 인공지능 연구원입니다.",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "a08670ff00ab",
+                "term": "Jasper",
+                "english": "Jasper",
+                "spokenAliases": [
+                  "재스퍼"
+                ],
+                "easyExplanation": "합성곱 레이어로만 구성된 음성인식 신경망 모델입니다.",
+                "pageNumber": 5,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "a08d986f97d3",
+                "term": "QANet",
+                "english": "QANet",
+                "spokenAliases": [
+                  "큐에이넷"
+                ],
+                "easyExplanation": "합성곱과 자가 주의 집중 구조를 결합한 언어 이해 모델입니다.",
+                "pageNumber": 5,
+                "occurrences": 1,
+                "source": "gemini"
+              }
+            ]
+          },
+          "scriptHash": "9841dfbe8aca32b80683b334d0ddc02532a7aa68992cc310c7dca5e4724adc43",
+          "snapshotHash": "9df5eb074c7e514e47404b30dfd4e304153b37ce6f2b0d0a4e8a37f28836238a",
+          "script": {
+            "id": "case-83e9ea30-f981-40eb-aca5-37eb59dd9f24",
+            "title": "1 실험",
+            "languageCode": "ko-KR",
+            "text": "오늘은 컨포머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다. 컨포머는 컨볼루션 어그멘티드 트랜스포머로, 트랜스포머가 포착하는 글로벌 인터랙션과 씨엔엔이 찾는 로컬 피처를 하나의 인코더에서 결합합니다. 입력 음성은 컨볼루션 서브샘플링을 거친 뒤 여러 개의 컨포머 블록으로 전달됩니다.\n\n각 블록에는 맥커론 라이크 피드 포워드 레이어, 멀티 헤디드 셀프 어텐션, 컨볼루션 모듈이 배치됩니다. 컨볼루션 모듈은 포인트와이즈 컨볼루션, 지엘유 액티베이션, 원 디 뎁스와이즈 컨볼루션, 배치 놈, 스위시 액티베이션을 사용합니다. 마지막에는 레이어 놈을 적용해 출력을 안정화합니다.\n\n이 구조는 에이에스알에서 알엔엔보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다. 리브리스피치 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 더블유이알이 달라집니다. 결과를 검토할 때는 컨포머, 에이에스알, 씨엔엔, 알엔엔이 각각 정확한 영문 표기로 기록되는지 보고, 멀티 헤디드 셀프 어텐션과 컨볼루션 서브샘플링의 설명도 함께 확인하겠습니다.",
+            "targetTerms": [
+              {
+                "id": "gold-01",
+                "canonicalTerm": "ASR",
+                "english": "ASR",
+                "spokenAliases": [
+                  "에이에스알"
+                ],
+                "expectedOccurrences": [
+                  9,
+                  14
+                ]
+              },
+              {
+                "id": "gold-02",
+                "canonicalTerm": "CNN",
+                "english": "CNN",
+                "spokenAliases": [
+                  "씨엔엔"
+                ],
+                "expectedOccurrences": [
+                  5,
+                  15
+                ]
+              },
+              {
+                "id": "gold-03",
+                "canonicalTerm": "WER",
+                "english": "WER",
+                "spokenAliases": [
+                  "더블유이알"
+                ],
+                "expectedOccurrences": [
+                  12
+                ]
+              },
+              {
+                "id": "gold-04",
+                "canonicalTerm": "RNN",
+                "english": "RNN",
+                "spokenAliases": [
+                  "알엔엔"
+                ],
+                "expectedOccurrences": [
+                  10,
+                  16
+                ]
+              },
+              {
+                "id": "gold-05",
+                "canonicalTerm": "GLU",
+                "english": "GLU",
+                "spokenAliases": [
+                  "지엘유",
+                  "글루"
+                ],
+                "expectedOccurrences": [
+                  7
+                ]
+              },
+              {
+                "id": "gold-06",
+                "canonicalTerm": "Conformer",
+                "english": "Conformer",
+                "spokenAliases": [
+                  "컨포머"
+                ],
+                "expectedOccurrences": [
+                  1,
+                  2,
+                  6,
+                  13
+                ]
+              },
+              {
+                "id": "gold-07",
+                "canonicalTerm": "Transformer",
+                "english": "Transformer",
+                "spokenAliases": [
+                  "트랜스포머"
+                ],
+                "expectedOccurrences": [
+                  3,
+                  4
+                ]
+              },
+              {
+                "id": "gold-08",
+                "canonicalTerm": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치",
+                  "리브리 스피치"
+                ],
+                "expectedOccurrences": [
+                  11
+                ]
+              },
+              {
+                "id": "gold-09",
+                "canonicalTerm": "Swish",
+                "english": "Swish",
+                "spokenAliases": [
+                  "스위시"
+                ],
+                "expectedOccurrences": [
+                  8
+                ]
+              }
+            ],
+            "adaptationTerms": [
+              {
+                "id": "pdf-01",
+                "canonicalTerm": "ASR",
+                "english": "ASR",
+                "spokenAliases": [
+                  "에이에스알"
+                ]
+              },
+              {
+                "id": "pdf-02",
+                "canonicalTerm": "MHSA",
+                "english": "MHSA",
+                "spokenAliases": [
+                  "엠에이치에스에이"
+                ]
+              },
+              {
+                "id": "pdf-03",
+                "canonicalTerm": "CNN",
+                "english": "CNN",
+                "spokenAliases": [
+                  "씨엔엔"
+                ]
+              },
+              {
+                "id": "pdf-04",
+                "canonicalTerm": "WER",
+                "english": "WER",
+                "spokenAliases": [
+                  "더블유이알"
+                ]
+              },
+              {
+                "id": "pdf-05",
+                "canonicalTerm": "RNN",
+                "english": "RNN",
+                "spokenAliases": [
+                  "알엔엔"
+                ]
+              },
+              {
+                "id": "pdf-06",
+                "canonicalTerm": "LSTM",
+                "english": "LSTM",
+                "spokenAliases": [
+                  "엘에스티엠"
+                ]
+              },
+              {
+                "id": "pdf-07",
+                "canonicalTerm": "GLU",
+                "english": "GLU",
+                "spokenAliases": [
+                  "지엘유",
+                  "글루"
+                ]
+              },
+              {
+                "id": "pdf-08",
+                "canonicalTerm": "Conformer",
+                "english": "Conformer",
+                "spokenAliases": [
+                  "컨포머"
+                ]
+              },
+              {
+                "id": "pdf-09",
+                "canonicalTerm": "Transformer",
+                "english": "Transformer",
+                "spokenAliases": [
+                  "트랜스포머"
+                ]
+              },
+              {
+                "id": "pdf-10",
+                "canonicalTerm": "Depthwise Conv",
+                "english": "Depthwise Conv",
+                "spokenAliases": [
+                  "뎁스와이즈 콘브"
+                ]
+              },
+              {
+                "id": "pdf-11",
+                "canonicalTerm": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치",
+                  "리브리 스피치"
+                ]
+              },
+              {
+                "id": "pdf-12",
+                "canonicalTerm": "Swish",
+                "english": "Swish",
+                "spokenAliases": [
+                  "스위시"
+                ]
+              },
+              {
+                "id": "pdf-13",
+                "canonicalTerm": "Layernorm",
+                "english": "Layernorm",
+                "spokenAliases": [
+                  "레이어놈"
+                ]
+              },
+              {
+                "id": "pdf-14",
+                "canonicalTerm": "ContextNet",
+                "english": "ContextNet",
+                "spokenAliases": [
+                  "컨텍스트넷"
+                ]
+              },
+              {
+                "id": "pdf-15",
+                "canonicalTerm": "Macaron-Net",
+                "english": "Macaron-Net",
+                "spokenAliases": [
+                  "마카롱넷"
+                ]
+              },
+              {
+                "id": "pdf-16",
+                "canonicalTerm": "Pointwise Conv",
+                "english": "Pointwise Conv",
+                "spokenAliases": [
+                  "포인트와이즈 콘브"
+                ]
+              },
+              {
+                "id": "pdf-17",
+                "canonicalTerm": "BatchNorm",
+                "english": "BatchNorm",
+                "spokenAliases": [
+                  "배치놈"
+                ]
+              },
+              {
+                "id": "pdf-18",
+                "canonicalTerm": "SpecAugment",
+                "english": "SpecAugment",
+                "spokenAliases": [
+                  "스펙어그멘트"
+                ]
+              },
+              {
+                "id": "pdf-19",
+                "canonicalTerm": "QuartzNet",
+                "english": "QuartzNet",
+                "spokenAliases": [
+                  "쿼츠넷"
+                ]
+              },
+              {
+                "id": "pdf-20",
+                "canonicalTerm": "Transformer-XL",
+                "english": "Transformer-XL",
+                "spokenAliases": [
+                  "트랜스포머 엑스엘"
+                ]
+              },
+              {
+                "id": "pdf-21",
+                "canonicalTerm": "Lingvo",
+                "english": "Lingvo",
+                "spokenAliases": [
+                  "링보"
+                ]
+              },
+              {
+                "id": "pdf-22",
+                "canonicalTerm": "Adam",
+                "english": "Adam",
+                "spokenAliases": [
+                  "아담"
+                ]
+              },
+              {
+                "id": "pdf-23",
+                "canonicalTerm": "Anmol Gulati",
+                "english": "Anmol Gulati",
+                "spokenAliases": [
+                  "앤몰 구라티"
+                ]
+              },
+              {
+                "id": "pdf-24",
+                "canonicalTerm": "Jasper",
+                "english": "Jasper",
+                "spokenAliases": [
+                  "재스퍼"
+                ]
+              },
+              {
+                "id": "pdf-25",
+                "canonicalTerm": "QANet",
+                "english": "QANet",
+                "spokenAliases": [
+                  "큐에이넷"
+                ]
+              }
+            ],
+            "experimentIdentity": {
+              "studyId": "study-7dd8170d-d100-4ee8-bf56-a5db3f321026",
+              "caseId": "case-83e9ea30-f981-40eb-aca5-37eb59dd9f24",
+              "caseSnapshotId": "snapshot-9df5eb074c7e514e47404b30",
+              "glossaryId": "0cf34f69-00ea-4c6d-ab62-fc6f90c99994",
+              "glossaryName": "1",
+              "glossaryHash": "a60cf18f4abd73a778064ba5125f35f420410b68cc9a61c8a5f2afc4217e46e6",
+              "scriptHash": "9841dfbe8aca32b80683b334d0ddc02532a7aa68992cc310c7dca5e4724adc43"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "study-8ed16b23-04c4-4e9f-8843-5ca0eb4d0428",
+      "title": "test논문 02",
+      "createdAt": "2026-08-09T10:18:16.500Z",
+      "cases": [
+        {
+          "id": "case-9cdb0a8a-2a35-4482-852a-63629852e7aa",
+          "studyId": "study-8ed16b23-04c4-4e9f-8843-5ca0eb4d0428",
+          "snapshotId": "snapshot-04cb3a1a48d73b374d431dbd",
+          "title": "test 02",
+          "createdAt": "2026-08-09T10:36:47.060Z",
+          "glossary": {
+            "id": "ae9fcac8-d32a-4369-91be-049d6e2eb641",
+            "name": "2",
+            "updatedAt": "2026-08-09T10:18:54.994Z",
+            "hash": "2e952cb556abc890b4f67d01f0b19f9db243bff5e9b3cce6a166b1a35055cb78",
+            "terms": [
+              {
+                "id": "5db3d4f1d6b4",
+                "term": "LAS",
+                "english": "Listen, Attend and Spell",
+                "spokenAliases": [
+                  "엘에이에스",
+                  "라스"
+                ],
+                "easyExplanation": "음성 입력으로부터 텍스트를 직접 예측하는 딥러닝 모델이다.",
+                "pageNumber": 1,
+                "occurrences": 31,
+                "source": "gemini"
+              },
+              {
+                "id": "e3eaee01f47f",
+                "term": "WER",
+                "english": "Word Error Rate",
+                "spokenAliases": [
+                  "더블유이알",
+                  "웨어"
+                ],
+                "easyExplanation": "음성 인식 시스템의 정확도를 측정하는 단어 에러율 지표이다.",
+                "pageNumber": 1,
+                "occurrences": 21,
+                "source": "gemini"
+              },
+              {
+                "id": "1294692e88bc",
+                "term": "ASR",
+                "english": "Automatic Speech Recognition",
+                "spokenAliases": [
+                  "에이에스알"
+                ],
+                "easyExplanation": "음성을 컴퓨터가 자동으로 텍스트로 변환하는 기술이다.",
+                "pageNumber": 1,
+                "occurrences": 15,
+                "source": "gemini"
+              },
+              {
+                "id": "2b84447c790f",
+                "term": "RNN",
+                "english": "Recurrent Neural Network",
+                "spokenAliases": [
+                  "알엔엔"
+                ],
+                "easyExplanation": "순차적인 시계열 데이터를 처리하기에 적합한 순환 신경망이다.",
+                "pageNumber": 1,
+                "occurrences": 5,
+                "source": "gemini"
+              },
+              {
+                "id": "4acd7666f674",
+                "term": "WPM",
+                "english": "Word Piece Model",
+                "spokenAliases": [
+                  "더블유피엠"
+                ],
+                "easyExplanation": "단어를 더 작은 서브워드 단위로 분할하는 토큰화 기술이다.",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "42ed9f8f58c6",
+                "term": "TPU",
+                "english": "Tensor Processing Unit",
+                "spokenAliases": [
+                  "티피유"
+                ],
+                "easyExplanation": "구글이 딥러닝 연산을 가속하기 위해 개발한 전용 프로세서이다.",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "e19150aa8382",
+                "term": "CNN",
+                "english": "Convolutional Neural Network",
+                "spokenAliases": [
+                  "씨엔엔"
+                ],
+                "easyExplanation": "격자 형태 데이터의 특징을 추출하는 합성곱 신경망이다.",
+                "pageNumber": 1,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "1b8cb242f7e2",
+                "term": "Switchboard",
+                "english": "Switchboard",
+                "spokenAliases": [
+                  "스위치보드"
+                ],
+                "easyExplanation": "전화 통화 음성을 수집하여 만든 음성 인식 평가 데이터셋이다.",
+                "pageNumber": 1,
+                "occurrences": 24,
+                "source": "gemini"
+              },
+              {
+                "id": "27a6b39fffb3",
+                "term": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치"
+                ],
+                "easyExplanation": "오디오북 기반으로 구축된 대표적인 음성 인식 데이터셋이다.",
+                "pageNumber": 1,
+                "occurrences": 21,
+                "source": "gemini"
+              },
+              {
+                "id": "e816bd9dabfe",
+                "term": "SpecAugment",
+                "english": "SpecAugment",
+                "spokenAliases": [
+                  "스펙오그먼트"
+                ],
+                "easyExplanation": "스펙트로그램을 변형해 음성 인식 성능을 높이는 증강 기법이다.",
+                "pageNumber": 1,
+                "occurrences": 13,
+                "source": "gemini"
+              },
+              {
+                "id": "20b48bb1f886",
+                "term": "Shallow fusion",
+                "english": "Shallow fusion",
+                "spokenAliases": [
+                  "셜로우 퓨전"
+                ],
+                "easyExplanation": "음성 모델과 언어 모델의 예측 확률을 디코딩 시 결합하는 방식이다.",
+                "pageNumber": 1,
+                "occurrences": 9,
+                "source": "gemini"
+              },
+              {
+                "id": "592e4b3c995e",
+                "term": "log mel spectrogram",
+                "english": "log mel spectrogram",
+                "spokenAliases": [
+                  "로그 멜 스펙트로그램"
+                ],
+                "easyExplanation": "음성을 시간과 주파수 축으로 표현한 특징 데이터이다.",
+                "pageNumber": 1,
+                "occurrences": 7,
+                "source": "gemini"
+              },
+              {
+                "id": "5de893a403a0",
+                "term": "Time warping",
+                "english": "Time warping",
+                "spokenAliases": [
+                  "타임 워핑"
+                ],
+                "easyExplanation": "시간 축을 따라 스펙트로그램을 미세하게 왜곡하는 증강 방식이다.",
+                "pageNumber": 1,
+                "occurrences": 6,
+                "source": "gemini"
+              },
+              {
+                "id": "576b8ed65db7",
+                "term": "Fisher",
+                "english": "Fisher",
+                "spokenAliases": [
+                  "피셔"
+                ],
+                "easyExplanation": "음성 인식 모델 학습에 널리 사용되는 전화 통화 데이터셋이다.",
+                "pageNumber": 1,
+                "occurrences": 6,
+                "source": "gemini"
+              },
+              {
+                "id": "cfde18470ef2",
+                "term": "Listen, Attend and Spell",
+                "english": "Listen, Attend and Spell",
+                "spokenAliases": [
+                  "리슨 어텐드 앤 스펠"
+                ],
+                "easyExplanation": "음성 신호를 텍스트로 변환하는 신경망 기반 모델이다.",
+                "pageNumber": 1,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "a5979ed9d8c8",
+                "term": "CallHome",
+                "english": "CallHome",
+                "spokenAliases": [
+                  "콜홈"
+                ],
+                "easyExplanation": "자유로운 일상 통화 음성으로 구성된 음성 인식 평가 데이터셋이다.",
+                "pageNumber": 1,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "21a8417ef5c6",
+                "term": "Frequency masking",
+                "english": "Frequency masking",
+                "spokenAliases": [
+                  "프리퀀시 마스킹"
+                ],
+                "easyExplanation": "스펙트로그램의 특정 주파수 대역을 가려 학습시키는 기술이다.",
+                "pageNumber": 1,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "e2578276747c",
+                "term": "Time masking",
+                "english": "Time masking",
+                "spokenAliases": [
+                  "타임 마스킹"
+                ],
+                "easyExplanation": "스펙트로그램의 특정 시간 구간을 가려 학습시키는 기법이다.",
+                "pageNumber": 2,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "91f5b74b0841",
+                "term": "Cutout",
+                "english": "Cutout",
+                "spokenAliases": [
+                  "컷아웃"
+                ],
+                "easyExplanation": "이미지의 일부 영역을 무작위로 가려 모델을 학습시키는 기법이다.",
+                "pageNumber": 1,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "8b769fc5a214",
+                "term": "Hub5’00",
+                "english": "Hub5’00",
+                "spokenAliases": [
+                  "허브 파이브"
+                ],
+                "easyExplanation": "전화 통화 음성 인식 평가에 사용되는 데이터셋이다.",
+                "pageNumber": 1,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "2f354d7207a0",
+                "term": "Kaldi",
+                "english": "Kaldi",
+                "spokenAliases": [
+                  "칼디"
+                ],
+                "easyExplanation": "음성 인식 연구 및 개발에 널리 쓰이는 오픈소스 툴킷이다.",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "3d3f421e9db6",
+                "term": "tensorflow",
+                "english": "tensorflow",
+                "spokenAliases": [
+                  "텐서플로우",
+                  "텐서플로"
+                ],
+                "easyExplanation": "구글이 개발한 대표적인 오픈소스 머신러닝 라이브러리이다.",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "4021d2d75768",
+                "term": "Daniel S. Park",
+                "english": "Daniel S. Park",
+                "spokenAliases": [
+                  "대니얼 박"
+                ],
+                "easyExplanation": "SpecAugment 논문의 제1저자이자 구글 AI 연구원이다.",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "55f0fdc56c99",
+                "term": "Quoc V. Le",
+                "english": "Quoc V. Le",
+                "spokenAliases": [
+                  "쿠옥 레"
+                ],
+                "easyExplanation": "구글 브레인 소속의 저명한 인공지능 연구원이다.",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "a8fae0706fcb",
+                "term": "LSTMs",
+                "english": "Long Short-Term Memory",
+                "spokenAliases": [
+                  "엘에스티엠"
+                ],
+                "easyExplanation": "시계열 데이터의 장기 기억 문제를 해결한 신경망 구조이다.",
+                "pageNumber": 2,
+                "occurrences": 1,
+                "source": "gemini"
+              }
+            ]
+          },
+          "scriptHash": "cc0fc70377fd99976282fac99d2641eeaa365639ce9baeff0626b762039e8ff1",
+          "snapshotHash": "04cb3a1a48d73b374d431dbd10e9bc2ec68e69b680459c37af79bdade71157da",
+          "script": {
+            "id": "case-9cdb0a8a-2a35-4482-852a-63629852e7aa",
+            "title": "test 02",
+            "languageCode": "ko-KR",
+            "text": "오늘 공유할 실험은 스펙어그먼트를 이용한 자동 음성 인식 데이터 증강입니다. 스펙어그먼트는 신경망의 입력인 필터 뱅크 코이피션츠에 직접 적용되며, 별도의 합성 음성을 만들지 않고 로그 멜 스펙트로그램을 변형합니다. 핵심 정책은 타임 워핑, 프리퀀시 마스킹, 타임 마스킹의 세 단계로 구성됩니다.\n\n타임 워핑은 시간축의 특징을 변형하고, 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며, 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 리슨 어텐드 앤드 스펠 네트워크, 줄여서 엘에이에스에 적용됩니다.\n\n평가는 리브리스피치 구백육십 아워와 스위치보드 삼백 아워 태스크에서 수행하고, 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 셸로 퓨전을 적용한 결과의 더블유이알을 구분해야 합니다. 스펙어그먼트, 엘에이에스, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+            "targetTerms": [
+              {
+                "id": "gold-01",
+                "canonicalTerm": "LAS",
+                "english": "Listen, Attend and Spell",
+                "spokenAliases": [
+                  "엘에이에스",
+                  "라스"
+                ],
+                "expectedOccurrences": [
+                  9,
+                  14
+                ]
+              },
+              {
+                "id": "gold-02",
+                "canonicalTerm": "WER",
+                "english": "Word Error Rate",
+                "spokenAliases": [
+                  "더블유이알",
+                  "웨어"
+                ],
+                "expectedOccurrences": [
+                  13
+                ]
+              },
+              {
+                "id": "gold-03",
+                "canonicalTerm": "Switchboard",
+                "english": "Switchboard",
+                "spokenAliases": [
+                  "스위치보드"
+                ],
+                "expectedOccurrences": [
+                  11
+                ]
+              },
+              {
+                "id": "gold-04",
+                "canonicalTerm": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치"
+                ],
+                "expectedOccurrences": [
+                  10
+                ]
+              },
+              {
+                "id": "gold-05",
+                "canonicalTerm": "log mel spectrogram",
+                "english": "log mel spectrogram",
+                "spokenAliases": [
+                  "로그 멜 스펙트로그램"
+                ],
+                "expectedOccurrences": [
+                  1
+                ]
+              },
+              {
+                "id": "gold-06",
+                "canonicalTerm": "Time warping",
+                "english": "Time warping",
+                "spokenAliases": [
+                  "타임 워핑"
+                ],
+                "expectedOccurrences": [
+                  2,
+                  5,
+                  15
+                ]
+              },
+              {
+                "id": "gold-07",
+                "canonicalTerm": "CallHome",
+                "english": "CallHome",
+                "spokenAliases": [
+                  "콜홈"
+                ],
+                "expectedOccurrences": [
+                  12
+                ]
+              },
+              {
+                "id": "gold-08",
+                "canonicalTerm": "Frequency masking",
+                "english": "Frequency masking",
+                "spokenAliases": [
+                  "프리퀀시 마스킹"
+                ],
+                "expectedOccurrences": [
+                  3,
+                  6,
+                  16
+                ]
+              },
+              {
+                "id": "gold-09",
+                "canonicalTerm": "Time masking",
+                "english": "Time masking",
+                "spokenAliases": [
+                  "타임 마스킹"
+                ],
+                "expectedOccurrences": [
+                  4,
+                  7,
+                  17
+                ]
+              },
+              {
+                "id": "gold-10",
+                "canonicalTerm": "Cutout",
+                "english": "Cutout",
+                "spokenAliases": [
+                  "컷아웃"
+                ],
+                "expectedOccurrences": [
+                  8
+                ]
+              }
+            ],
+            "adaptationTerms": [
+              {
+                "id": "pdf-01",
+                "canonicalTerm": "LAS",
+                "english": "Listen, Attend and Spell",
+                "spokenAliases": [
+                  "엘에이에스",
+                  "라스"
+                ]
+              },
+              {
+                "id": "pdf-02",
+                "canonicalTerm": "WER",
+                "english": "Word Error Rate",
+                "spokenAliases": [
+                  "더블유이알",
+                  "웨어"
+                ]
+              },
+              {
+                "id": "pdf-03",
+                "canonicalTerm": "ASR",
+                "english": "Automatic Speech Recognition",
+                "spokenAliases": [
+                  "에이에스알"
+                ]
+              },
+              {
+                "id": "pdf-04",
+                "canonicalTerm": "RNN",
+                "english": "Recurrent Neural Network",
+                "spokenAliases": [
+                  "알엔엔"
+                ]
+              },
+              {
+                "id": "pdf-05",
+                "canonicalTerm": "WPM",
+                "english": "Word Piece Model",
+                "spokenAliases": [
+                  "더블유피엠"
+                ]
+              },
+              {
+                "id": "pdf-06",
+                "canonicalTerm": "TPU",
+                "english": "Tensor Processing Unit",
+                "spokenAliases": [
+                  "티피유"
+                ]
+              },
+              {
+                "id": "pdf-07",
+                "canonicalTerm": "CNN",
+                "english": "Convolutional Neural Network",
+                "spokenAliases": [
+                  "씨엔엔"
+                ]
+              },
+              {
+                "id": "pdf-08",
+                "canonicalTerm": "Switchboard",
+                "english": "Switchboard",
+                "spokenAliases": [
+                  "스위치보드"
+                ]
+              },
+              {
+                "id": "pdf-09",
+                "canonicalTerm": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치"
+                ]
+              },
+              {
+                "id": "pdf-10",
+                "canonicalTerm": "SpecAugment",
+                "english": "SpecAugment",
+                "spokenAliases": [
+                  "스펙오그먼트"
+                ]
+              },
+              {
+                "id": "pdf-11",
+                "canonicalTerm": "Shallow fusion",
+                "english": "Shallow fusion",
+                "spokenAliases": [
+                  "셜로우 퓨전"
+                ]
+              },
+              {
+                "id": "pdf-12",
+                "canonicalTerm": "log mel spectrogram",
+                "english": "log mel spectrogram",
+                "spokenAliases": [
+                  "로그 멜 스펙트로그램"
+                ]
+              },
+              {
+                "id": "pdf-13",
+                "canonicalTerm": "Time warping",
+                "english": "Time warping",
+                "spokenAliases": [
+                  "타임 워핑"
+                ]
+              },
+              {
+                "id": "pdf-14",
+                "canonicalTerm": "Fisher",
+                "english": "Fisher",
+                "spokenAliases": [
+                  "피셔"
+                ]
+              },
+              {
+                "id": "pdf-15",
+                "canonicalTerm": "Listen, Attend and Spell",
+                "english": "Listen, Attend and Spell",
+                "spokenAliases": [
+                  "리슨 어텐드 앤 스펠"
+                ]
+              },
+              {
+                "id": "pdf-16",
+                "canonicalTerm": "CallHome",
+                "english": "CallHome",
+                "spokenAliases": [
+                  "콜홈"
+                ]
+              },
+              {
+                "id": "pdf-17",
+                "canonicalTerm": "Frequency masking",
+                "english": "Frequency masking",
+                "spokenAliases": [
+                  "프리퀀시 마스킹"
+                ]
+              },
+              {
+                "id": "pdf-18",
+                "canonicalTerm": "Time masking",
+                "english": "Time masking",
+                "spokenAliases": [
+                  "타임 마스킹"
+                ]
+              },
+              {
+                "id": "pdf-19",
+                "canonicalTerm": "Cutout",
+                "english": "Cutout",
+                "spokenAliases": [
+                  "컷아웃"
+                ]
+              },
+              {
+                "id": "pdf-20",
+                "canonicalTerm": "Hub5’00",
+                "english": "Hub5’00",
+                "spokenAliases": [
+                  "허브 파이브"
+                ]
+              },
+              {
+                "id": "pdf-21",
+                "canonicalTerm": "Kaldi",
+                "english": "Kaldi",
+                "spokenAliases": [
+                  "칼디"
+                ]
+              },
+              {
+                "id": "pdf-22",
+                "canonicalTerm": "tensorflow",
+                "english": "tensorflow",
+                "spokenAliases": [
+                  "텐서플로우",
+                  "텐서플로"
+                ]
+              },
+              {
+                "id": "pdf-23",
+                "canonicalTerm": "Daniel S. Park",
+                "english": "Daniel S. Park",
+                "spokenAliases": [
+                  "대니얼 박"
+                ]
+              },
+              {
+                "id": "pdf-24",
+                "canonicalTerm": "Quoc V. Le",
+                "english": "Quoc V. Le",
+                "spokenAliases": [
+                  "쿠옥 레"
+                ]
+              },
+              {
+                "id": "pdf-25",
+                "canonicalTerm": "LSTMs",
+                "english": "Long Short-Term Memory",
+                "spokenAliases": [
+                  "엘에스티엠"
+                ]
+              }
+            ],
+            "experimentIdentity": {
+              "studyId": "study-8ed16b23-04c4-4e9f-8843-5ca0eb4d0428",
+              "caseId": "case-9cdb0a8a-2a35-4482-852a-63629852e7aa",
+              "caseSnapshotId": "snapshot-04cb3a1a48d73b374d431dbd",
+              "glossaryId": "ae9fcac8-d32a-4369-91be-049d6e2eb641",
+              "glossaryName": "2",
+              "glossaryHash": "2e952cb556abc890b4f67d01f0b19f9db243bff5e9b3cce6a166b1a35055cb78",
+              "scriptHash": "cc0fc70377fd99976282fac99d2641eeaa365639ce9baeff0626b762039e8ff1"
+            }
+          }
+        },
+        {
+          "id": "case-1a7ecc72-4924-4e76-8eb4-27d73851b6b8",
+          "studyId": "study-8ed16b23-04c4-4e9f-8843-5ca0eb4d0428",
+          "snapshotId": "snapshot-c14c2d507e08856c387a2bd9",
+          "title": "test 02-2",
+          "createdAt": "2026-08-09T11:48:24.379Z",
+          "glossary": {
+            "id": "ae9fcac8-d32a-4369-91be-049d6e2eb641",
+            "name": "2",
+            "updatedAt": "2026-08-09T10:18:54.994Z",
+            "hash": "2e952cb556abc890b4f67d01f0b19f9db243bff5e9b3cce6a166b1a35055cb78",
+            "terms": [
+              {
+                "id": "5db3d4f1d6b4",
+                "term": "LAS",
+                "english": "Listen, Attend and Spell",
+                "spokenAliases": [
+                  "엘에이에스",
+                  "라스"
+                ],
+                "easyExplanation": "음성 입력으로부터 텍스트를 직접 예측하는 딥러닝 모델이다.",
+                "pageNumber": 1,
+                "occurrences": 31,
+                "source": "gemini"
+              },
+              {
+                "id": "e3eaee01f47f",
+                "term": "WER",
+                "english": "Word Error Rate",
+                "spokenAliases": [
+                  "더블유이알",
+                  "웨어"
+                ],
+                "easyExplanation": "음성 인식 시스템의 정확도를 측정하는 단어 에러율 지표이다.",
+                "pageNumber": 1,
+                "occurrences": 21,
+                "source": "gemini"
+              },
+              {
+                "id": "1294692e88bc",
+                "term": "ASR",
+                "english": "Automatic Speech Recognition",
+                "spokenAliases": [
+                  "에이에스알"
+                ],
+                "easyExplanation": "음성을 컴퓨터가 자동으로 텍스트로 변환하는 기술이다.",
+                "pageNumber": 1,
+                "occurrences": 15,
+                "source": "gemini"
+              },
+              {
+                "id": "2b84447c790f",
+                "term": "RNN",
+                "english": "Recurrent Neural Network",
+                "spokenAliases": [
+                  "알엔엔"
+                ],
+                "easyExplanation": "순차적인 시계열 데이터를 처리하기에 적합한 순환 신경망이다.",
+                "pageNumber": 1,
+                "occurrences": 5,
+                "source": "gemini"
+              },
+              {
+                "id": "4acd7666f674",
+                "term": "WPM",
+                "english": "Word Piece Model",
+                "spokenAliases": [
+                  "더블유피엠"
+                ],
+                "easyExplanation": "단어를 더 작은 서브워드 단위로 분할하는 토큰화 기술이다.",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "42ed9f8f58c6",
+                "term": "TPU",
+                "english": "Tensor Processing Unit",
+                "spokenAliases": [
+                  "티피유"
+                ],
+                "easyExplanation": "구글이 딥러닝 연산을 가속하기 위해 개발한 전용 프로세서이다.",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "e19150aa8382",
+                "term": "CNN",
+                "english": "Convolutional Neural Network",
+                "spokenAliases": [
+                  "씨엔엔"
+                ],
+                "easyExplanation": "격자 형태 데이터의 특징을 추출하는 합성곱 신경망이다.",
+                "pageNumber": 1,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "1b8cb242f7e2",
+                "term": "Switchboard",
+                "english": "Switchboard",
+                "spokenAliases": [
+                  "스위치보드"
+                ],
+                "easyExplanation": "전화 통화 음성을 수집하여 만든 음성 인식 평가 데이터셋이다.",
+                "pageNumber": 1,
+                "occurrences": 24,
+                "source": "gemini"
+              },
+              {
+                "id": "27a6b39fffb3",
+                "term": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치"
+                ],
+                "easyExplanation": "오디오북 기반으로 구축된 대표적인 음성 인식 데이터셋이다.",
+                "pageNumber": 1,
+                "occurrences": 21,
+                "source": "gemini"
+              },
+              {
+                "id": "e816bd9dabfe",
+                "term": "SpecAugment",
+                "english": "SpecAugment",
+                "spokenAliases": [
+                  "스펙오그먼트"
+                ],
+                "easyExplanation": "스펙트로그램을 변형해 음성 인식 성능을 높이는 증강 기법이다.",
+                "pageNumber": 1,
+                "occurrences": 13,
+                "source": "gemini"
+              },
+              {
+                "id": "20b48bb1f886",
+                "term": "Shallow fusion",
+                "english": "Shallow fusion",
+                "spokenAliases": [
+                  "셜로우 퓨전"
+                ],
+                "easyExplanation": "음성 모델과 언어 모델의 예측 확률을 디코딩 시 결합하는 방식이다.",
+                "pageNumber": 1,
+                "occurrences": 9,
+                "source": "gemini"
+              },
+              {
+                "id": "592e4b3c995e",
+                "term": "log mel spectrogram",
+                "english": "log mel spectrogram",
+                "spokenAliases": [
+                  "로그 멜 스펙트로그램"
+                ],
+                "easyExplanation": "음성을 시간과 주파수 축으로 표현한 특징 데이터이다.",
+                "pageNumber": 1,
+                "occurrences": 7,
+                "source": "gemini"
+              },
+              {
+                "id": "5de893a403a0",
+                "term": "Time warping",
+                "english": "Time warping",
+                "spokenAliases": [
+                  "타임 워핑"
+                ],
+                "easyExplanation": "시간 축을 따라 스펙트로그램을 미세하게 왜곡하는 증강 방식이다.",
+                "pageNumber": 1,
+                "occurrences": 6,
+                "source": "gemini"
+              },
+              {
+                "id": "576b8ed65db7",
+                "term": "Fisher",
+                "english": "Fisher",
+                "spokenAliases": [
+                  "피셔"
+                ],
+                "easyExplanation": "음성 인식 모델 학습에 널리 사용되는 전화 통화 데이터셋이다.",
+                "pageNumber": 1,
+                "occurrences": 6,
+                "source": "gemini"
+              },
+              {
+                "id": "cfde18470ef2",
+                "term": "Listen, Attend and Spell",
+                "english": "Listen, Attend and Spell",
+                "spokenAliases": [
+                  "리슨 어텐드 앤 스펠"
+                ],
+                "easyExplanation": "음성 신호를 텍스트로 변환하는 신경망 기반 모델이다.",
+                "pageNumber": 1,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "a5979ed9d8c8",
+                "term": "CallHome",
+                "english": "CallHome",
+                "spokenAliases": [
+                  "콜홈"
+                ],
+                "easyExplanation": "자유로운 일상 통화 음성으로 구성된 음성 인식 평가 데이터셋이다.",
+                "pageNumber": 1,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "21a8417ef5c6",
+                "term": "Frequency masking",
+                "english": "Frequency masking",
+                "spokenAliases": [
+                  "프리퀀시 마스킹"
+                ],
+                "easyExplanation": "스펙트로그램의 특정 주파수 대역을 가려 학습시키는 기술이다.",
+                "pageNumber": 1,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "e2578276747c",
+                "term": "Time masking",
+                "english": "Time masking",
+                "spokenAliases": [
+                  "타임 마스킹"
+                ],
+                "easyExplanation": "스펙트로그램의 특정 시간 구간을 가려 학습시키는 기법이다.",
+                "pageNumber": 2,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "91f5b74b0841",
+                "term": "Cutout",
+                "english": "Cutout",
+                "spokenAliases": [
+                  "컷아웃"
+                ],
+                "easyExplanation": "이미지의 일부 영역을 무작위로 가려 모델을 학습시키는 기법이다.",
+                "pageNumber": 1,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "8b769fc5a214",
+                "term": "Hub5’00",
+                "english": "Hub5’00",
+                "spokenAliases": [
+                  "허브 파이브"
+                ],
+                "easyExplanation": "전화 통화 음성 인식 평가에 사용되는 데이터셋이다.",
+                "pageNumber": 1,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "2f354d7207a0",
+                "term": "Kaldi",
+                "english": "Kaldi",
+                "spokenAliases": [
+                  "칼디"
+                ],
+                "easyExplanation": "음성 인식 연구 및 개발에 널리 쓰이는 오픈소스 툴킷이다.",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "3d3f421e9db6",
+                "term": "tensorflow",
+                "english": "tensorflow",
+                "spokenAliases": [
+                  "텐서플로우",
+                  "텐서플로"
+                ],
+                "easyExplanation": "구글이 개발한 대표적인 오픈소스 머신러닝 라이브러리이다.",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "4021d2d75768",
+                "term": "Daniel S. Park",
+                "english": "Daniel S. Park",
+                "spokenAliases": [
+                  "대니얼 박"
+                ],
+                "easyExplanation": "SpecAugment 논문의 제1저자이자 구글 AI 연구원이다.",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "55f0fdc56c99",
+                "term": "Quoc V. Le",
+                "english": "Quoc V. Le",
+                "spokenAliases": [
+                  "쿠옥 레"
+                ],
+                "easyExplanation": "구글 브레인 소속의 저명한 인공지능 연구원이다.",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "a8fae0706fcb",
+                "term": "LSTMs",
+                "english": "Long Short-Term Memory",
+                "spokenAliases": [
+                  "엘에스티엠"
+                ],
+                "easyExplanation": "시계열 데이터의 장기 기억 문제를 해결한 신경망 구조이다.",
+                "pageNumber": 2,
+                "occurrences": 1,
+                "source": "gemini"
+              }
+            ]
+          },
+          "scriptHash": "cc0fc70377fd99976282fac99d2641eeaa365639ce9baeff0626b762039e8ff1",
+          "snapshotHash": "c14c2d507e08856c387a2bd9fdec00d3aeda01322f3810c9b8af81d13eb64cc6",
+          "script": {
+            "id": "case-1a7ecc72-4924-4e76-8eb4-27d73851b6b8",
+            "title": "test 02-2",
+            "languageCode": "ko-KR",
+            "text": "오늘 공유할 실험은 스펙어그먼트를 이용한 자동 음성 인식 데이터 증강입니다. 스펙어그먼트는 신경망의 입력인 필터 뱅크 코이피션츠에 직접 적용되며, 별도의 합성 음성을 만들지 않고 로그 멜 스펙트로그램을 변형합니다. 핵심 정책은 타임 워핑, 프리퀀시 마스킹, 타임 마스킹의 세 단계로 구성됩니다.\n\n타임 워핑은 시간축의 특징을 변형하고, 프리퀀시 마스킹은 연속된 멜 프리퀀시 채널을 가립니다. 타임 마스킹은 연속된 타임 스텝을 가리며, 두 마스킹 방식은 컴퓨터 비전의 컷아웃에서 아이디어를 얻었습니다. 이 정책은 리슨 어텐드 앤드 스펠 네트워크, 줄여서 엘에이에스에 적용됩니다.\n\n평가는 리브리스피치 구백육십 아워와 스위치보드 삼백 아워 태스크에서 수행하고, 콜홈 구간도 따로 비교합니다. 외부 랭귀지 모델을 사용하지 않은 결과와 셸로 퓨전을 적용한 결과의 더블유이알을 구분해야 합니다. 스펙어그먼트, 엘에이에스, 타임 워핑, 프리퀀시 마스킹, 타임 마스킹이 연속해서 등장해도 각각 정확히 전사되어야 데이터 증강 정책을 올바르게 해석할 수 있습니다.",
+            "targetTerms": [
+              {
+                "id": "gold-01",
+                "canonicalTerm": "LAS",
+                "english": "Listen, Attend and Spell",
+                "spokenAliases": [
+                  "엘에이에스",
+                  "라스"
+                ],
+                "expectedOccurrences": [
+                  9,
+                  14
+                ]
+              },
+              {
+                "id": "gold-02",
+                "canonicalTerm": "WER",
+                "english": "Word Error Rate",
+                "spokenAliases": [
+                  "더블유이알",
+                  "웨어"
+                ],
+                "expectedOccurrences": [
+                  13
+                ]
+              },
+              {
+                "id": "gold-03",
+                "canonicalTerm": "Switchboard",
+                "english": "Switchboard",
+                "spokenAliases": [
+                  "스위치보드"
+                ],
+                "expectedOccurrences": [
+                  11
+                ]
+              },
+              {
+                "id": "gold-04",
+                "canonicalTerm": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치"
+                ],
+                "expectedOccurrences": [
+                  10
+                ]
+              },
+              {
+                "id": "gold-05",
+                "canonicalTerm": "log mel spectrogram",
+                "english": "log mel spectrogram",
+                "spokenAliases": [
+                  "로그 멜 스펙트로그램"
+                ],
+                "expectedOccurrences": [
+                  1
+                ]
+              },
+              {
+                "id": "gold-06",
+                "canonicalTerm": "Time warping",
+                "english": "Time warping",
+                "spokenAliases": [
+                  "타임 워핑"
+                ],
+                "expectedOccurrences": [
+                  2,
+                  5,
+                  15
+                ]
+              },
+              {
+                "id": "gold-07",
+                "canonicalTerm": "CallHome",
+                "english": "CallHome",
+                "spokenAliases": [
+                  "콜홈"
+                ],
+                "expectedOccurrences": [
+                  12
+                ]
+              },
+              {
+                "id": "gold-08",
+                "canonicalTerm": "Frequency masking",
+                "english": "Frequency masking",
+                "spokenAliases": [
+                  "프리퀀시 마스킹"
+                ],
+                "expectedOccurrences": [
+                  3,
+                  6,
+                  16
+                ]
+              },
+              {
+                "id": "gold-09",
+                "canonicalTerm": "Time masking",
+                "english": "Time masking",
+                "spokenAliases": [
+                  "타임 마스킹"
+                ],
+                "expectedOccurrences": [
+                  4,
+                  7,
+                  17
+                ]
+              },
+              {
+                "id": "gold-10",
+                "canonicalTerm": "Cutout",
+                "english": "Cutout",
+                "spokenAliases": [
+                  "컷아웃"
+                ],
+                "expectedOccurrences": [
+                  8
+                ]
+              }
+            ],
+            "adaptationTerms": [
+              {
+                "id": "pdf-01",
+                "canonicalTerm": "LAS",
+                "english": "Listen, Attend and Spell",
+                "spokenAliases": [
+                  "엘에이에스",
+                  "라스"
+                ]
+              },
+              {
+                "id": "pdf-02",
+                "canonicalTerm": "WER",
+                "english": "Word Error Rate",
+                "spokenAliases": [
+                  "더블유이알",
+                  "웨어"
+                ]
+              },
+              {
+                "id": "pdf-03",
+                "canonicalTerm": "ASR",
+                "english": "Automatic Speech Recognition",
+                "spokenAliases": [
+                  "에이에스알"
+                ]
+              },
+              {
+                "id": "pdf-04",
+                "canonicalTerm": "RNN",
+                "english": "Recurrent Neural Network",
+                "spokenAliases": [
+                  "알엔엔"
+                ]
+              },
+              {
+                "id": "pdf-05",
+                "canonicalTerm": "WPM",
+                "english": "Word Piece Model",
+                "spokenAliases": [
+                  "더블유피엠"
+                ]
+              },
+              {
+                "id": "pdf-06",
+                "canonicalTerm": "TPU",
+                "english": "Tensor Processing Unit",
+                "spokenAliases": [
+                  "티피유"
+                ]
+              },
+              {
+                "id": "pdf-07",
+                "canonicalTerm": "CNN",
+                "english": "Convolutional Neural Network",
+                "spokenAliases": [
+                  "씨엔엔"
+                ]
+              },
+              {
+                "id": "pdf-08",
+                "canonicalTerm": "Switchboard",
+                "english": "Switchboard",
+                "spokenAliases": [
+                  "스위치보드"
+                ]
+              },
+              {
+                "id": "pdf-09",
+                "canonicalTerm": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치"
+                ]
+              },
+              {
+                "id": "pdf-10",
+                "canonicalTerm": "SpecAugment",
+                "english": "SpecAugment",
+                "spokenAliases": [
+                  "스펙오그먼트"
+                ]
+              },
+              {
+                "id": "pdf-11",
+                "canonicalTerm": "Shallow fusion",
+                "english": "Shallow fusion",
+                "spokenAliases": [
+                  "셜로우 퓨전"
+                ]
+              },
+              {
+                "id": "pdf-12",
+                "canonicalTerm": "log mel spectrogram",
+                "english": "log mel spectrogram",
+                "spokenAliases": [
+                  "로그 멜 스펙트로그램"
+                ]
+              },
+              {
+                "id": "pdf-13",
+                "canonicalTerm": "Time warping",
+                "english": "Time warping",
+                "spokenAliases": [
+                  "타임 워핑"
+                ]
+              },
+              {
+                "id": "pdf-14",
+                "canonicalTerm": "Fisher",
+                "english": "Fisher",
+                "spokenAliases": [
+                  "피셔"
+                ]
+              },
+              {
+                "id": "pdf-15",
+                "canonicalTerm": "Listen, Attend and Spell",
+                "english": "Listen, Attend and Spell",
+                "spokenAliases": [
+                  "리슨 어텐드 앤 스펠"
+                ]
+              },
+              {
+                "id": "pdf-16",
+                "canonicalTerm": "CallHome",
+                "english": "CallHome",
+                "spokenAliases": [
+                  "콜홈"
+                ]
+              },
+              {
+                "id": "pdf-17",
+                "canonicalTerm": "Frequency masking",
+                "english": "Frequency masking",
+                "spokenAliases": [
+                  "프리퀀시 마스킹"
+                ]
+              },
+              {
+                "id": "pdf-18",
+                "canonicalTerm": "Time masking",
+                "english": "Time masking",
+                "spokenAliases": [
+                  "타임 마스킹"
+                ]
+              },
+              {
+                "id": "pdf-19",
+                "canonicalTerm": "Cutout",
+                "english": "Cutout",
+                "spokenAliases": [
+                  "컷아웃"
+                ]
+              },
+              {
+                "id": "pdf-20",
+                "canonicalTerm": "Hub5’00",
+                "english": "Hub5’00",
+                "spokenAliases": [
+                  "허브 파이브"
+                ]
+              },
+              {
+                "id": "pdf-21",
+                "canonicalTerm": "Kaldi",
+                "english": "Kaldi",
+                "spokenAliases": [
+                  "칼디"
+                ]
+              },
+              {
+                "id": "pdf-22",
+                "canonicalTerm": "tensorflow",
+                "english": "tensorflow",
+                "spokenAliases": [
+                  "텐서플로우",
+                  "텐서플로"
+                ]
+              },
+              {
+                "id": "pdf-23",
+                "canonicalTerm": "Daniel S. Park",
+                "english": "Daniel S. Park",
+                "spokenAliases": [
+                  "대니얼 박"
+                ]
+              },
+              {
+                "id": "pdf-24",
+                "canonicalTerm": "Quoc V. Le",
+                "english": "Quoc V. Le",
+                "spokenAliases": [
+                  "쿠옥 레"
+                ]
+              },
+              {
+                "id": "pdf-25",
+                "canonicalTerm": "LSTMs",
+                "english": "Long Short-Term Memory",
+                "spokenAliases": [
+                  "엘에스티엠"
+                ]
+              }
+            ],
+            "experimentIdentity": {
+              "studyId": "study-8ed16b23-04c4-4e9f-8843-5ca0eb4d0428",
+              "caseId": "case-1a7ecc72-4924-4e76-8eb4-27d73851b6b8",
+              "caseSnapshotId": "snapshot-c14c2d507e08856c387a2bd9",
+              "glossaryId": "ae9fcac8-d32a-4369-91be-049d6e2eb641",
+              "glossaryName": "2",
+              "glossaryHash": "2e952cb556abc890b4f67d01f0b19f9db243bff5e9b3cce6a166b1a35055cb78",
+              "scriptHash": "cc0fc70377fd99976282fac99d2641eeaa365639ce9baeff0626b762039e8ff1"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "study-d19b1102-60ad-4093-a44b-59d1901e9e9b",
+      "title": "테스트 논문 03",
+      "createdAt": "2026-08-09T10:32:09.057Z",
+      "cases": [
+        {
+          "id": "case-35ecfd58-1fae-487c-a9f3-704e2d4a012a",
+          "studyId": "study-d19b1102-60ad-4093-a44b-59d1901e9e9b",
+          "snapshotId": "snapshot-283345fa30c846340a09e87f",
+          "title": "test 03",
+          "createdAt": "2026-08-09T10:39:18.596Z",
+          "glossary": {
+            "id": "da998d15-f6a4-4af4-8224-ebbd1ea2d418",
+            "name": "3",
+            "updatedAt": "2026-08-09T10:31:48.426Z",
+            "hash": "d6ac1144063fe85e46c8e0861653fdbd1ace974a9d506011ea9f019026fa2f24",
+            "terms": [
+              {
+                "id": "66c2fbdc8ad5",
+                "term": "TDNN",
+                "english": "Time Delay Neural Network",
+                "spokenAliases": [
+                  "티디엔엔"
+                ],
+                "easyExplanation": "시간 지연을 고려해 시간 흐름에 따른 특징을 추출하는 신경망 구조",
+                "pageNumber": 1,
+                "occurrences": 27,
+                "source": "gemini"
+              },
+              {
+                "id": "bf92395aa248",
+                "term": "ECAPA-TDNN",
+                "english": "Emphasized Channel Attention, Propagation and Aggregation in TDNN",
+                "spokenAliases": [
+                  "에카파 티디엔엔"
+                ],
+                "easyExplanation": "채널 주의집중과 특성 통합을 적용한 음성 인식 및 화자 검증 모델",
+                "pageNumber": 1,
+                "occurrences": 15,
+                "source": "gemini"
+              },
+              {
+                "id": "b8bfe9c2722a",
+                "term": "EER",
+                "english": "Equal Error Rate",
+                "spokenAliases": [
+                  "이이알"
+                ],
+                "easyExplanation": "오인인증률과 오거부률이 같아지는 지점에서의 성능 측정 지표",
+                "pageNumber": 4,
+                "occurrences": 15,
+                "source": "gemini"
+              },
+              {
+                "id": "2fe1c05c1bc0",
+                "term": "MFA",
+                "english": "Multi-layer Feature Aggregation",
+                "spokenAliases": [
+                  "엠에프에이"
+                ],
+                "easyExplanation": "신경망의 여러 계층에서 생성된 특징을 통합하여 활용하는 기술",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "4d20664e1714",
+                "term": "MUSAN",
+                "english": "",
+                "spokenAliases": [
+                  "무산"
+                ],
+                "easyExplanation": "음악, 소음, 음성 데이터로 구성된 노이즈 데이터셋",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "787d83c9be1d",
+                "term": "PLDA",
+                "english": "Probabilistic Linear Discriminant Analysis",
+                "spokenAliases": [
+                  "피엘디에이"
+                ],
+                "easyExplanation": "화자 간 및 화자 내 변형을 통계적으로 모델링하는 판별 분석 기법",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "4e8f45f3cc77",
+                "term": "VAD",
+                "english": "Voice Activity Detection",
+                "spokenAliases": [
+                  "브이에이디"
+                ],
+                "easyExplanation": "음성 신호 중 무음이나 소음을 제외한 실제 발화 구간을 탐지하는 기술",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "5d75f89ff44d",
+                "term": "VoxCeleb",
+                "english": "",
+                "spokenAliases": [
+                  "복스셀럽"
+                ],
+                "easyExplanation": "대규모 화자 인식 연구 및 성능 평가를 위한 음성 데이터셋",
+                "pageNumber": 1,
+                "occurrences": 15,
+                "source": "gemini"
+              },
+              {
+                "id": "0dff1f2c3309",
+                "term": "MinDCF",
+                "english": "",
+                "spokenAliases": [
+                  "민디씨에프"
+                ],
+                "easyExplanation": "화자 검증 시스템의 성능과 판별 비용을 평가하는 검출 비용 지표",
+                "pageNumber": 4,
+                "occurrences": 13,
+                "source": "gemini"
+              },
+              {
+                "id": "05487172764d",
+                "term": "ResNet",
+                "english": "",
+                "spokenAliases": [
+                  "레즈넷"
+                ],
+                "easyExplanation": "잔차 연결을 통해 신경망 깊이가 깊어져도 학습이 잘 되도록 돕는 모델",
+                "pageNumber": 1,
+                "occurrences": 11,
+                "source": "gemini"
+              },
+              {
+                "id": "cd56bd779cc2",
+                "term": "VoxSRC",
+                "english": "VoxCeleb Speaker Recognition Challenge",
+                "spokenAliases": [
+                  "복스에스알씨"
+                ],
+                "easyExplanation": "VoxCeleb 데이터셋을 활용해 화자 인식 기술을 겨루는 경진대회",
+                "pageNumber": 1,
+                "occurrences": 9,
+                "source": "gemini"
+              },
+              {
+                "id": "fd7e4e2965cf",
+                "term": "Res2Net",
+                "english": "",
+                "spokenAliases": [
+                  "레즈투넷"
+                ],
+                "easyExplanation": "다중 스케일 특성을 추출할 수 있도록 잔차 구조를 개선한 신경망 모델",
+                "pageNumber": 1,
+                "occurrences": 7,
+                "source": "gemini"
+              },
+              {
+                "id": "8e5196f0c160",
+                "term": "x-vectors",
+                "english": "",
+                "spokenAliases": [
+                  "엑스벡터",
+                  "엑스 벡터"
+                ],
+                "easyExplanation": "가변 길이 음성 신호를 고정 길이 벡터로 변환하는 화자 특징 표현 방식",
+                "pageNumber": 1,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "963bb6a82e1a",
+                "term": "Conv1D",
+                "english": "",
+                "spokenAliases": [
+                  "콘브원디",
+                  "컨브원디"
+                ],
+                "easyExplanation": "1차원 시퀀스 데이터에 대해 합성곱 연산을 수행하는 레이어",
+                "pageNumber": 3,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "24c6d355f138",
+                "term": "Voice Activity Detection",
+                "english": "",
+                "spokenAliases": [
+                  "보이스 액티비티 디텍션"
+                ],
+                "easyExplanation": "오디오 신호에서 사람이 말하는 음성 구간만을 감지하는 기술",
+                "pageNumber": 1,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "1af69c94500e",
+                "term": "r-vector",
+                "english": "",
+                "spokenAliases": [
+                  "알벡터",
+                  "알 벡터"
+                ],
+                "easyExplanation": "ResNet 구조 기반으로 화자의 음성 임베딩을 추출하는 방식",
+                "pageNumber": 2,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "659316235845",
+                "term": "Batch Normalization",
+                "english": "",
+                "spokenAliases": [
+                  "배치 노멀라이제이션"
+                ],
+                "easyExplanation": "학습 시 각 레이어의 입력 분포를 정규화하여 학습 속도를 향상시키는 기법",
+                "pageNumber": 2,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "89cebda3afc9",
+                "term": "MFCCs",
+                "english": "",
+                "spokenAliases": [
+                  "엠에프씨씨"
+                ],
+                "easyExplanation": "음성 스펙트럼에서 청각 특성을 반영해 추출한 대표적 특징 표현 방식",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "0e18f44c1fec",
+                "term": "Adam",
+                "english": "",
+                "spokenAliases": [
+                  "아담"
+                ],
+                "easyExplanation": "경사하강법 기반으로 오차를 줄여나가는 적응형 최적화 알고리즘",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "dacde1080567",
+                "term": "AAM-softmax",
+                "english": "",
+                "spokenAliases": [
+                  "에이에이엠 소프트맥스"
+                ],
+                "easyExplanation": "각 클래스 간의 마진을 극대화하여 변별력을 높이는 손실 함수",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "daba5972e47f",
+                "term": "SE-ResNet",
+                "english": "",
+                "spokenAliases": [
+                  "에스이 레즈넷"
+                ],
+                "easyExplanation": "Squeeze-and-Excitation 블록을 잔차 구조 네트워크에 결합한 모델",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "999586202c26",
+                "term": "Brecht Desplanques",
+                "english": "",
+                "spokenAliases": [
+                  "브레히트 데스플랑크"
+                ],
+                "easyExplanation": "ECAPA-TDNN 논문의 제1저자이자 겐트 대학교의 연구원",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "223364cb0e34",
+                "term": "ReLU",
+                "english": "Rectified Linear Units",
+                "spokenAliases": [
+                  "렐루"
+                ],
+                "easyExplanation": "음수 입력은 0으로 처리하고 양수 입력은 그대로 출력하는 비선형 활성화 함수",
+                "pageNumber": 2,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "2f354d7207a0",
+                "term": "Kaldi",
+                "english": "",
+                "spokenAliases": [
+                  "칼디"
+                ],
+                "easyExplanation": "음성 인식 및 음성 처리 연구에 광범위하게 사용되는 툴킷",
+                "pageNumber": 3,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "996959420518",
+                "term": "Squeeze-and-Excitation",
+                "english": "",
+                "spokenAliases": [
+                  "스퀴즈 앤 엑사이테이션"
+                ],
+                "easyExplanation": "채널 간 상관관계를 재조정하여 중요한 특성을 강조하는 기법",
+                "pageNumber": 5,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "e816bd9dabfe",
+                "term": "SpecAugment",
+                "english": "",
+                "spokenAliases": [
+                  "스펙오그먼트"
+                ],
+                "easyExplanation": "스펙트로그램의 주파수나 시간 영역을 마스킹하여 데이터를 증강하는 기법",
+                "pageNumber": 5,
+                "occurrences": 1,
+                "source": "gemini"
+              }
+            ]
+          },
+          "scriptHash": "0e064d3776e0e36f672eb2c20a07b30ca61e21179f2c180ded67fea65c1b7b74",
+          "snapshotHash": "283345fa30c846340a09e87f435a64e286e7cbe44fb726b28ef5eecf2ce6145d",
+          "script": {
+            "id": "case-35ecfd58-1fae-487c-a9f3-704e2d4a012a",
+            "title": "test 03",
+            "languageCode": "ko-KR",
+            "text": "오늘은 에카파 티디엔엔을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 엑스 벡터 아키텍처는 타임 딜레이 뉴럴 네트워크, 즉 티디엔엔과 스태티스틱스 풀링을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다. 에카파 티디엔엔은 이 구조에 채널 어텐션과 계층 간 피처 결합을 추가합니다.\n\n초기 프레임 레이어는 원 디멘셔널 레스투넷 모듈로 재구성되고, 에스이 레스넷과 비슷한 스퀴즈 앤드 익사이테이션 블록이 채널 인터디펜던시를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤 멀티 레이어 피처 어그리게이션을 수행합니다. 마지막 어텐티브 스태티스틱스 풀링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다.\n\n성능은 복스셀렙 원과 복스에스알씨 이천십구 테스트 세트에서 평가합니다. 지표로는 이이알과 민 디씨에프를 함께 사용하며, 어댑티브 에스 놈도 적용합니다. 에카파 티디엔엔, 티디엔엔, 엑스 벡터, 레스투넷, 에스이 레스넷처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+            "targetTerms": [
+              {
+                "id": "gold-01",
+                "canonicalTerm": "TDNN",
+                "english": "Time Delay Neural Network",
+                "spokenAliases": [
+                  "티디엔엔"
+                ],
+                "expectedOccurrences": [
+                  2,
+                  4,
+                  6,
+                  10,
+                  11
+                ]
+              },
+              {
+                "id": "gold-02",
+                "canonicalTerm": "ECAPA-TDNN",
+                "english": "Emphasized Channel Attention, Propagation and Aggregation in TDNN",
+                "spokenAliases": [
+                  "에카파 티디엔엔"
+                ],
+                "expectedOccurrences": [
+                  1,
+                  5,
+                  9
+                ]
+              },
+              {
+                "id": "gold-03",
+                "canonicalTerm": "EER",
+                "english": "Equal Error Rate",
+                "spokenAliases": [
+                  "이이알"
+                ],
+                "expectedOccurrences": [
+                  8
+                ]
+              },
+              {
+                "id": "gold-04",
+                "canonicalTerm": "VoxSRC",
+                "english": "VoxCeleb Speaker Recognition Challenge",
+                "spokenAliases": [
+                  "복스에스알씨"
+                ],
+                "expectedOccurrences": [
+                  7
+                ]
+              },
+              {
+                "id": "gold-05",
+                "canonicalTerm": "x-vectors",
+                "english": "",
+                "spokenAliases": [
+                  "엑스벡터",
+                  "엑스 벡터"
+                ],
+                "expectedOccurrences": [
+                  3,
+                  12
+                ]
+              }
+            ],
+            "adaptationTerms": [
+              {
+                "id": "pdf-01",
+                "canonicalTerm": "TDNN",
+                "english": "Time Delay Neural Network",
+                "spokenAliases": [
+                  "티디엔엔"
+                ]
+              },
+              {
+                "id": "pdf-02",
+                "canonicalTerm": "ECAPA-TDNN",
+                "english": "Emphasized Channel Attention, Propagation and Aggregation in TDNN",
+                "spokenAliases": [
+                  "에카파 티디엔엔"
+                ]
+              },
+              {
+                "id": "pdf-03",
+                "canonicalTerm": "EER",
+                "english": "Equal Error Rate",
+                "spokenAliases": [
+                  "이이알"
+                ]
+              },
+              {
+                "id": "pdf-04",
+                "canonicalTerm": "MFA",
+                "english": "Multi-layer Feature Aggregation",
+                "spokenAliases": [
+                  "엠에프에이"
+                ]
+              },
+              {
+                "id": "pdf-05",
+                "canonicalTerm": "MUSAN",
+                "english": "",
+                "spokenAliases": [
+                  "무산"
+                ]
+              },
+              {
+                "id": "pdf-06",
+                "canonicalTerm": "PLDA",
+                "english": "Probabilistic Linear Discriminant Analysis",
+                "spokenAliases": [
+                  "피엘디에이"
+                ]
+              },
+              {
+                "id": "pdf-07",
+                "canonicalTerm": "VAD",
+                "english": "Voice Activity Detection",
+                "spokenAliases": [
+                  "브이에이디"
+                ]
+              },
+              {
+                "id": "pdf-08",
+                "canonicalTerm": "VoxCeleb",
+                "english": "",
+                "spokenAliases": [
+                  "복스셀럽"
+                ]
+              },
+              {
+                "id": "pdf-09",
+                "canonicalTerm": "MinDCF",
+                "english": "",
+                "spokenAliases": [
+                  "민디씨에프"
+                ]
+              },
+              {
+                "id": "pdf-10",
+                "canonicalTerm": "ResNet",
+                "english": "",
+                "spokenAliases": [
+                  "레즈넷"
+                ]
+              },
+              {
+                "id": "pdf-11",
+                "canonicalTerm": "VoxSRC",
+                "english": "VoxCeleb Speaker Recognition Challenge",
+                "spokenAliases": [
+                  "복스에스알씨"
+                ]
+              },
+              {
+                "id": "pdf-12",
+                "canonicalTerm": "Res2Net",
+                "english": "",
+                "spokenAliases": [
+                  "레즈투넷"
+                ]
+              },
+              {
+                "id": "pdf-13",
+                "canonicalTerm": "x-vectors",
+                "english": "",
+                "spokenAliases": [
+                  "엑스벡터",
+                  "엑스 벡터"
+                ]
+              },
+              {
+                "id": "pdf-14",
+                "canonicalTerm": "Conv1D",
+                "english": "",
+                "spokenAliases": [
+                  "콘브원디",
+                  "컨브원디"
+                ]
+              },
+              {
+                "id": "pdf-15",
+                "canonicalTerm": "Voice Activity Detection",
+                "english": "",
+                "spokenAliases": [
+                  "보이스 액티비티 디텍션"
+                ]
+              },
+              {
+                "id": "pdf-16",
+                "canonicalTerm": "r-vector",
+                "english": "",
+                "spokenAliases": [
+                  "알벡터",
+                  "알 벡터"
+                ]
+              },
+              {
+                "id": "pdf-17",
+                "canonicalTerm": "Batch Normalization",
+                "english": "",
+                "spokenAliases": [
+                  "배치 노멀라이제이션"
+                ]
+              },
+              {
+                "id": "pdf-18",
+                "canonicalTerm": "MFCCs",
+                "english": "",
+                "spokenAliases": [
+                  "엠에프씨씨"
+                ]
+              },
+              {
+                "id": "pdf-19",
+                "canonicalTerm": "Adam",
+                "english": "",
+                "spokenAliases": [
+                  "아담"
+                ]
+              },
+              {
+                "id": "pdf-20",
+                "canonicalTerm": "AAM-softmax",
+                "english": "",
+                "spokenAliases": [
+                  "에이에이엠 소프트맥스"
+                ]
+              },
+              {
+                "id": "pdf-21",
+                "canonicalTerm": "SE-ResNet",
+                "english": "",
+                "spokenAliases": [
+                  "에스이 레즈넷"
+                ]
+              },
+              {
+                "id": "pdf-22",
+                "canonicalTerm": "Brecht Desplanques",
+                "english": "",
+                "spokenAliases": [
+                  "브레히트 데스플랑크"
+                ]
+              },
+              {
+                "id": "pdf-23",
+                "canonicalTerm": "ReLU",
+                "english": "Rectified Linear Units",
+                "spokenAliases": [
+                  "렐루"
+                ]
+              },
+              {
+                "id": "pdf-24",
+                "canonicalTerm": "Kaldi",
+                "english": "",
+                "spokenAliases": [
+                  "칼디"
+                ]
+              },
+              {
+                "id": "pdf-25",
+                "canonicalTerm": "Squeeze-and-Excitation",
+                "english": "",
+                "spokenAliases": [
+                  "스퀴즈 앤 엑사이테이션"
+                ]
+              },
+              {
+                "id": "pdf-26",
+                "canonicalTerm": "SpecAugment",
+                "english": "",
+                "spokenAliases": [
+                  "스펙오그먼트"
+                ]
+              }
+            ],
+            "experimentIdentity": {
+              "studyId": "study-d19b1102-60ad-4093-a44b-59d1901e9e9b",
+              "caseId": "case-35ecfd58-1fae-487c-a9f3-704e2d4a012a",
+              "caseSnapshotId": "snapshot-283345fa30c846340a09e87f",
+              "glossaryId": "da998d15-f6a4-4af4-8224-ebbd1ea2d418",
+              "glossaryName": "3",
+              "glossaryHash": "d6ac1144063fe85e46c8e0861653fdbd1ace974a9d506011ea9f019026fa2f24",
+              "scriptHash": "0e064d3776e0e36f672eb2c20a07b30ca61e21179f2c180ded67fea65c1b7b74"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "study-1004034b-19b3-42ec-b55c-3514b45d102c",
+      "title": "테스트 논문 4",
+      "createdAt": "2026-08-09T10:45:20.876Z",
+      "cases": [
+        {
+          "id": "case-0631d607-e4c0-496c-a4ba-8ec1a54d43b2",
+          "studyId": "study-1004034b-19b3-42ec-b55c-3514b45d102c",
+          "snapshotId": "snapshot-2e0ff116802d448ba6faff71",
+          "title": "test 04",
+          "createdAt": "2026-08-09T10:53:46.486Z",
+          "glossary": {
+            "id": "8994387d-594d-48b3-8800-b25a7f624f65",
+            "name": "4",
+            "updatedAt": "2026-08-09T10:45:54.018Z",
+            "hash": "750847b8005a7e68526802f8c2748a2ff3561b2d4cf6de696c685078b25078b4",
+            "terms": [
+              {
+                "id": "66d8b38bb699",
+                "term": "FMS",
+                "english": "FMS",
+                "spokenAliases": [
+                  "에프엠에스"
+                ],
+                "easyExplanation": "특징 맵의 필터별 중요도를 가중치로 조절하는 특징 맵 스케일링 기술",
+                "pageNumber": 1,
+                "occurrences": 28,
+                "source": "gemini"
+              },
+              {
+                "id": "b8bfe9c2722a",
+                "term": "EER",
+                "english": "EER",
+                "spokenAliases": [
+                  "이이알"
+                ],
+                "easyExplanation": "오류 판단 기준의 균형을 측정하는 등가 오류율 평가 지표",
+                "pageNumber": 3,
+                "occurrences": 12,
+                "source": "gemini"
+              },
+              {
+                "id": "3b4b008193bd",
+                "term": "GRU",
+                "english": "GRU",
+                "spokenAliases": [
+                  "지알유"
+                ],
+                "easyExplanation": "기억 게이트를 활용해 음성 프레임 정보를 요약하는 순환 신경망 모델",
+                "pageNumber": 1,
+                "occurrences": 11,
+                "source": "gemini"
+              },
+              {
+                "id": "2505d6e0a14c",
+                "term": "TTA",
+                "english": "TTA",
+                "spokenAliases": [
+                  "티티에이"
+                ],
+                "easyExplanation": "평가 단계에서 음성 구간을 분할 추출하여 평균 수치를 계산하는 검증 기법",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "14492e7efb7b",
+                "term": "CBAM",
+                "english": "CBAM",
+                "spokenAliases": [
+                  "씨비에이엠",
+                  "시비에이엠"
+                ],
+                "easyExplanation": "채널과 공간 차원의 어텐션을 결합하여 특징 맵을 강화하는 모듈",
+                "pageNumber": 3,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "3967318c53c2",
+                "term": "RawNet",
+                "english": "RawNet",
+                "spokenAliases": [
+                  "로우넷",
+                  "라우넷"
+                ],
+                "easyExplanation": "원형 음성 파형을 직접 입력받아 화자를 인식하는 딥러닝 모델",
+                "pageNumber": 1,
+                "occurrences": 34,
+                "source": "gemini"
+              },
+              {
+                "id": "ee6edc2ef018",
+                "term": "speaker verification",
+                "english": "speaker verification",
+                "spokenAliases": [
+                  "스피커 베리피케이션"
+                ],
+                "easyExplanation": "주어진 음성이 특정 화자의 음성인지 여부를 판별하는 기술",
+                "pageNumber": 1,
+                "occurrences": 22,
+                "source": "gemini"
+              },
+              {
+                "id": "3a58299fb23a",
+                "term": "raw waveform",
+                "english": "raw waveform",
+                "spokenAliases": [
+                  "로우 웨이브폼",
+                  "라우 웨이브폼"
+                ],
+                "easyExplanation": "별도의 변환이나 전처리 과정을 거치지 않은 순수한 상태의 음성 신호 파형",
+                "pageNumber": 1,
+                "occurrences": 17,
+                "source": "gemini"
+              },
+              {
+                "id": "de2f62e8add9",
+                "term": "VoxCeleb1",
+                "english": "VoxCeleb1",
+                "spokenAliases": [
+                  "복스셀렙원"
+                ],
+                "easyExplanation": "유튜브에서 수집한 대규모 화자 인식 연구용 음성 데이터셋",
+                "pageNumber": 1,
+                "occurrences": 14,
+                "source": "gemini"
+              },
+              {
+                "id": "2fb65751159f",
+                "term": "sinc-conv",
+                "english": "sinc-conv",
+                "spokenAliases": [
+                  "싱크 컨브",
+                  "싱크 콘브"
+                ],
+                "easyExplanation": "파형에서 직접 주파수 영역의 특징을 추출하는 대역통과 필터 연산 레이어",
+                "pageNumber": 1,
+                "occurrences": 11,
+                "source": "gemini"
+              },
+              {
+                "id": "68864a179d7f",
+                "term": "RawNet2",
+                "english": "RawNet2",
+                "spokenAliases": [
+                  "로우넷투",
+                  "라우넷투"
+                ],
+                "easyExplanation": "특징 맵 스케일링과 싱크 합성곱을 적용해 성능을 개선한 화자 검증 모델",
+                "pageNumber": 2,
+                "occurrences": 8,
+                "source": "gemini"
+              },
+              {
+                "id": "f56054fcaed1",
+                "term": "DNNs",
+                "english": "DNNs",
+                "spokenAliases": [
+                  "디엔엔즈",
+                  "디엔엔"
+                ],
+                "easyExplanation": "데이터의 고차원 특징을 추상화하여 학습하는 심층 신경망 모델",
+                "pageNumber": 1,
+                "occurrences": 7,
+                "source": "gemini"
+              },
+              {
+                "id": "9c7637ae823c",
+                "term": "spectrogram",
+                "english": "spectrogram",
+                "spokenAliases": [
+                  "스펙트로그램"
+                ],
+                "easyExplanation": "음성 신호의 주파수 변화를 시간에 따라 시각적으로 표현한 이미지",
+                "pageNumber": 1,
+                "occurrences": 7,
+                "source": "gemini"
+              },
+              {
+                "id": "9b339b10b680",
+                "term": "residual block",
+                "english": "residual block",
+                "spokenAliases": [
+                  "레지듀얼 블록"
+                ],
+                "easyExplanation": "입력 데이터를 출력에 더해주는 잔차 연결 구조를 적용한 신경망 단편",
+                "pageNumber": 1,
+                "occurrences": 7,
+                "source": "gemini"
+              },
+              {
+                "id": "4582e6a8904e",
+                "term": "VoxCeleb2",
+                "english": "VoxCeleb2",
+                "spokenAliases": [
+                  "복스셀렙투"
+                ],
+                "easyExplanation": "VoxCeleb1을 확장하여 더 많은 화자와 음성을 포함하는 데이터셋",
+                "pageNumber": 2,
+                "occurrences": 6,
+                "source": "gemini"
+              },
+              {
+                "id": "ebbf1d090685",
+                "term": "attention mechanism",
+                "english": "attention mechanism",
+                "spokenAliases": [
+                  "어텐션 메커니즘"
+                ],
+                "easyExplanation": "입력 데이터 중 중요한 부분에 가중치를 두어 집중 처리하는 방식",
+                "pageNumber": 1,
+                "occurrences": 5,
+                "source": "gemini"
+              },
+              {
+                "id": "4b90388b1abe",
+                "term": "self-attentive pooling",
+                "english": "self-attentive pooling",
+                "spokenAliases": [
+                  "셀프 어텐티브 풀링"
+                ],
+                "easyExplanation": "프레임 단위 음성 특징 중 중요한 부분에 가중치를 두어 하나로 요약하는 방식",
+                "pageNumber": 1,
+                "occurrences": 5,
+                "source": "gemini"
+              },
+              {
+                "id": "0190920d0d47",
+                "term": "SincNet",
+                "english": "SincNet",
+                "spokenAliases": [
+                  "싱크넷"
+                ],
+                "easyExplanation": "음성 신호의 파형을 직접 처리하기 위해 밴드패스 필터를 사용하는 신경망 구조",
+                "pageNumber": 1,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "c76b67471dd4",
+                "term": "Feature Map Scaling",
+                "english": "Feature Map Scaling",
+                "spokenAliases": [
+                  "피처 맵 스케일링",
+                  "피쳐 맵 스케일링"
+                ],
+                "easyExplanation": "신경망 중간 특징 맵의 필터별 중요도를 조정하는 기술",
+                "pageNumber": 1,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "1c70f7fabcbe",
+                "term": "deep neural networks",
+                "english": "deep neural networks",
+                "spokenAliases": [
+                  "딥 뉴럴 네트워크"
+                ],
+                "easyExplanation": "여러 은닉층을 통해 복잡한 패턴을 학습하는 인공지능 신경망 구조",
+                "pageNumber": 1,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "fed0b9d8ccff",
+                "term": "LeakyReLU",
+                "english": "LeakyReLU",
+                "spokenAliases": [
+                  "리키리루",
+                  "리키 리루"
+                ],
+                "easyExplanation": "음수 입력값에도 작은 기울기를 부여해 신호 손실을 방지하는 활성화 함수",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "0126cd0b8d8b",
+                "term": "GhostVLAD",
+                "english": "GhostVLAD",
+                "spokenAliases": [
+                  "고스트블래드"
+                ],
+                "easyExplanation": "불필요한 음성 프레임을 걸러내고 음성 특징을 집계하는 집계 신경망 구조",
+                "pageNumber": 4,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "81a26492cabe",
+                "term": "sinc-convolution",
+                "english": "sinc-convolution",
+                "spokenAliases": [
+                  "싱크 컨볼루션",
+                  "싱크 합성곱"
+                ],
+                "easyExplanation": "대역통과 필터를 형성하여 파형에서 직접 주파수 특징을 추출하는 방식",
+                "pageNumber": 1,
+                "occurrences": 3,
+                "source": "gemini"
+              },
+              {
+                "id": "899937d7dd19",
+                "term": "equal error rate",
+                "english": "equal error rate",
+                "spokenAliases": [
+                  "이퀄 에러 레이트"
+                ],
+                "easyExplanation": "오인식률과 오거부률이 같아지는 지점의 오류율을 나타내는 평가 지표",
+                "pageNumber": 1,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "1b8dca089bb3",
+                "term": "gated recurrent unit",
+                "english": "gated recurrent unit",
+                "spokenAliases": [
+                  "게이티드 리커런트 유닛"
+                ],
+                "easyExplanation": "시계열 순차 데이터를 효율적으로 처리하기 위한 순환 신경망 구조",
+                "pageNumber": 1,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "ba61d8ea27ec",
+                "term": "Mel-frequency cepstral coefficients",
+                "english": "Mel-frequency cepstral coefficients",
+                "spokenAliases": [
+                  "멜 프리퀀시 셉스트럴 코에피셔츠"
+                ],
+                "easyExplanation": "사람의 청각 특성을 반영하여 음성 신호의 특징을 추출하는 방식",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "d35b5423b898",
+                "term": "cosine similarity",
+                "english": "cosine similarity",
+                "spokenAliases": [
+                  "코사인 시밀러리티",
+                  "코사인 유사도"
+                ],
+                "easyExplanation": "두 벡터 사이의 각도 코사인 값을 이용해 유사한 정도를 측정하는 방식",
+                "pageNumber": 2,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "f5c43882c7bf",
+                "term": "test time augmentation",
+                "english": "test time augmentation",
+                "spokenAliases": [
+                  "테스트 타임 오그멘테이션"
+                ],
+                "easyExplanation": "평가 시 입력 데이터를 여러 방식으로 변형하여 예측의 안정성을 높이는 기법",
+                "pageNumber": 2,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "049b4d199eb6",
+                "term": "relative error reduction",
+                "english": "relative error reduction",
+                "spokenAliases": [
+                  "릴러티브 에러 리덕션"
+                ],
+                "easyExplanation": "기존 모델 대비 오류율이 얼마나 감소했는지를 비율로 나타낸 지표",
+                "pageNumber": 2,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "cd8d46750b53",
+                "term": "AMSGrad",
+                "english": "AMSGrad",
+                "spokenAliases": [
+                  "에이엠에스그래드"
+                ],
+                "easyExplanation": "신경망 학습 과정에서 가중치를 안정적으로 업데이트하는 최적화 알고리즘",
+                "pageNumber": 3,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "55ae881dce6a",
+                "term": "squeeze-excitation",
+                "english": "squeeze-excitation",
+                "spokenAliases": [
+                  "스퀴즈 엑사이테이션"
+                ],
+                "easyExplanation": "채널별 중요도를 재가중하여 신경망의 특징 표현력을 향상시키는 기술",
+                "pageNumber": 4,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "dfecc9eaf34d",
+                "term": "PyTorch",
+                "english": "PyTorch",
+                "spokenAliases": [
+                  "파이토치"
+                ],
+                "easyExplanation": "딥러닝 모델 개발 및 구현에 광범위하게 쓰이는 오픈소스 프레임워크",
+                "pageNumber": 5,
+                "occurrences": 1,
+                "source": "gemini"
+              }
+            ]
+          },
+          "scriptHash": "2a27cf0ba7d03f5850206ad80b1d5b98563708d7cf97b8b8292dd6d939ec8d1e",
+          "snapshotHash": "2e0ff116802d448ba6faff71ec14c8f74c844ff9e7bf79320508893dbe5aa831",
+          "script": {
+            "id": "case-0631d607-e4c0-496c-a4ba-8ec1a54d43b2",
+            "title": "test 04",
+            "languageCode": "ko-KR",
+            "text": "오늘은 로 웨이브폼을 직접 입력하는 텍스트 인디펜던트 스피커 베리피케이션 모델을 설명하겠습니다. 로넷은 수작업 음향 특징 대신 원시 파형에서 스피커 임베딩을 추출해 처리 파이프라인을 단순화합니다. 이 연구는 로넷의 피처 맵을 조절하기 위해 피처 맵 스케일링, 줄여서 에프엠에스를 제안합니다.\n\n에프엠에스는 시그모이드 논리니어 펑션을 적용한 스케일 벡터를 사용합니다. 스케일 벡터는 필터 수와 같은 차원을 가지며 피처 맵에 멀티플리커티브 스케일링을 적용하거나, 애디티블리 스케일링하거나, 두 방식을 연속으로 사용합니다. 첫 컨볼루션 레이어는 싱크넷의 싱크 컨볼루션 레이어로 교체해 학습 가능한 필터를 구성할 수 있습니다. 이후 지알유가 프레임 정보를 모아 코드 벡터를 생성합니다.\n\n실험은 복스셀렙 원 평가 데이터셋에서 진행하고, 시스템의 이퀄 에러 레이트 인 이이알을 비교합니다. 로넷, 로 웨이브폼, 에프엠에스, 싱크 컨볼루션, 싱크넷이 정확히 인식되어야 제안 방법과 입력 표현을 구분할 수 있습니다. 특히 로넷이 일반 단어로 바뀌지 않고 RawNet으로 표기되는지 확인하겠습니다.",
+            "targetTerms": [
+              {
+                "id": "gold-01",
+                "canonicalTerm": "FMS",
+                "english": "FMS",
+                "spokenAliases": [
+                  "에프엠에스"
+                ],
+                "expectedOccurrences": [
+                  3,
+                  4,
+                  10
+                ]
+              },
+              {
+                "id": "gold-02",
+                "canonicalTerm": "EER",
+                "english": "EER",
+                "spokenAliases": [
+                  "이이알"
+                ],
+                "expectedOccurrences": [
+                  9
+                ]
+              },
+              {
+                "id": "gold-03",
+                "canonicalTerm": "GRU",
+                "english": "GRU",
+                "spokenAliases": [
+                  "지알유"
+                ],
+                "expectedOccurrences": [
+                  7
+                ]
+              },
+              {
+                "id": "gold-04",
+                "canonicalTerm": "RawNet",
+                "english": "RawNet",
+                "spokenAliases": [
+                  "로우넷",
+                  "라우넷"
+                ],
+                "expectedOccurrences": [
+                  13
+                ]
+              },
+              {
+                "id": "gold-05",
+                "canonicalTerm": "speaker verification",
+                "english": "speaker verification",
+                "spokenAliases": [
+                  "스피커 베리피케이션"
+                ],
+                "expectedOccurrences": [
+                  1
+                ]
+              },
+              {
+                "id": "gold-06",
+                "canonicalTerm": "SincNet",
+                "english": "SincNet",
+                "spokenAliases": [
+                  "싱크넷"
+                ],
+                "expectedOccurrences": [
+                  5,
+                  12
+                ]
+              },
+              {
+                "id": "gold-07",
+                "canonicalTerm": "Feature Map Scaling",
+                "english": "Feature Map Scaling",
+                "spokenAliases": [
+                  "피처 맵 스케일링",
+                  "피쳐 맵 스케일링"
+                ],
+                "expectedOccurrences": [
+                  2
+                ]
+              },
+              {
+                "id": "gold-08",
+                "canonicalTerm": "sinc-convolution",
+                "english": "sinc-convolution",
+                "spokenAliases": [
+                  "싱크 컨볼루션",
+                  "싱크 합성곱"
+                ],
+                "expectedOccurrences": [
+                  6,
+                  11
+                ]
+              },
+              {
+                "id": "gold-09",
+                "canonicalTerm": "equal error rate",
+                "english": "equal error rate",
+                "spokenAliases": [
+                  "이퀄 에러 레이트"
+                ],
+                "expectedOccurrences": [
+                  8
+                ]
+              }
+            ],
+            "adaptationTerms": [
+              {
+                "id": "pdf-01",
+                "canonicalTerm": "FMS",
+                "english": "FMS",
+                "spokenAliases": [
+                  "에프엠에스"
+                ]
+              },
+              {
+                "id": "pdf-02",
+                "canonicalTerm": "EER",
+                "english": "EER",
+                "spokenAliases": [
+                  "이이알"
+                ]
+              },
+              {
+                "id": "pdf-03",
+                "canonicalTerm": "GRU",
+                "english": "GRU",
+                "spokenAliases": [
+                  "지알유"
+                ]
+              },
+              {
+                "id": "pdf-04",
+                "canonicalTerm": "TTA",
+                "english": "TTA",
+                "spokenAliases": [
+                  "티티에이"
+                ]
+              },
+              {
+                "id": "pdf-05",
+                "canonicalTerm": "CBAM",
+                "english": "CBAM",
+                "spokenAliases": [
+                  "씨비에이엠",
+                  "시비에이엠"
+                ]
+              },
+              {
+                "id": "pdf-06",
+                "canonicalTerm": "RawNet",
+                "english": "RawNet",
+                "spokenAliases": [
+                  "로우넷",
+                  "라우넷"
+                ]
+              },
+              {
+                "id": "pdf-07",
+                "canonicalTerm": "speaker verification",
+                "english": "speaker verification",
+                "spokenAliases": [
+                  "스피커 베리피케이션"
+                ]
+              },
+              {
+                "id": "pdf-08",
+                "canonicalTerm": "raw waveform",
+                "english": "raw waveform",
+                "spokenAliases": [
+                  "로우 웨이브폼",
+                  "라우 웨이브폼"
+                ]
+              },
+              {
+                "id": "pdf-09",
+                "canonicalTerm": "VoxCeleb1",
+                "english": "VoxCeleb1",
+                "spokenAliases": [
+                  "복스셀렙원"
+                ]
+              },
+              {
+                "id": "pdf-10",
+                "canonicalTerm": "sinc-conv",
+                "english": "sinc-conv",
+                "spokenAliases": [
+                  "싱크 컨브",
+                  "싱크 콘브"
+                ]
+              },
+              {
+                "id": "pdf-11",
+                "canonicalTerm": "RawNet2",
+                "english": "RawNet2",
+                "spokenAliases": [
+                  "로우넷투",
+                  "라우넷투"
+                ]
+              },
+              {
+                "id": "pdf-12",
+                "canonicalTerm": "DNNs",
+                "english": "DNNs",
+                "spokenAliases": [
+                  "디엔엔즈",
+                  "디엔엔"
+                ]
+              },
+              {
+                "id": "pdf-13",
+                "canonicalTerm": "spectrogram",
+                "english": "spectrogram",
+                "spokenAliases": [
+                  "스펙트로그램"
+                ]
+              },
+              {
+                "id": "pdf-14",
+                "canonicalTerm": "residual block",
+                "english": "residual block",
+                "spokenAliases": [
+                  "레지듀얼 블록"
+                ]
+              },
+              {
+                "id": "pdf-15",
+                "canonicalTerm": "VoxCeleb2",
+                "english": "VoxCeleb2",
+                "spokenAliases": [
+                  "복스셀렙투"
+                ]
+              },
+              {
+                "id": "pdf-16",
+                "canonicalTerm": "attention mechanism",
+                "english": "attention mechanism",
+                "spokenAliases": [
+                  "어텐션 메커니즘"
+                ]
+              },
+              {
+                "id": "pdf-17",
+                "canonicalTerm": "self-attentive pooling",
+                "english": "self-attentive pooling",
+                "spokenAliases": [
+                  "셀프 어텐티브 풀링"
+                ]
+              },
+              {
+                "id": "pdf-18",
+                "canonicalTerm": "SincNet",
+                "english": "SincNet",
+                "spokenAliases": [
+                  "싱크넷"
+                ]
+              },
+              {
+                "id": "pdf-19",
+                "canonicalTerm": "Feature Map Scaling",
+                "english": "Feature Map Scaling",
+                "spokenAliases": [
+                  "피처 맵 스케일링",
+                  "피쳐 맵 스케일링"
+                ]
+              },
+              {
+                "id": "pdf-20",
+                "canonicalTerm": "deep neural networks",
+                "english": "deep neural networks",
+                "spokenAliases": [
+                  "딥 뉴럴 네트워크"
+                ]
+              },
+              {
+                "id": "pdf-21",
+                "canonicalTerm": "LeakyReLU",
+                "english": "LeakyReLU",
+                "spokenAliases": [
+                  "리키리루",
+                  "리키 리루"
+                ]
+              },
+              {
+                "id": "pdf-22",
+                "canonicalTerm": "GhostVLAD",
+                "english": "GhostVLAD",
+                "spokenAliases": [
+                  "고스트블래드"
+                ]
+              },
+              {
+                "id": "pdf-23",
+                "canonicalTerm": "sinc-convolution",
+                "english": "sinc-convolution",
+                "spokenAliases": [
+                  "싱크 컨볼루션",
+                  "싱크 합성곱"
+                ]
+              },
+              {
+                "id": "pdf-24",
+                "canonicalTerm": "equal error rate",
+                "english": "equal error rate",
+                "spokenAliases": [
+                  "이퀄 에러 레이트"
+                ]
+              },
+              {
+                "id": "pdf-25",
+                "canonicalTerm": "gated recurrent unit",
+                "english": "gated recurrent unit",
+                "spokenAliases": [
+                  "게이티드 리커런트 유닛"
+                ]
+              },
+              {
+                "id": "pdf-26",
+                "canonicalTerm": "Mel-frequency cepstral coefficients",
+                "english": "Mel-frequency cepstral coefficients",
+                "spokenAliases": [
+                  "멜 프리퀀시 셉스트럴 코에피셔츠"
+                ]
+              },
+              {
+                "id": "pdf-27",
+                "canonicalTerm": "cosine similarity",
+                "english": "cosine similarity",
+                "spokenAliases": [
+                  "코사인 시밀러리티",
+                  "코사인 유사도"
+                ]
+              },
+              {
+                "id": "pdf-28",
+                "canonicalTerm": "test time augmentation",
+                "english": "test time augmentation",
+                "spokenAliases": [
+                  "테스트 타임 오그멘테이션"
+                ]
+              },
+              {
+                "id": "pdf-29",
+                "canonicalTerm": "relative error reduction",
+                "english": "relative error reduction",
+                "spokenAliases": [
+                  "릴러티브 에러 리덕션"
+                ]
+              },
+              {
+                "id": "pdf-30",
+                "canonicalTerm": "AMSGrad",
+                "english": "AMSGrad",
+                "spokenAliases": [
+                  "에이엠에스그래드"
+                ]
+              },
+              {
+                "id": "pdf-31",
+                "canonicalTerm": "squeeze-excitation",
+                "english": "squeeze-excitation",
+                "spokenAliases": [
+                  "스퀴즈 엑사이테이션"
+                ]
+              },
+              {
+                "id": "pdf-32",
+                "canonicalTerm": "PyTorch",
+                "english": "PyTorch",
+                "spokenAliases": [
+                  "파이토치"
+                ]
+              }
+            ],
+            "experimentIdentity": {
+              "studyId": "study-1004034b-19b3-42ec-b55c-3514b45d102c",
+              "caseId": "case-0631d607-e4c0-496c-a4ba-8ec1a54d43b2",
+              "caseSnapshotId": "snapshot-2e0ff116802d448ba6faff71",
+              "glossaryId": "8994387d-594d-48b3-8800-b25a7f624f65",
+              "glossaryName": "4",
+              "glossaryHash": "750847b8005a7e68526802f8c2748a2ff3561b2d4cf6de696c685078b25078b4",
+              "scriptHash": "2a27cf0ba7d03f5850206ad80b1d5b98563708d7cf97b8b8292dd6d939ec8d1e"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "study-0d51d355-68c8-4827-8161-8c068ef40b27",
+      "title": "테스트 논문 05",
+      "createdAt": "2026-08-09T10:58:01.793Z",
+      "cases": [
+        {
+          "id": "case-2e6c63e2-fcaa-4e7f-81d4-ee21a7f9459f",
+          "studyId": "study-0d51d355-68c8-4827-8161-8c068ef40b27",
+          "snapshotId": "snapshot-a475ee2ef617cb1fa3ff883e",
+          "title": "test 05",
+          "createdAt": "2026-08-09T10:59:29.732Z",
+          "glossary": {
+            "id": "2af485d6-20bf-432b-b659-3d9ad568eebd",
+            "name": "5",
+            "updatedAt": "2026-08-09T10:58:27.801Z",
+            "hash": "7f7b603bff2b60b753ecb5161ddd3805634702d2f7c7117b4b6b1211b25f96cd",
+            "terms": [
+              {
+                "id": "e3eaee01f47f",
+                "term": "WER",
+                "english": "Word Error Rate",
+                "spokenAliases": [
+                  "더블유이알",
+                  "워드 에러 레이트"
+                ],
+                "easyExplanation": "음성 인식 시스템의 정확도를 측정하는 단어 오류율 지표",
+                "pageNumber": 1,
+                "occurrences": 45,
+                "source": "gemini"
+              },
+              {
+                "id": "03b0f06e5e12",
+                "term": "LSTM",
+                "english": "LSTM",
+                "spokenAliases": [
+                  "엘에스티엠"
+                ],
+                "easyExplanation": "시계열 음성 데이터 처리에 사용되는 순환 신경망 구조",
+                "pageNumber": 1,
+                "occurrences": 28,
+                "source": "gemini"
+              },
+              {
+                "id": "d36ad809371b",
+                "term": "VCTK",
+                "english": "VCTK",
+                "spokenAliases": [
+                  "브이씨티케이"
+                ],
+                "easyExplanation": "다양한 화자의 영문 음성 데이터를 포함하는 데이터셋",
+                "pageNumber": 2,
+                "occurrences": 9,
+                "source": "gemini"
+              },
+              {
+                "id": "2b53576b0a0e",
+                "term": "SDR",
+                "english": "Source to Distortion Ratio",
+                "spokenAliases": [
+                  "에스디알"
+                ],
+                "easyExplanation": "분리된 음성 신호의 왜곡 대비 신호 비율을 나타내는 음질 평가 지표",
+                "pageNumber": 3,
+                "occurrences": 9,
+                "source": "gemini"
+              },
+              {
+                "id": "5ae53a5eba48",
+                "term": "STFT",
+                "english": "STFT",
+                "spokenAliases": [
+                  "에스티에프티"
+                ],
+                "easyExplanation": "시간에 따른 음성의 주파수 변화를 분석하는 푸리에 변환 기법",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "72d50e9b9d2e",
+                "term": "VoiceFilter",
+                "english": "VoiceFilter",
+                "spokenAliases": [
+                  "보이스필터",
+                  "보이스 필터"
+                ],
+                "easyExplanation": "타겟 화자의 음성만 분리하는 딥러닝 기반 음성 추출 기술",
+                "pageNumber": 1,
+                "occurrences": 58,
+                "source": "gemini"
+              },
+              {
+                "id": "27a6b39fffb3",
+                "term": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치"
+                ],
+                "easyExplanation": "오디오북 기반의 음성 인식 연구용 공개 데이터셋",
+                "pageNumber": 2,
+                "occurrences": 12,
+                "source": "gemini"
+              },
+              {
+                "id": "ed55b6b1318b",
+                "term": "d-vector",
+                "english": "d-vector",
+                "spokenAliases": [
+                  "디벡터",
+                  "디 벡터"
+                ],
+                "easyExplanation": "화자의 음성 특성을 고정된 차원의 벡터로 표현한 임베딩",
+                "pageNumber": 2,
+                "occurrences": 11,
+                "source": "gemini"
+              },
+              {
+                "id": "2134f4e8d805",
+                "term": "Speaker Recognition",
+                "english": "Speaker Recognition",
+                "spokenAliases": [
+                  "스피커 레코그니션",
+                  "화자 인식"
+                ],
+                "easyExplanation": "음성 신호로부터 화자의 신원을 식별하는 기술",
+                "pageNumber": 1,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "5d75f89ff44d",
+                "term": "VoxCeleb",
+                "english": "VoxCeleb",
+                "spokenAliases": [
+                  "복스셀럽"
+                ],
+                "easyExplanation": "유튜브 동영상에서 추출한 대규모 화자 인식 연구용 데이터셋",
+                "pageNumber": 2,
+                "occurrences": 4,
+                "source": "gemini"
+              },
+              {
+                "id": "334caa25599a",
+                "term": "Spectrogram Masking",
+                "english": "Spectrogram Masking",
+                "spokenAliases": [
+                  "스펙트로그램 마스킹"
+                ],
+                "easyExplanation": "스펙트로그램 상에서 특정 음성 영역만 필터링하는 방식",
+                "pageNumber": 1,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "33f95e1f0f3c",
+                "term": "Deep Attractor Network",
+                "english": "Deep Attractor Network",
+                "spokenAliases": [
+                  "딥 어트랙터 네트워크"
+                ],
+                "easyExplanation": "임베딩 공간에서 화자별 끌개 포인트를 형성하여 음성을 분리하는 모델",
+                "pageNumber": 1,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "f3e26ebf571d",
+                "term": "Voice Filtering",
+                "english": "Voice Filtering",
+                "spokenAliases": [
+                  "보이스 필터링"
+                ],
+                "easyExplanation": "참조 음성을 기반으로 혼합 신호에서 특정 화자의 음성만 걸러내는 과정",
+                "pageNumber": 1,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "0e88ab3edc61",
+                "term": "Inverse STFT",
+                "english": "Inverse STFT",
+                "spokenAliases": [
+                  "인버스 에스티에프티"
+                ],
+                "easyExplanation": "주파수 영역 스펙트로그램을 시간 영역 오디오 신호로 복원하는 과정",
+                "pageNumber": 2,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "fbf261730ee1",
+                "term": "Speaker Diarization",
+                "english": "Speaker Diarization",
+                "spokenAliases": [
+                  "스피커 다이어라이제이션",
+                  "화자 분할"
+                ],
+                "easyExplanation": "음성 녹음에서 화자별 발화 구간을 식별하고 구분하는 기술",
+                "pageNumber": 5,
+                "occurrences": 2,
+                "source": "gemini"
+              },
+              {
+                "id": "a2a6b674b080",
+                "term": "Deep Clustering",
+                "english": "Deep Clustering",
+                "spokenAliases": [
+                  "딥 클러스터링"
+                ],
+                "easyExplanation": "신경망 임베딩을 활용하여 혼합 음성을 화자별로 군집화하여 분리하는 기술",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "c02b7bae8402",
+                "term": "GEV beamformer",
+                "english": "GEV beamformer",
+                "spokenAliases": [
+                  "지이브이 빔포머"
+                ],
+                "easyExplanation": "일반화된 고유값 분해 기법을 이용하여 잡음을 제거하는 빔포밍 방식",
+                "pageNumber": 1,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "39aa7cd3cf15",
+                "term": "MultiReader",
+                "english": "MultiReader",
+                "spokenAliases": [
+                  "멀티리더"
+                ],
+                "easyExplanation": "여러 종류의 음성 데이터셋을 병합하여 신경망을 학습시키는 기법",
+                "pageNumber": 2,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "899937d7dd19",
+                "term": "Equal Error Rate",
+                "english": "Equal Error Rate",
+                "spokenAliases": [
+                  "이퀄 에러 레이트",
+                  "이이알"
+                ],
+                "easyExplanation": "화자 검증 시스템에서 오인식률과 거부율이 일치하는 지점의 오류율",
+                "pageNumber": 2,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "8d522886197a",
+                "term": "log-mel filterbank",
+                "english": "log-mel filterbank",
+                "spokenAliases": [
+                  "로그멜 필터뱅크"
+                ],
+                "easyExplanation": "사람의 청각 특성을 반영하여 음성 스펙트럼을 변환한 특성 추출 방식",
+                "pageNumber": 2,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "e8e7e7e1dc6e",
+                "term": "Sigmoid",
+                "english": "Sigmoid",
+                "spokenAliases": [
+                  "시그모이드"
+                ],
+                "easyExplanation": "입력값을 0과 1 사이의 확률값으로 변환하는 신경망 활성화 함수",
+                "pageNumber": 2,
+                "occurrences": 1,
+                "source": "gemini"
+              },
+              {
+                "id": "223364cb0e34",
+                "term": "ReLU",
+                "english": "ReLU",
+                "spokenAliases": [
+                  "렐루"
+                ],
+                "easyExplanation": "음수 입력값을 0으로 처리하는 인공신경망 활성화 함수",
+                "pageNumber": 2,
+                "occurrences": 1,
+                "source": "gemini"
+              }
+            ]
+          },
+          "scriptHash": "c5c08e1efb8b366cc07e1c958ed349c29bf8bfc48bffe4be67ce7bdac80ad8ab",
+          "snapshotHash": "a475ee2ef617cb1fa3ff883e27a2eb67e5da0cf4f3cdc497be67c84db1b21f82",
+          "script": {
+            "id": "case-2e6c63e2-fcaa-4e7f-81d4-ee21a7f9459f",
+            "title": "test 05",
+            "languageCode": "ko-KR",
+            "text": "오늘은 여러 사람이 동시에 말하는 신호에서 목표 화자의 음성만 분리하는 보이스필터를 설명하겠습니다. 보이스필터는 타기티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다. 시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고, 서로 분리해 학습한 두 개의 뉴럴 네트워크를 결합합니다.\n\n첫 번째 스피커 리코그니션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다. 엘에스티엠 기반 스피커 인코더가 고정된 이백오십육 차원의 디 벡터를 만들면, 두 번째 스펙트로그램 마스킹 네트워크가 노이지 스펙트로그램과 스피커 임베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다. 마스크를 매그니튜드 스펙트로그램에 적용한 뒤 인버스 에스티에프티로 음성을 복원합니다.\n\n평가에서는 멀티 스피커 시그널의 더블유이알이 크게 줄어드는지 확인하고, 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다. 보이스필터, 디 벡터, 엘에스티엠, 에스티에프티처럼 짧은 약어와 고유 모델명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다. 또한 소스 세퍼레이션과 스피커 리코그니션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+            "targetTerms": [
+              {
+                "id": "gold-01",
+                "canonicalTerm": "WER",
+                "english": "Word Error Rate",
+                "spokenAliases": [
+                  "더블유이알",
+                  "워드 에러 레이트"
+                ],
+                "expectedOccurrences": [
+                  9
+                ]
+              },
+              {
+                "id": "gold-02",
+                "canonicalTerm": "LSTM",
+                "english": "LSTM",
+                "spokenAliases": [
+                  "엘에스티엠"
+                ],
+                "expectedOccurrences": [
+                  4,
+                  12
+                ]
+              },
+              {
+                "id": "gold-03",
+                "canonicalTerm": "STFT",
+                "english": "STFT",
+                "spokenAliases": [
+                  "에스티에프티"
+                ],
+                "expectedOccurrences": [
+                  8,
+                  13
+                ]
+              },
+              {
+                "id": "gold-04",
+                "canonicalTerm": "VoiceFilter",
+                "english": "VoiceFilter",
+                "spokenAliases": [
+                  "보이스필터",
+                  "보이스 필터"
+                ],
+                "expectedOccurrences": [
+                  1,
+                  2,
+                  10
+                ]
+              },
+              {
+                "id": "gold-05",
+                "canonicalTerm": "d-vector",
+                "english": "d-vector",
+                "spokenAliases": [
+                  "디벡터",
+                  "디 벡터"
+                ],
+                "expectedOccurrences": [
+                  5,
+                  11
+                ]
+              },
+              {
+                "id": "gold-06",
+                "canonicalTerm": "Spectrogram Masking",
+                "english": "Spectrogram Masking",
+                "spokenAliases": [
+                  "스펙트로그램 마스킹"
+                ],
+                "expectedOccurrences": [
+                  3,
+                  6
+                ]
+              },
+              {
+                "id": "gold-07",
+                "canonicalTerm": "Inverse STFT",
+                "english": "Inverse STFT",
+                "spokenAliases": [
+                  "인버스 에스티에프티"
+                ],
+                "expectedOccurrences": [
+                  7
+                ]
+              }
+            ],
+            "adaptationTerms": [
+              {
+                "id": "pdf-01",
+                "canonicalTerm": "WER",
+                "english": "Word Error Rate",
+                "spokenAliases": [
+                  "더블유이알",
+                  "워드 에러 레이트"
+                ]
+              },
+              {
+                "id": "pdf-02",
+                "canonicalTerm": "LSTM",
+                "english": "LSTM",
+                "spokenAliases": [
+                  "엘에스티엠"
+                ]
+              },
+              {
+                "id": "pdf-03",
+                "canonicalTerm": "VCTK",
+                "english": "VCTK",
+                "spokenAliases": [
+                  "브이씨티케이"
+                ]
+              },
+              {
+                "id": "pdf-04",
+                "canonicalTerm": "SDR",
+                "english": "Source to Distortion Ratio",
+                "spokenAliases": [
+                  "에스디알"
+                ]
+              },
+              {
+                "id": "pdf-05",
+                "canonicalTerm": "STFT",
+                "english": "STFT",
+                "spokenAliases": [
+                  "에스티에프티"
+                ]
+              },
+              {
+                "id": "pdf-06",
+                "canonicalTerm": "VoiceFilter",
+                "english": "VoiceFilter",
+                "spokenAliases": [
+                  "보이스필터",
+                  "보이스 필터"
+                ]
+              },
+              {
+                "id": "pdf-07",
+                "canonicalTerm": "LibriSpeech",
+                "english": "LibriSpeech",
+                "spokenAliases": [
+                  "리브리스피치"
+                ]
+              },
+              {
+                "id": "pdf-08",
+                "canonicalTerm": "d-vector",
+                "english": "d-vector",
+                "spokenAliases": [
+                  "디벡터",
+                  "디 벡터"
+                ]
+              },
+              {
+                "id": "pdf-09",
+                "canonicalTerm": "Speaker Recognition",
+                "english": "Speaker Recognition",
+                "spokenAliases": [
+                  "스피커 레코그니션",
+                  "화자 인식"
+                ]
+              },
+              {
+                "id": "pdf-10",
+                "canonicalTerm": "VoxCeleb",
+                "english": "VoxCeleb",
+                "spokenAliases": [
+                  "복스셀럽"
+                ]
+              },
+              {
+                "id": "pdf-11",
+                "canonicalTerm": "Spectrogram Masking",
+                "english": "Spectrogram Masking",
+                "spokenAliases": [
+                  "스펙트로그램 마스킹"
+                ]
+              },
+              {
+                "id": "pdf-12",
+                "canonicalTerm": "Deep Attractor Network",
+                "english": "Deep Attractor Network",
+                "spokenAliases": [
+                  "딥 어트랙터 네트워크"
+                ]
+              },
+              {
+                "id": "pdf-13",
+                "canonicalTerm": "Voice Filtering",
+                "english": "Voice Filtering",
+                "spokenAliases": [
+                  "보이스 필터링"
+                ]
+              },
+              {
+                "id": "pdf-14",
+                "canonicalTerm": "Inverse STFT",
+                "english": "Inverse STFT",
+                "spokenAliases": [
+                  "인버스 에스티에프티"
+                ]
+              },
+              {
+                "id": "pdf-15",
+                "canonicalTerm": "Speaker Diarization",
+                "english": "Speaker Diarization",
+                "spokenAliases": [
+                  "스피커 다이어라이제이션",
+                  "화자 분할"
+                ]
+              },
+              {
+                "id": "pdf-16",
+                "canonicalTerm": "Deep Clustering",
+                "english": "Deep Clustering",
+                "spokenAliases": [
+                  "딥 클러스터링"
+                ]
+              },
+              {
+                "id": "pdf-17",
+                "canonicalTerm": "GEV beamformer",
+                "english": "GEV beamformer",
+                "spokenAliases": [
+                  "지이브이 빔포머"
+                ]
+              },
+              {
+                "id": "pdf-18",
+                "canonicalTerm": "MultiReader",
+                "english": "MultiReader",
+                "spokenAliases": [
+                  "멀티리더"
+                ]
+              },
+              {
+                "id": "pdf-19",
+                "canonicalTerm": "Equal Error Rate",
+                "english": "Equal Error Rate",
+                "spokenAliases": [
+                  "이퀄 에러 레이트",
+                  "이이알"
+                ]
+              },
+              {
+                "id": "pdf-20",
+                "canonicalTerm": "log-mel filterbank",
+                "english": "log-mel filterbank",
+                "spokenAliases": [
+                  "로그멜 필터뱅크"
+                ]
+              },
+              {
+                "id": "pdf-21",
+                "canonicalTerm": "Sigmoid",
+                "english": "Sigmoid",
+                "spokenAliases": [
+                  "시그모이드"
+                ]
+              },
+              {
+                "id": "pdf-22",
+                "canonicalTerm": "ReLU",
+                "english": "ReLU",
+                "spokenAliases": [
+                  "렐루"
+                ]
+              }
+            ],
+            "experimentIdentity": {
+              "studyId": "study-0d51d355-68c8-4827-8161-8c068ef40b27",
+              "caseId": "case-2e6c63e2-fcaa-4e7f-81d4-ee21a7f9459f",
+              "caseSnapshotId": "snapshot-a475ee2ef617cb1fa3ff883e",
+              "glossaryId": "2af485d6-20bf-432b-b659-3d9ad568eebd",
+              "glossaryName": "5",
+              "glossaryHash": "7f7b603bff2b60b753ecb5161ddd3805634702d2f7c7117b4b6b1211b25f96cd",
+              "scriptHash": "c5c08e1efb8b366cc07e1c958ed349c29bf8bfc48bffe4be67ce7bdac80ad8ab"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

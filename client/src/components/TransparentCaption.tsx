@@ -38,17 +38,23 @@ function HighlightedPart({ text, terms }: { text: string; terms: GlossaryTerm[] 
 export function TransparentCaption({
   line,
   terms,
-  className
+  className,
+  emphasizeTerms = true
 }: {
   line: TranscriptLine;
   terms: GlossaryTerm[];
   className: string;
+  emphasizeTerms?: boolean;
 }) {
+  if (!emphasizeTerms) {
+    return <p lang="ko" className={`caption-text ${className}`}>{line.text}</p>;
+  }
+
   const relevantTerms = terms.filter((term) => line.termIds.includes(term.id));
   const parts = buildCaptionDisplayParts(line.text, line.corrections);
 
   return (
-    <p className={className}>
+    <p lang="ko" className={`caption-text ${className}`}>
       {parts.map((part, index) => {
         if (part.kind === "text") {
           return <HighlightedPart key={`text-${index}`} text={part.text} terms={relevantTerms} />;

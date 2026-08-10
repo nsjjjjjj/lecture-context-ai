@@ -1,0 +1,1999 @@
+{
+  "version": 4,
+  "createdAt": "2026-08-09T11:49:23.424Z",
+  "recording": {
+    "id": "452f822a-894f-4d11-bc49-6f4c7128f744",
+    "scriptId": "case-1b9a2c32-2831-4434-b5c7-50fc3f91c23c",
+    "speakerReadReferenceScriptVerbatim": true,
+    "evaluationMode": "accuracy",
+    "experimentIdentity": {
+      "studyId": "study-7dd8170d-d100-4ee8-bf56-a5db3f321026",
+      "caseId": "case-1b9a2c32-2831-4434-b5c7-50fc3f91c23c",
+      "caseSnapshotId": "snapshot-407513fea9b088af7905558f",
+      "glossaryId": "0cf34f69-00ea-4c6d-ab62-fc6f90c99994",
+      "glossaryName": "1",
+      "glossaryHash": "a60cf18f4abd73a778064ba5125f35f420410b68cc9a61c8a5f2afc4217e46e6",
+      "scriptHash": "9841dfbe8aca32b80683b334d0ddc02532a7aa68992cc310c7dca5e4724adc43"
+    }
+  },
+  "script": {
+    "id": "case-1b9a2c32-2831-4434-b5c7-50fc3f91c23c",
+    "title": "test 01",
+    "languageCode": "ko-KR",
+    "text": "오늘은 컨포머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다. 컨포머는 컨볼루션 어그멘티드 트랜스포머로, 트랜스포머가 포착하는 글로벌 인터랙션과 씨엔엔이 찾는 로컬 피처를 하나의 인코더에서 결합합니다. 입력 음성은 컨볼루션 서브샘플링을 거친 뒤 여러 개의 컨포머 블록으로 전달됩니다.\n\n각 블록에는 맥커론 라이크 피드 포워드 레이어, 멀티 헤디드 셀프 어텐션, 컨볼루션 모듈이 배치됩니다. 컨볼루션 모듈은 포인트와이즈 컨볼루션, 지엘유 액티베이션, 원 디 뎁스와이즈 컨볼루션, 배치 놈, 스위시 액티베이션을 사용합니다. 마지막에는 레이어 놈을 적용해 출력을 안정화합니다.\n\n이 구조는 에이에스알에서 알엔엔보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다. 리브리스피치 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 더블유이알이 달라집니다. 결과를 검토할 때는 컨포머, 에이에스알, 씨엔엔, 알엔엔이 각각 정확한 영문 표기로 기록되는지 보고, 멀티 헤디드 셀프 어텐션과 컨볼루션 서브샘플링의 설명도 함께 확인하겠습니다.",
+    "targetTerms": [
+      {
+        "id": "gold-01",
+        "canonicalTerm": "ASR",
+        "english": "ASR",
+        "spokenAliases": [
+          "에이에스알"
+        ],
+        "expectedOccurrences": [
+          9,
+          14
+        ]
+      },
+      {
+        "id": "gold-02",
+        "canonicalTerm": "CNN",
+        "english": "CNN",
+        "spokenAliases": [
+          "씨엔엔"
+        ],
+        "expectedOccurrences": [
+          5,
+          15
+        ]
+      },
+      {
+        "id": "gold-03",
+        "canonicalTerm": "WER",
+        "english": "WER",
+        "spokenAliases": [
+          "더블유이알"
+        ],
+        "expectedOccurrences": [
+          12
+        ]
+      },
+      {
+        "id": "gold-04",
+        "canonicalTerm": "RNN",
+        "english": "RNN",
+        "spokenAliases": [
+          "알엔엔"
+        ],
+        "expectedOccurrences": [
+          10,
+          16
+        ]
+      },
+      {
+        "id": "gold-05",
+        "canonicalTerm": "GLU",
+        "english": "GLU",
+        "spokenAliases": [
+          "지엘유",
+          "글루"
+        ],
+        "expectedOccurrences": [
+          7
+        ]
+      },
+      {
+        "id": "gold-06",
+        "canonicalTerm": "Conformer",
+        "english": "Conformer",
+        "spokenAliases": [
+          "컨포머"
+        ],
+        "expectedOccurrences": [
+          1,
+          2,
+          6,
+          13
+        ]
+      },
+      {
+        "id": "gold-07",
+        "canonicalTerm": "Transformer",
+        "english": "Transformer",
+        "spokenAliases": [
+          "트랜스포머"
+        ],
+        "expectedOccurrences": [
+          3,
+          4
+        ]
+      },
+      {
+        "id": "gold-08",
+        "canonicalTerm": "LibriSpeech",
+        "english": "LibriSpeech",
+        "spokenAliases": [
+          "리브리스피치",
+          "리브리 스피치"
+        ],
+        "expectedOccurrences": [
+          11
+        ]
+      },
+      {
+        "id": "gold-09",
+        "canonicalTerm": "Swish",
+        "english": "Swish",
+        "spokenAliases": [
+          "스위시"
+        ],
+        "expectedOccurrences": [
+          8
+        ]
+      }
+    ],
+    "adaptationTerms": [
+      {
+        "id": "pdf-01",
+        "canonicalTerm": "ASR",
+        "english": "ASR",
+        "spokenAliases": [
+          "에이에스알"
+        ]
+      },
+      {
+        "id": "pdf-02",
+        "canonicalTerm": "MHSA",
+        "english": "MHSA",
+        "spokenAliases": [
+          "엠에이치에스에이"
+        ]
+      },
+      {
+        "id": "pdf-03",
+        "canonicalTerm": "CNN",
+        "english": "CNN",
+        "spokenAliases": [
+          "씨엔엔"
+        ]
+      },
+      {
+        "id": "pdf-04",
+        "canonicalTerm": "WER",
+        "english": "WER",
+        "spokenAliases": [
+          "더블유이알"
+        ]
+      },
+      {
+        "id": "pdf-05",
+        "canonicalTerm": "RNN",
+        "english": "RNN",
+        "spokenAliases": [
+          "알엔엔"
+        ]
+      },
+      {
+        "id": "pdf-06",
+        "canonicalTerm": "LSTM",
+        "english": "LSTM",
+        "spokenAliases": [
+          "엘에스티엠"
+        ]
+      },
+      {
+        "id": "pdf-07",
+        "canonicalTerm": "GLU",
+        "english": "GLU",
+        "spokenAliases": [
+          "지엘유",
+          "글루"
+        ]
+      },
+      {
+        "id": "pdf-08",
+        "canonicalTerm": "Conformer",
+        "english": "Conformer",
+        "spokenAliases": [
+          "컨포머"
+        ]
+      },
+      {
+        "id": "pdf-09",
+        "canonicalTerm": "Transformer",
+        "english": "Transformer",
+        "spokenAliases": [
+          "트랜스포머"
+        ]
+      },
+      {
+        "id": "pdf-10",
+        "canonicalTerm": "Depthwise Conv",
+        "english": "Depthwise Conv",
+        "spokenAliases": [
+          "뎁스와이즈 콘브"
+        ]
+      },
+      {
+        "id": "pdf-11",
+        "canonicalTerm": "LibriSpeech",
+        "english": "LibriSpeech",
+        "spokenAliases": [
+          "리브리스피치",
+          "리브리 스피치"
+        ]
+      },
+      {
+        "id": "pdf-12",
+        "canonicalTerm": "Swish",
+        "english": "Swish",
+        "spokenAliases": [
+          "스위시"
+        ]
+      },
+      {
+        "id": "pdf-13",
+        "canonicalTerm": "Layernorm",
+        "english": "Layernorm",
+        "spokenAliases": [
+          "레이어놈"
+        ]
+      },
+      {
+        "id": "pdf-14",
+        "canonicalTerm": "ContextNet",
+        "english": "ContextNet",
+        "spokenAliases": [
+          "컨텍스트넷"
+        ]
+      },
+      {
+        "id": "pdf-15",
+        "canonicalTerm": "Macaron-Net",
+        "english": "Macaron-Net",
+        "spokenAliases": [
+          "마카롱넷"
+        ]
+      },
+      {
+        "id": "pdf-16",
+        "canonicalTerm": "Pointwise Conv",
+        "english": "Pointwise Conv",
+        "spokenAliases": [
+          "포인트와이즈 콘브"
+        ]
+      },
+      {
+        "id": "pdf-17",
+        "canonicalTerm": "BatchNorm",
+        "english": "BatchNorm",
+        "spokenAliases": [
+          "배치놈"
+        ]
+      },
+      {
+        "id": "pdf-18",
+        "canonicalTerm": "SpecAugment",
+        "english": "SpecAugment",
+        "spokenAliases": [
+          "스펙어그멘트"
+        ]
+      },
+      {
+        "id": "pdf-19",
+        "canonicalTerm": "QuartzNet",
+        "english": "QuartzNet",
+        "spokenAliases": [
+          "쿼츠넷"
+        ]
+      },
+      {
+        "id": "pdf-20",
+        "canonicalTerm": "Transformer-XL",
+        "english": "Transformer-XL",
+        "spokenAliases": [
+          "트랜스포머 엑스엘"
+        ]
+      },
+      {
+        "id": "pdf-21",
+        "canonicalTerm": "Lingvo",
+        "english": "Lingvo",
+        "spokenAliases": [
+          "링보"
+        ]
+      },
+      {
+        "id": "pdf-22",
+        "canonicalTerm": "Adam",
+        "english": "Adam",
+        "spokenAliases": [
+          "아담"
+        ]
+      },
+      {
+        "id": "pdf-23",
+        "canonicalTerm": "Anmol Gulati",
+        "english": "Anmol Gulati",
+        "spokenAliases": [
+          "앤몰 구라티"
+        ]
+      },
+      {
+        "id": "pdf-24",
+        "canonicalTerm": "Jasper",
+        "english": "Jasper",
+        "spokenAliases": [
+          "재스퍼"
+        ]
+      },
+      {
+        "id": "pdf-25",
+        "canonicalTerm": "QANet",
+        "english": "QANet",
+        "spokenAliases": [
+          "큐에이넷"
+        ]
+      }
+    ],
+    "experimentIdentity": {
+      "studyId": "study-7dd8170d-d100-4ee8-bf56-a5db3f321026",
+      "caseId": "case-1b9a2c32-2831-4434-b5c7-50fc3f91c23c",
+      "caseSnapshotId": "snapshot-407513fea9b088af7905558f",
+      "glossaryId": "0cf34f69-00ea-4c6d-ab62-fc6f90c99994",
+      "glossaryName": "1",
+      "glossaryHash": "a60cf18f4abd73a778064ba5125f35f420410b68cc9a61c8a5f2afc4217e46e6",
+      "scriptHash": "9841dfbe8aca32b80683b334d0ddc02532a7aa68992cc310c7dca5e4724adc43"
+    }
+  },
+  "websocketUrl": "ws://127.0.0.1:8787/ws",
+  "measurementNote": "화자가 기준 문장을 그대로 읽었다고 명시적으로 선언한 녹음입니다. occurrence-level 지표를 정확도 비교에 사용할 수 있습니다.",
+  "runs": [
+    {
+      "label": "without-phrase-set",
+      "status": "completed",
+      "phraseSet": [],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "ASR",
+          "english": "ASR",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "MHSA",
+          "english": "MHSA",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "CNN",
+          "english": "CNN",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "WER",
+          "english": "WER",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "RNN",
+          "english": "RNN",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "LSTM",
+          "english": "LSTM",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "GLU",
+          "english": "GLU",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "Conformer",
+          "english": "Conformer",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "Transformer",
+          "english": "Transformer",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "Depthwise Conv",
+          "english": "Depthwise Conv",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "LibriSpeech",
+          "english": "LibriSpeech",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "Swish",
+          "english": "Swish",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "Layernorm",
+          "english": "Layernorm",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "ContextNet",
+          "english": "ContextNet",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Macaron-Net",
+          "english": "Macaron-Net",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "Pointwise Conv",
+          "english": "Pointwise Conv",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "BatchNorm",
+          "english": "BatchNorm",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "SpecAugment",
+          "english": "SpecAugment",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "QuartzNet",
+          "english": "QuartzNet",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "Transformer-XL",
+          "english": "Transformer-XL",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "Lingvo",
+          "english": "Lingvo",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "Adam",
+          "english": "Adam",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "Anmol Gulati",
+          "english": "Anmol Gulati",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "Jasper",
+          "english": "Jasper",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "QANet",
+          "english": "QANet",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T11:47:52.784Z",
+      "readyAfterMs": 78,
+      "audioDurationMs": 83959,
+      "wallClockMs": 90640,
+      "interimCount": 6,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 컴포머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다.",
+          "rawText": "오늘은 컴포머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "컨포머는 컨볼루션 어그멘티드 트랜스포머로 트랜스포머가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다.",
+          "rawText": "컨포머는 컨볼루션 어그멘티드 트랜스포머로 트랜스포머가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다.",
+          "detectedTermIds": [
+            "pdf-03"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "컨볼루션 서브 샘플링을 거친 뒤 여러 개의 컨퍼머 블록으로 전달됩니다.",
+          "rawText": "컨볼루션 서브 샘플링을 거친 뒤 여러 개의 컨퍼머 블록으로 전달됩니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "각 블록에는 백커런트, 라이크, 피드, 포워드 레이어, 멀티 헤디드, 셀프 어텐션, 컨볼루션 모듈이 배치됩니다.",
+          "rawText": "각 블록에는 백커런트, 라이크, 피드, 포워드 레이어, 멀티 헤디드, 셀프 어텐션, 컨볼루션 모듈이 배치됩니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "모듈은 포인트 와이즈 컨볼루션, 지혜류 액티베이션",
+          "rawText": "모듈은 포인트 와이즈 컨볼루션, 지혜류 액티베이션",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "1D 뎁스 와이즈 컨볼루션 배치놈 스위시 액티베이션을 사용합니다. 마지막에는 레이어놈을 적용해 출력을 안정화합니다.",
+          "rawText": "1D 뎁스 와이즈 컨볼루션 배치놈 스위시 액티베이션을 사용합니다. 마지막에는 레이어놈을 적용해 출력을 안정화합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다.",
+          "rawText": "이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다.",
+          "detectedTermIds": [
+            "pdf-01",
+            "pdf-05"
+          ],
+          "corrections": []
+        }
+      ],
+      "transcript": "오늘은 컴포머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다. 컨포머는 컨볼루션 어그멘티드 트랜스포머로 트랜스포머가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다. 컨볼루션 서브 샘플링을 거친 뒤 여러 개의 컨퍼머 블록으로 전달됩니다. 각 블록에는 백커런트, 라이크, 피드, 포워드 레이어, 멀티 헤디드, 셀프 어텐션, 컨볼루션 모듈이 배치됩니다. 모듈은 포인트 와이즈 컨볼루션, 지혜류 액티베이션 1D 뎁스 와이즈 컨볼루션 배치놈 스위시 액티베이션을 사용합니다. 마지막에는 레이어놈을 적용해 출력을 안정화합니다. 이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다.",
+      "rawTranscript": "오늘은 컴포머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다. 컨포머는 컨볼루션 어그멘티드 트랜스포머로 트랜스포머가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다. 컨볼루션 서브 샘플링을 거친 뒤 여러 개의 컨퍼머 블록으로 전달됩니다. 각 블록에는 백커런트, 라이크, 피드, 포워드 레이어, 멀티 헤디드, 셀프 어텐션, 컨볼루션 모듈이 배치됩니다. 모듈은 포인트 와이즈 컨볼루션, 지혜류 액티베이션 1D 뎁스 와이즈 컨볼루션 배치놈 스위시 액티베이션을 사용합니다. 마지막에는 레이어놈을 적용해 출력을 안정화합니다. 이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 3,
+        "aliasCorrectionSuccesses": 0,
+        "misses": 13,
+        "falseCorrections": 0,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 16,
+        "productLinkRate": 0.1875
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Transformer",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Transformer",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "CNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "CNN"
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "GLU",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Swish",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "ASR",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "ASR"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "RNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "RNN"
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "LibriSpeech",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "WER",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 14,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "ASR",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 15,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "CNN",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 16,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "RNN",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        }
+      ],
+      "unexpectedObservations": [],
+      "errors": []
+    },
+    {
+      "label": "canonical-phrase-set",
+      "status": "completed",
+      "phraseSet": [
+        "ASR",
+        "MHSA",
+        "CNN",
+        "WER",
+        "RNN",
+        "LSTM",
+        "GLU",
+        "Conformer",
+        "Transformer",
+        "Depthwise Conv",
+        "LibriSpeech",
+        "Swish",
+        "Layernorm",
+        "ContextNet",
+        "Macaron-Net",
+        "Pointwise Conv",
+        "BatchNorm",
+        "SpecAugment",
+        "QuartzNet",
+        "Transformer-XL",
+        "Lingvo",
+        "Adam",
+        "Anmol Gulati",
+        "Jasper",
+        "QANet"
+      ],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "ASR",
+          "english": "ASR",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "MHSA",
+          "english": "MHSA",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "CNN",
+          "english": "CNN",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "WER",
+          "english": "WER",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "RNN",
+          "english": "RNN",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "LSTM",
+          "english": "LSTM",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "GLU",
+          "english": "GLU",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "Conformer",
+          "english": "Conformer",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "Transformer",
+          "english": "Transformer",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "Depthwise Conv",
+          "english": "Depthwise Conv",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "LibriSpeech",
+          "english": "LibriSpeech",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "Swish",
+          "english": "Swish",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "Layernorm",
+          "english": "Layernorm",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "ContextNet",
+          "english": "ContextNet",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Macaron-Net",
+          "english": "Macaron-Net",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "Pointwise Conv",
+          "english": "Pointwise Conv",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "BatchNorm",
+          "english": "BatchNorm",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "SpecAugment",
+          "english": "SpecAugment",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "QuartzNet",
+          "english": "QuartzNet",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "Transformer-XL",
+          "english": "Transformer-XL",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "Lingvo",
+          "english": "Lingvo",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "Adam",
+          "english": "Adam",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "Anmol Gulati",
+          "english": "Anmol Gulati",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "Jasper",
+          "english": "Jasper",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "QANet",
+          "english": "QANet",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T11:47:52.786Z",
+      "readyAfterMs": 78,
+      "audioDurationMs": 83959,
+      "wallClockMs": 87187,
+      "interimCount": 5,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 컨퍼머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다.",
+          "rawText": "오늘은 컨퍼머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "Conformer는 Convolution Augmented Transformer로 Transformer가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다.",
+          "rawText": "Conformer는 Convolution Augmented Transformer로 Transformer가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다.",
+          "detectedTermIds": [
+            "pdf-08",
+            "pdf-09",
+            "pdf-09",
+            "pdf-03"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "컨볼루션 서브 샘플링을 거친 뒤 여러 개의 컨퍼머 블록으로 전달됩니다.",
+          "rawText": "컨볼루션 서브 샘플링을 거친 뒤 여러 개의 컨퍼머 블록으로 전달됩니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "각 블록에는 백커런트, 라이크, 피드, 포워드 레이어, 멀티 헤디드, 셀프 어텐션, 컨볼루션 모듈이 배치됩니다.",
+          "rawText": "각 블록에는 백커런트, 라이크, 피드, 포워드 레이어, 멀티 헤디드, 셀프 어텐션, 컨볼루션 모듈이 배치됩니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "모듈은 Pointwise Conv, GLU activation",
+          "rawText": "모듈은 Pointwise Conv, GLU activation",
+          "detectedTermIds": [
+            "pdf-16",
+            "pdf-07"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "1D Depthwise Convolution, BatchNorm, Swish 액티베이션을 사용합니다. 마지막에는 LayerNorm을 적용해 출력을 안정화합니다.",
+          "rawText": "1D Depthwise Convolution, BatchNorm, Swish 액티베이션을 사용합니다. 마지막에는 LayerNorm을 적용해 출력을 안정화합니다.",
+          "detectedTermIds": [
+            "pdf-17",
+            "pdf-12",
+            "pdf-13"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다.",
+          "rawText": "이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다.",
+          "detectedTermIds": [
+            "pdf-01",
+            "pdf-05"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "LibriSpeech 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 WR이 달라집니다. 결과를 검토할 때는 Conformer, ASR, CNN, RNN이 각각 정확한 영문 표기로 기록되는지 보고 멀티 헤디드 셀프 어텐션과 컨볼루션 서브 샘플링의 설명도 함께 확인하겠습니다.",
+          "rawText": "LibriSpeech 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 WR이 달라집니다. 결과를 검토할 때는 Conformer, ASR, CNN, RNN이 각각 정확한 영문 표기로 기록되는지 보고 멀티 헤디드 셀프 어텐션과 컨볼루션 서브 샘플링의 설명도 함께 확인하겠습니다.",
+          "detectedTermIds": [
+            "pdf-11",
+            "pdf-08",
+            "pdf-01",
+            "pdf-03",
+            "pdf-05"
+          ],
+          "corrections": []
+        }
+      ],
+      "transcript": "오늘은 컨퍼머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다. Conformer는 Convolution Augmented Transformer로 Transformer가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다. 컨볼루션 서브 샘플링을 거친 뒤 여러 개의 컨퍼머 블록으로 전달됩니다. 각 블록에는 백커런트, 라이크, 피드, 포워드 레이어, 멀티 헤디드, 셀프 어텐션, 컨볼루션 모듈이 배치됩니다. 모듈은 Pointwise Conv, GLU activation 1D Depthwise Convolution, BatchNorm, Swish 액티베이션을 사용합니다. 마지막에는 LayerNorm을 적용해 출력을 안정화합니다. 이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다. LibriSpeech 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 WR이 달라집니다. 결과를 검토할 때는 Conformer, ASR, CNN, RNN이 각각 정확한 영문 표기로 기록되는지 보고 멀티 헤디드 셀프 어텐션과 컨볼루션 서브 샘플링의 설명도 함께 확인하겠습니다.",
+      "rawTranscript": "오늘은 컨퍼머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다. Conformer는 Convolution Augmented Transformer로 Transformer가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다. 컨볼루션 서브 샘플링을 거친 뒤 여러 개의 컨퍼머 블록으로 전달됩니다. 각 블록에는 백커런트, 라이크, 피드, 포워드 레이어, 멀티 헤디드, 셀프 어텐션, 컨볼루션 모듈이 배치됩니다. 모듈은 Pointwise Conv, GLU activation 1D Depthwise Convolution, BatchNorm, Swish 액티베이션을 사용합니다. 마지막에는 LayerNorm을 적용해 출력을 안정화합니다. 이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다. LibriSpeech 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 WR이 달라집니다. 결과를 검토할 때는 Conformer, ASR, CNN, RNN이 각각 정확한 영문 표기로 기록되는지 보고 멀티 헤디드 셀프 어텐션과 컨볼루션 서브 샘플링의 설명도 함께 확인하겠습니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 13,
+        "aliasCorrectionSuccesses": 0,
+        "misses": 3,
+        "falseCorrections": 0,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 16,
+        "productLinkRate": 0.8125
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "Conformer"
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Transformer",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "Transformer"
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Transformer",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "Transformer"
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "CNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "CNN"
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "GLU",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "GLU"
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Swish",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 5,
+          "rawText": "Swish"
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "ASR",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "ASR"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "RNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "RNN"
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "LibriSpeech",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "LibriSpeech"
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "WER",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "Conformer"
+        },
+        {
+          "sequence": 14,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "ASR",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "ASR"
+        },
+        {
+          "sequence": 15,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "CNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "CNN"
+        },
+        {
+          "sequence": 16,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "RNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "RNN"
+        }
+      ],
+      "unexpectedObservations": [],
+      "errors": []
+    },
+    {
+      "label": "spoken-alias-phrase-set",
+      "status": "completed",
+      "phraseSet": [
+        "ASR",
+        "에이에스알",
+        "MHSA",
+        "엠에이치에스에이",
+        "CNN",
+        "씨엔엔",
+        "WER",
+        "더블유이알",
+        "RNN",
+        "알엔엔",
+        "LSTM",
+        "엘에스티엠",
+        "GLU",
+        "지엘유",
+        "글루",
+        "Conformer",
+        "컨포머",
+        "Transformer",
+        "트랜스포머",
+        "Depthwise Conv",
+        "뎁스와이즈 콘브",
+        "LibriSpeech",
+        "리브리스피치",
+        "리브리 스피치",
+        "Swish",
+        "스위시",
+        "Layernorm",
+        "레이어놈",
+        "ContextNet",
+        "컨텍스트넷",
+        "Macaron-Net",
+        "마카롱넷",
+        "Pointwise Conv",
+        "포인트와이즈 콘브",
+        "BatchNorm",
+        "배치놈",
+        "SpecAugment",
+        "스펙어그멘트",
+        "QuartzNet",
+        "쿼츠넷",
+        "Transformer-XL",
+        "트랜스포머 엑스엘",
+        "Lingvo",
+        "링보",
+        "Adam",
+        "아담",
+        "Anmol Gulati",
+        "앤몰 구라티",
+        "Jasper",
+        "재스퍼",
+        "QANet",
+        "큐에이넷"
+      ],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "ASR",
+          "english": "ASR",
+          "spokenAliases": [
+            "에이에스알"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "MHSA",
+          "english": "MHSA",
+          "spokenAliases": [
+            "엠에이치에스에이"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "CNN",
+          "english": "CNN",
+          "spokenAliases": [
+            "씨엔엔"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "WER",
+          "english": "WER",
+          "spokenAliases": [
+            "더블유이알"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "RNN",
+          "english": "RNN",
+          "spokenAliases": [
+            "알엔엔"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "LSTM",
+          "english": "LSTM",
+          "spokenAliases": [
+            "엘에스티엠"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "GLU",
+          "english": "GLU",
+          "spokenAliases": [
+            "지엘유",
+            "글루"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "Conformer",
+          "english": "Conformer",
+          "spokenAliases": [
+            "컨포머"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "Transformer",
+          "english": "Transformer",
+          "spokenAliases": [
+            "트랜스포머"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "Depthwise Conv",
+          "english": "Depthwise Conv",
+          "spokenAliases": [
+            "뎁스와이즈 콘브"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "LibriSpeech",
+          "english": "LibriSpeech",
+          "spokenAliases": [
+            "리브리스피치",
+            "리브리 스피치"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "Swish",
+          "english": "Swish",
+          "spokenAliases": [
+            "스위시"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "Layernorm",
+          "english": "Layernorm",
+          "spokenAliases": [
+            "레이어놈"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "ContextNet",
+          "english": "ContextNet",
+          "spokenAliases": [
+            "컨텍스트넷"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Macaron-Net",
+          "english": "Macaron-Net",
+          "spokenAliases": [
+            "마카롱넷"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "Pointwise Conv",
+          "english": "Pointwise Conv",
+          "spokenAliases": [
+            "포인트와이즈 콘브"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "BatchNorm",
+          "english": "BatchNorm",
+          "spokenAliases": [
+            "배치놈"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "SpecAugment",
+          "english": "SpecAugment",
+          "spokenAliases": [
+            "스펙어그멘트"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "QuartzNet",
+          "english": "QuartzNet",
+          "spokenAliases": [
+            "쿼츠넷"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "Transformer-XL",
+          "english": "Transformer-XL",
+          "spokenAliases": [
+            "트랜스포머 엑스엘"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "Lingvo",
+          "english": "Lingvo",
+          "spokenAliases": [
+            "링보"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "Adam",
+          "english": "Adam",
+          "spokenAliases": [
+            "아담"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "Anmol Gulati",
+          "english": "Anmol Gulati",
+          "spokenAliases": [
+            "앤몰 구라티"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "Jasper",
+          "english": "Jasper",
+          "spokenAliases": [
+            "재스퍼"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "QANet",
+          "english": "QANet",
+          "spokenAliases": [
+            "큐에이넷"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T11:47:52.787Z",
+      "readyAfterMs": 108,
+      "audioDurationMs": 83959,
+      "wallClockMs": 87201,
+      "interimCount": 10,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 Conformer 기반 자동 음성 인식 모델의 구조를 설명하겠습니다.",
+          "rawText": "오늘은 컨포머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다.",
+          "detectedTermIds": [
+            "pdf-08"
+          ],
+          "corrections": [
+            {
+              "originalText": "컨포머",
+              "correctedText": "Conformer",
+              "termId": "pdf-08",
+              "displayStart": 4,
+              "displayEnd": 13,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "Conformer는 컨볼루션 어그멘티드 Transformer로 Transformer가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다.",
+          "rawText": "컨포머는 컨볼루션 어그멘티드 트랜스포머로 트랜스포머가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다.",
+          "detectedTermIds": [
+            "pdf-08",
+            "pdf-09",
+            "pdf-09",
+            "pdf-03"
+          ],
+          "corrections": [
+            {
+              "originalText": "컨포머",
+              "correctedText": "Conformer",
+              "termId": "pdf-08",
+              "displayStart": 0,
+              "displayEnd": 9,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "트랜스포머",
+              "correctedText": "Transformer",
+              "termId": "pdf-09",
+              "displayStart": 22,
+              "displayEnd": 33,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "트랜스포머",
+              "correctedText": "Transformer",
+              "termId": "pdf-09",
+              "displayStart": 35,
+              "displayEnd": 46,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "컨볼루션 서브 샘플링을 거친 뒤 여러 개의 Conformer 블록으로 전달됩니다.",
+          "rawText": "컨볼루션 서브 샘플링을 거친 뒤 여러 개의 컨포머 블록으로 전달됩니다.",
+          "detectedTermIds": [
+            "pdf-08"
+          ],
+          "corrections": [
+            {
+              "originalText": "컨포머",
+              "correctedText": "Conformer",
+              "termId": "pdf-08",
+              "displayStart": 24,
+              "displayEnd": 33,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "각 블록에는 마카롱 라이크 피드 포워드 레이어 멀티 헤디드 셀프 어텐션 컨볼루션 모듈이 배치됩니다.",
+          "rawText": "각 블록에는 마카롱 라이크 피드 포워드 레이어 멀티 헤디드 셀프 어텐션 컨볼루션 모듈이 배치됩니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "모듈은 포인트와이즈 컨볼루션 GLU 액티베이션",
+          "rawText": "모듈은 포인트와이즈 컨볼루션 GLU 액티베이션",
+          "detectedTermIds": [
+            "pdf-07"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "1D 뎁스와이즈 컨볼루션 BatchNorm Swish 액티베이션을 사용합니다. 마지막에는 Layernorm을 적용해 출력을 안정화합니다.",
+          "rawText": "1D 뎁스와이즈 컨볼루션 배치놈 스위시 액티베이션을 사용합니다. 마지막에는 레이어놈을 적용해 출력을 안정화합니다.",
+          "detectedTermIds": [
+            "pdf-17",
+            "pdf-12",
+            "pdf-13"
+          ],
+          "corrections": [
+            {
+              "originalText": "배치놈",
+              "correctedText": "BatchNorm",
+              "termId": "pdf-17",
+              "displayStart": 14,
+              "displayEnd": 23,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "스위시",
+              "correctedText": "Swish",
+              "termId": "pdf-12",
+              "displayStart": 24,
+              "displayEnd": 29,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "레이어놈",
+              "correctedText": "Layernorm",
+              "termId": "pdf-13",
+              "displayStart": 50,
+              "displayEnd": 59,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다.",
+          "rawText": "이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다.",
+          "detectedTermIds": [
+            "pdf-01",
+            "pdf-05"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "LibriSpeech 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 WER이 달라집니다. 결과를 검토할 때는 Conformer ASR CNN RNN이 각각 정확한 영문 표기로 기록되는지 보고 멀티헤디드 셀프 어텐션과 컨볼루션 서브샘플링의 설명도 함께 확인하겠습니다.",
+          "rawText": "리브리스피치 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 WER이 달라집니다. 결과를 검토할 때는 컨포머 ASR CNN RNN이 각각 정확한 영문 표기로 기록되는지 보고 멀티헤디드 셀프 어텐션과 컨볼루션 서브샘플링의 설명도 함께 확인하겠습니다.",
+          "detectedTermIds": [
+            "pdf-11",
+            "pdf-04",
+            "pdf-08",
+            "pdf-01",
+            "pdf-03",
+            "pdf-05"
+          ],
+          "corrections": [
+            {
+              "originalText": "리브리스피치",
+              "correctedText": "LibriSpeech",
+              "termId": "pdf-11",
+              "displayStart": 0,
+              "displayEnd": 11,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "컨포머",
+              "correctedText": "Conformer",
+              "termId": "pdf-08",
+              "displayStart": 63,
+              "displayEnd": 72,
+              "reason": "spokenAlias"
+            }
+          ]
+        }
+      ],
+      "transcript": "오늘은 Conformer 기반 자동 음성 인식 모델의 구조를 설명하겠습니다. Conformer는 컨볼루션 어그멘티드 Transformer로 Transformer가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다. 컨볼루션 서브 샘플링을 거친 뒤 여러 개의 Conformer 블록으로 전달됩니다. 각 블록에는 마카롱 라이크 피드 포워드 레이어 멀티 헤디드 셀프 어텐션 컨볼루션 모듈이 배치됩니다. 모듈은 포인트와이즈 컨볼루션 GLU 액티베이션 1D 뎁스와이즈 컨볼루션 BatchNorm Swish 액티베이션을 사용합니다. 마지막에는 Layernorm을 적용해 출력을 안정화합니다. 이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다. LibriSpeech 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 WER이 달라집니다. 결과를 검토할 때는 Conformer ASR CNN RNN이 각각 정확한 영문 표기로 기록되는지 보고 멀티헤디드 셀프 어텐션과 컨볼루션 서브샘플링의 설명도 함께 확인하겠습니다.",
+      "rawTranscript": "오늘은 컨포머 기반 자동 음성 인식 모델의 구조를 설명하겠습니다. 컨포머는 컨볼루션 어그멘티드 트랜스포머로 트랜스포머가 도착하는 글로벌 인터랙션과 CNN이 찾는 로컬 피처를 하나의 인코더에 결합합니다. 컨볼루션 서브 샘플링을 거친 뒤 여러 개의 컨포머 블록으로 전달됩니다. 각 블록에는 마카롱 라이크 피드 포워드 레이어 멀티 헤디드 셀프 어텐션 컨볼루션 모듈이 배치됩니다. 모듈은 포인트와이즈 컨볼루션 GLU 액티베이션 1D 뎁스와이즈 컨볼루션 배치놈 스위시 액티베이션을 사용합니다. 마지막에는 레이어놈을 적용해 출력을 안정화합니다. 이 구조는 ASR에서 RNN보다 긴 범위의 관계를 잘 모델링하면서 국소적인 음향 패턴도 놓치지 않는 것이 핵심입니다. 리브리스피치 벤치마크에서는 외부 랭귀지 모델 사용 여부에 따라 WER이 달라집니다. 결과를 검토할 때는 컨포머 ASR CNN RNN이 각각 정확한 영문 표기로 기록되는지 보고 멀티헤디드 셀프 어텐션과 컨볼루션 서브샘플링의 설명도 함께 확인하겠습니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 8,
+        "aliasCorrectionSuccesses": 8,
+        "misses": 0,
+        "falseCorrections": 2,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 16,
+        "productLinkRate": 1
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 0,
+          "rawText": "컨포머"
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 1,
+          "rawText": "컨포머"
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Transformer",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 1,
+          "rawText": "트랜스포머"
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Transformer",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 1,
+          "rawText": "트랜스포머"
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "CNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "CNN"
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 2,
+          "rawText": "컨포머"
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "GLU",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "GLU"
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-09",
+          "canonicalTerm": "Swish",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 5,
+          "rawText": "스위시"
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "ASR",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "ASR"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "RNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "RNN"
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-08",
+          "canonicalTerm": "LibriSpeech",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 7,
+          "rawText": "리브리스피치"
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "WER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "WER"
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Conformer",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 7,
+          "rawText": "컨포머"
+        },
+        {
+          "sequence": 14,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "ASR",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "ASR"
+        },
+        {
+          "sequence": 15,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "CNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "CNN"
+        },
+        {
+          "sequence": 16,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "RNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "RNN"
+        }
+      ],
+      "unexpectedObservations": [
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 5,
+          "rawText": "배치놈"
+        },
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 5,
+          "rawText": "레이어놈"
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

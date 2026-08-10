@@ -1,0 +1,1789 @@
+{
+  "version": 4,
+  "createdAt": "2026-08-09T12:17:56.241Z",
+  "recording": {
+    "id": "7d6c73f1-100c-42e4-8034-5410e97882db",
+    "scriptId": "case-2e6c63e2-fcaa-4e7f-81d4-ee21a7f9459f",
+    "speakerReadReferenceScriptVerbatim": true,
+    "evaluationMode": "accuracy",
+    "experimentIdentity": {
+      "studyId": "study-0d51d355-68c8-4827-8161-8c068ef40b27",
+      "caseId": "case-2e6c63e2-fcaa-4e7f-81d4-ee21a7f9459f",
+      "caseSnapshotId": "snapshot-a475ee2ef617cb1fa3ff883e",
+      "glossaryId": "2af485d6-20bf-432b-b659-3d9ad568eebd",
+      "glossaryName": "5",
+      "glossaryHash": "7f7b603bff2b60b753ecb5161ddd3805634702d2f7c7117b4b6b1211b25f96cd",
+      "scriptHash": "c5c08e1efb8b366cc07e1c958ed349c29bf8bfc48bffe4be67ce7bdac80ad8ab"
+    }
+  },
+  "script": {
+    "id": "case-2e6c63e2-fcaa-4e7f-81d4-ee21a7f9459f",
+    "title": "test 05",
+    "languageCode": "ko-KR",
+    "text": "오늘은 여러 사람이 동시에 말하는 신호에서 목표 화자의 음성만 분리하는 보이스필터를 설명하겠습니다. 보이스필터는 타기티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다. 시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고, 서로 분리해 학습한 두 개의 뉴럴 네트워크를 결합합니다.\n\n첫 번째 스피커 리코그니션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다. 엘에스티엠 기반 스피커 인코더가 고정된 이백오십육 차원의 디 벡터를 만들면, 두 번째 스펙트로그램 마스킹 네트워크가 노이지 스펙트로그램과 스피커 임베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다. 마스크를 매그니튜드 스펙트로그램에 적용한 뒤 인버스 에스티에프티로 음성을 복원합니다.\n\n평가에서는 멀티 스피커 시그널의 더블유이알이 크게 줄어드는지 확인하고, 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다. 보이스필터, 디 벡터, 엘에스티엠, 에스티에프티처럼 짧은 약어와 고유 모델명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다. 또한 소스 세퍼레이션과 스피커 리코그니션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+    "targetTerms": [
+      {
+        "id": "gold-01",
+        "canonicalTerm": "WER",
+        "english": "Word Error Rate",
+        "spokenAliases": [
+          "더블유이알",
+          "워드 에러 레이트"
+        ],
+        "expectedOccurrences": [
+          9
+        ]
+      },
+      {
+        "id": "gold-02",
+        "canonicalTerm": "LSTM",
+        "english": "LSTM",
+        "spokenAliases": [
+          "엘에스티엠"
+        ],
+        "expectedOccurrences": [
+          4,
+          12
+        ]
+      },
+      {
+        "id": "gold-03",
+        "canonicalTerm": "STFT",
+        "english": "STFT",
+        "spokenAliases": [
+          "에스티에프티"
+        ],
+        "expectedOccurrences": [
+          8,
+          13
+        ]
+      },
+      {
+        "id": "gold-04",
+        "canonicalTerm": "VoiceFilter",
+        "english": "VoiceFilter",
+        "spokenAliases": [
+          "보이스필터",
+          "보이스 필터"
+        ],
+        "expectedOccurrences": [
+          1,
+          2,
+          10
+        ]
+      },
+      {
+        "id": "gold-05",
+        "canonicalTerm": "d-vector",
+        "english": "d-vector",
+        "spokenAliases": [
+          "디벡터",
+          "디 벡터"
+        ],
+        "expectedOccurrences": [
+          5,
+          11
+        ]
+      },
+      {
+        "id": "gold-06",
+        "canonicalTerm": "Spectrogram Masking",
+        "english": "Spectrogram Masking",
+        "spokenAliases": [
+          "스펙트로그램 마스킹"
+        ],
+        "expectedOccurrences": [
+          3,
+          6
+        ]
+      },
+      {
+        "id": "gold-07",
+        "canonicalTerm": "Inverse STFT",
+        "english": "Inverse STFT",
+        "spokenAliases": [
+          "인버스 에스티에프티"
+        ],
+        "expectedOccurrences": [
+          7
+        ]
+      }
+    ],
+    "adaptationTerms": [
+      {
+        "id": "pdf-01",
+        "canonicalTerm": "WER",
+        "english": "Word Error Rate",
+        "spokenAliases": [
+          "더블유이알",
+          "워드 에러 레이트"
+        ]
+      },
+      {
+        "id": "pdf-02",
+        "canonicalTerm": "LSTM",
+        "english": "LSTM",
+        "spokenAliases": [
+          "엘에스티엠"
+        ]
+      },
+      {
+        "id": "pdf-03",
+        "canonicalTerm": "VCTK",
+        "english": "VCTK",
+        "spokenAliases": [
+          "브이씨티케이"
+        ]
+      },
+      {
+        "id": "pdf-04",
+        "canonicalTerm": "SDR",
+        "english": "Source to Distortion Ratio",
+        "spokenAliases": [
+          "에스디알"
+        ]
+      },
+      {
+        "id": "pdf-05",
+        "canonicalTerm": "STFT",
+        "english": "STFT",
+        "spokenAliases": [
+          "에스티에프티"
+        ]
+      },
+      {
+        "id": "pdf-06",
+        "canonicalTerm": "VoiceFilter",
+        "english": "VoiceFilter",
+        "spokenAliases": [
+          "보이스필터",
+          "보이스 필터"
+        ]
+      },
+      {
+        "id": "pdf-07",
+        "canonicalTerm": "LibriSpeech",
+        "english": "LibriSpeech",
+        "spokenAliases": [
+          "리브리스피치"
+        ]
+      },
+      {
+        "id": "pdf-08",
+        "canonicalTerm": "d-vector",
+        "english": "d-vector",
+        "spokenAliases": [
+          "디벡터",
+          "디 벡터"
+        ]
+      },
+      {
+        "id": "pdf-09",
+        "canonicalTerm": "Speaker Recognition",
+        "english": "Speaker Recognition",
+        "spokenAliases": [
+          "스피커 레코그니션",
+          "화자 인식"
+        ]
+      },
+      {
+        "id": "pdf-10",
+        "canonicalTerm": "VoxCeleb",
+        "english": "VoxCeleb",
+        "spokenAliases": [
+          "복스셀럽"
+        ]
+      },
+      {
+        "id": "pdf-11",
+        "canonicalTerm": "Spectrogram Masking",
+        "english": "Spectrogram Masking",
+        "spokenAliases": [
+          "스펙트로그램 마스킹"
+        ]
+      },
+      {
+        "id": "pdf-12",
+        "canonicalTerm": "Deep Attractor Network",
+        "english": "Deep Attractor Network",
+        "spokenAliases": [
+          "딥 어트랙터 네트워크"
+        ]
+      },
+      {
+        "id": "pdf-13",
+        "canonicalTerm": "Voice Filtering",
+        "english": "Voice Filtering",
+        "spokenAliases": [
+          "보이스 필터링"
+        ]
+      },
+      {
+        "id": "pdf-14",
+        "canonicalTerm": "Inverse STFT",
+        "english": "Inverse STFT",
+        "spokenAliases": [
+          "인버스 에스티에프티"
+        ]
+      },
+      {
+        "id": "pdf-15",
+        "canonicalTerm": "Speaker Diarization",
+        "english": "Speaker Diarization",
+        "spokenAliases": [
+          "스피커 다이어라이제이션",
+          "화자 분할"
+        ]
+      },
+      {
+        "id": "pdf-16",
+        "canonicalTerm": "Deep Clustering",
+        "english": "Deep Clustering",
+        "spokenAliases": [
+          "딥 클러스터링"
+        ]
+      },
+      {
+        "id": "pdf-17",
+        "canonicalTerm": "GEV beamformer",
+        "english": "GEV beamformer",
+        "spokenAliases": [
+          "지이브이 빔포머"
+        ]
+      },
+      {
+        "id": "pdf-18",
+        "canonicalTerm": "MultiReader",
+        "english": "MultiReader",
+        "spokenAliases": [
+          "멀티리더"
+        ]
+      },
+      {
+        "id": "pdf-19",
+        "canonicalTerm": "Equal Error Rate",
+        "english": "Equal Error Rate",
+        "spokenAliases": [
+          "이퀄 에러 레이트",
+          "이이알"
+        ]
+      },
+      {
+        "id": "pdf-20",
+        "canonicalTerm": "log-mel filterbank",
+        "english": "log-mel filterbank",
+        "spokenAliases": [
+          "로그멜 필터뱅크"
+        ]
+      },
+      {
+        "id": "pdf-21",
+        "canonicalTerm": "Sigmoid",
+        "english": "Sigmoid",
+        "spokenAliases": [
+          "시그모이드"
+        ]
+      },
+      {
+        "id": "pdf-22",
+        "canonicalTerm": "ReLU",
+        "english": "ReLU",
+        "spokenAliases": [
+          "렐루"
+        ]
+      }
+    ],
+    "experimentIdentity": {
+      "studyId": "study-0d51d355-68c8-4827-8161-8c068ef40b27",
+      "caseId": "case-2e6c63e2-fcaa-4e7f-81d4-ee21a7f9459f",
+      "caseSnapshotId": "snapshot-a475ee2ef617cb1fa3ff883e",
+      "glossaryId": "2af485d6-20bf-432b-b659-3d9ad568eebd",
+      "glossaryName": "5",
+      "glossaryHash": "7f7b603bff2b60b753ecb5161ddd3805634702d2f7c7117b4b6b1211b25f96cd",
+      "scriptHash": "c5c08e1efb8b366cc07e1c958ed349c29bf8bfc48bffe4be67ce7bdac80ad8ab"
+    }
+  },
+  "websocketUrl": "ws://127.0.0.1:8787/ws",
+  "measurementNote": "화자가 기준 문장을 그대로 읽었다고 명시적으로 선언한 녹음입니다. occurrence-level 지표를 정확도 비교에 사용할 수 있습니다.",
+  "runs": [
+    {
+      "label": "without-phrase-set",
+      "status": "completed",
+      "phraseSet": [],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "WER",
+          "english": "Word Error Rate",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "LSTM",
+          "english": "LSTM",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "VCTK",
+          "english": "VCTK",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "SDR",
+          "english": "Source to Distortion Ratio",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "STFT",
+          "english": "STFT",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "VoiceFilter",
+          "english": "VoiceFilter",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "LibriSpeech",
+          "english": "LibriSpeech",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "d-vector",
+          "english": "d-vector",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "Speaker Recognition",
+          "english": "Speaker Recognition",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "VoxCeleb",
+          "english": "VoxCeleb",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "Spectrogram Masking",
+          "english": "Spectrogram Masking",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "Deep Attractor Network",
+          "english": "Deep Attractor Network",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "Voice Filtering",
+          "english": "Voice Filtering",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "Inverse STFT",
+          "english": "Inverse STFT",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Speaker Diarization",
+          "english": "Speaker Diarization",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "Deep Clustering",
+          "english": "Deep Clustering",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "GEV beamformer",
+          "english": "GEV beamformer",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "MultiReader",
+          "english": "MultiReader",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Equal Error Rate",
+          "english": "Equal Error Rate",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "log-mel filterbank",
+          "english": "log-mel filterbank",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "Sigmoid",
+          "english": "Sigmoid",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "ReLU",
+          "english": "ReLU",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T12:16:30.653Z",
+      "readyAfterMs": 7,
+      "audioDurationMs": 81823,
+      "wallClockMs": 85587,
+      "interimCount": 11,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 보이스 필터를 설명하겠습니다.",
+          "rawText": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 보이스 필터를 설명하겠습니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "스피커는 타깃티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다.",
+          "rawText": "스피커는 타깃티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리해 학습한 두 개의 뉴럴 네트워크를 결합합니다.",
+          "rawText": "시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리해 학습한 두 개의 뉴럴 네트워크를 결합합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "첫 번째 스피커 리코그네이션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다.",
+          "rawText": "첫 번째 스피커 리코그네이션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "LSM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 스펙트로그램 마스킹 네트워크가 노이즈 스펙트로그램과 스피커 인베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다.",
+          "rawText": "LSM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 스펙트로그램 마스킹 네트워크가 노이즈 스펙트로그램과 스피커 인베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT",
+          "rawText": "마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT",
+          "detectedTermIds": [
+            "pdf-05"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "로 음성을 복원합니다.",
+          "rawText": "로 음성을 복원합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다.",
+          "rawText": "평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다.",
+          "detectedTermIds": [
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "보이스 필터, d-vector, LSTM, STFT처럼 짧은 약어와 고유 모델명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다.",
+          "rawText": "보이스 필터, d-vector, LSTM, STFT처럼 짧은 약어와 고유 모델명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다.",
+          "detectedTermIds": [
+            "pdf-08",
+            "pdf-02",
+            "pdf-05"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "또한 소스 세퍼레이션과 스피커 리코그네이션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+          "rawText": "또한 소스 세퍼레이션과 스피커 리코그네이션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        }
+      ],
+      "transcript": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 보이스 필터를 설명하겠습니다. 스피커는 타깃티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다. 시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리해 학습한 두 개의 뉴럴 네트워크를 결합합니다. 첫 번째 스피커 리코그네이션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다. LSM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 스펙트로그램 마스킹 네트워크가 노이즈 스펙트로그램과 스피커 인베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다. 마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT 로 음성을 복원합니다. 평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다. 보이스 필터, d-vector, LSTM, STFT처럼 짧은 약어와 고유 모델명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다. 또한 소스 세퍼레이션과 스피커 리코그네이션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+      "rawTranscript": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 보이스 필터를 설명하겠습니다. 스피커는 타깃티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다. 시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리해 학습한 두 개의 뉴럴 네트워크를 결합합니다. 첫 번째 스피커 리코그네이션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다. LSM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 스펙트로그램 마스킹 네트워크가 노이즈 스펙트로그램과 스피커 인베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다. 마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT 로 음성을 복원합니다. 평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다. 보이스 필터, d-vector, LSTM, STFT처럼 짧은 약어와 고유 모델명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다. 또한 소스 세퍼레이션과 스피커 리코그네이션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 5,
+        "aliasCorrectionSuccesses": 0,
+        "misses": 8,
+        "falseCorrections": 0,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 13,
+        "productLinkRate": 0.38461538461538464
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoiceFilter",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoiceFilter",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Spectrogram Masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "LSTM",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "d-vector",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Spectrogram Masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Inverse STFT",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "STFT",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 5,
+          "rawText": "STFT"
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "WER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "WER"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoiceFilter",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "d-vector",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "d-vector"
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "LSTM",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "LSTM"
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "STFT",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "STFT"
+        }
+      ],
+      "unexpectedObservations": [],
+      "errors": []
+    },
+    {
+      "label": "canonical-phrase-set",
+      "status": "completed",
+      "phraseSet": [
+        "WER",
+        "Word Error Rate",
+        "LSTM",
+        "VCTK",
+        "SDR",
+        "Source to Distortion Ratio",
+        "STFT",
+        "VoiceFilter",
+        "LibriSpeech",
+        "d-vector",
+        "Speaker Recognition",
+        "VoxCeleb",
+        "Spectrogram Masking",
+        "Deep Attractor Network",
+        "Voice Filtering",
+        "Inverse STFT",
+        "Speaker Diarization",
+        "Deep Clustering",
+        "GEV beamformer",
+        "MultiReader",
+        "Equal Error Rate",
+        "log-mel filterbank",
+        "Sigmoid",
+        "ReLU"
+      ],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "WER",
+          "english": "Word Error Rate",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "LSTM",
+          "english": "LSTM",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "VCTK",
+          "english": "VCTK",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "SDR",
+          "english": "Source to Distortion Ratio",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "STFT",
+          "english": "STFT",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "VoiceFilter",
+          "english": "VoiceFilter",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "LibriSpeech",
+          "english": "LibriSpeech",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "d-vector",
+          "english": "d-vector",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "Speaker Recognition",
+          "english": "Speaker Recognition",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "VoxCeleb",
+          "english": "VoxCeleb",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "Spectrogram Masking",
+          "english": "Spectrogram Masking",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "Deep Attractor Network",
+          "english": "Deep Attractor Network",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "Voice Filtering",
+          "english": "Voice Filtering",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "Inverse STFT",
+          "english": "Inverse STFT",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Speaker Diarization",
+          "english": "Speaker Diarization",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "Deep Clustering",
+          "english": "Deep Clustering",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "GEV beamformer",
+          "english": "GEV beamformer",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "MultiReader",
+          "english": "MultiReader",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Equal Error Rate",
+          "english": "Equal Error Rate",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "log-mel filterbank",
+          "english": "log-mel filterbank",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "Sigmoid",
+          "english": "Sigmoid",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "ReLU",
+          "english": "ReLU",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T12:16:30.654Z",
+      "readyAfterMs": 9,
+      "audioDurationMs": 81823,
+      "wallClockMs": 84226,
+      "interimCount": 11,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 보이스 필터를 설명하겠습니다.",
+          "rawText": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 보이스 필터를 설명하겠습니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "필터는 타겟티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다.",
+          "rawText": "필터는 타겟티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리에 학습한 두 개의 뉴럴 네트워크를 결합합니다.",
+          "rawText": "시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리에 학습한 두 개의 뉴럴 네트워크를 결합합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "첫 번째 스피커 리코그네이션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다.",
+          "rawText": "첫 번째 스피커 리코그네이션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "LSTM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 스펙트로그램 마스킹 네트워크가 노이즈 스펙트로그램과 스피커 임베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다.",
+          "rawText": "LSTM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 스펙트로그램 마스킹 네트워크가 노이즈 스펙트로그램과 스피커 임베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다.",
+          "detectedTermIds": [
+            "pdf-02"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT",
+          "rawText": "마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT",
+          "detectedTermIds": [
+            "pdf-05"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "로 음성을 복원합니다.",
+          "rawText": "로 음성을 복원합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다.",
+          "rawText": "평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다.",
+          "detectedTermIds": [
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "보이스 필터 d-vector LSTM STFT처럼 짧은 약어와 고유 모델 명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다.",
+          "rawText": "보이스 필터 d-vector LSTM STFT처럼 짧은 약어와 고유 모델 명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다.",
+          "detectedTermIds": [
+            "pdf-08",
+            "pdf-02",
+            "pdf-05"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "또한 소스 세퍼레이션과 스피커 리코그네이션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+          "rawText": "또한 소스 세퍼레이션과 스피커 리코그네이션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        }
+      ],
+      "transcript": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 보이스 필터를 설명하겠습니다. 필터는 타겟티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다. 시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리에 학습한 두 개의 뉴럴 네트워크를 결합합니다. 첫 번째 스피커 리코그네이션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다. LSTM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 스펙트로그램 마스킹 네트워크가 노이즈 스펙트로그램과 스피커 임베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다. 마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT 로 음성을 복원합니다. 평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다. 보이스 필터 d-vector LSTM STFT처럼 짧은 약어와 고유 모델 명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다. 또한 소스 세퍼레이션과 스피커 리코그네이션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+      "rawTranscript": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 보이스 필터를 설명하겠습니다. 필터는 타겟티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다. 시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리에 학습한 두 개의 뉴럴 네트워크를 결합합니다. 첫 번째 스피커 리코그네이션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다. LSTM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 스펙트로그램 마스킹 네트워크가 노이즈 스펙트로그램과 스피커 임베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다. 마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT 로 음성을 복원합니다. 평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다. 보이스 필터 d-vector LSTM STFT처럼 짧은 약어와 고유 모델 명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다. 또한 소스 세퍼레이션과 스피커 리코그네이션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 6,
+        "aliasCorrectionSuccesses": 0,
+        "misses": 7,
+        "falseCorrections": 0,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 13,
+        "productLinkRate": 0.46153846153846156
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoiceFilter",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoiceFilter",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Spectrogram Masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "LSTM",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 4,
+          "rawText": "LSTM"
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "d-vector",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Spectrogram Masking",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Inverse STFT",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "STFT",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 5,
+          "rawText": "STFT"
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "WER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "WER"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoiceFilter",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "d-vector",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "d-vector"
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "LSTM",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "LSTM"
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "STFT",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "STFT"
+        }
+      ],
+      "unexpectedObservations": [],
+      "errors": []
+    },
+    {
+      "label": "spoken-alias-phrase-set",
+      "status": "completed",
+      "phraseSet": [
+        "WER",
+        "Word Error Rate",
+        "더블유이알",
+        "워드 에러 레이트",
+        "LSTM",
+        "엘에스티엠",
+        "VCTK",
+        "브이씨티케이",
+        "SDR",
+        "Source to Distortion Ratio",
+        "에스디알",
+        "STFT",
+        "에스티에프티",
+        "VoiceFilter",
+        "보이스필터",
+        "보이스 필터",
+        "LibriSpeech",
+        "리브리스피치",
+        "d-vector",
+        "디벡터",
+        "디 벡터",
+        "Speaker Recognition",
+        "스피커 레코그니션",
+        "화자 인식",
+        "VoxCeleb",
+        "복스셀럽",
+        "Spectrogram Masking",
+        "스펙트로그램 마스킹",
+        "Deep Attractor Network",
+        "딥 어트랙터 네트워크",
+        "Voice Filtering",
+        "보이스 필터링",
+        "Inverse STFT",
+        "인버스 에스티에프티",
+        "Speaker Diarization",
+        "스피커 다이어라이제이션",
+        "화자 분할",
+        "Deep Clustering",
+        "딥 클러스터링",
+        "GEV beamformer",
+        "지이브이 빔포머",
+        "MultiReader",
+        "멀티리더",
+        "Equal Error Rate",
+        "이퀄 에러 레이트",
+        "이이알",
+        "log-mel filterbank",
+        "로그멜 필터뱅크",
+        "Sigmoid",
+        "시그모이드",
+        "ReLU",
+        "렐루"
+      ],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "WER",
+          "english": "Word Error Rate",
+          "spokenAliases": [
+            "더블유이알",
+            "워드 에러 레이트"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "LSTM",
+          "english": "LSTM",
+          "spokenAliases": [
+            "엘에스티엠"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "VCTK",
+          "english": "VCTK",
+          "spokenAliases": [
+            "브이씨티케이"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "SDR",
+          "english": "Source to Distortion Ratio",
+          "spokenAliases": [
+            "에스디알"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "STFT",
+          "english": "STFT",
+          "spokenAliases": [
+            "에스티에프티"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "VoiceFilter",
+          "english": "VoiceFilter",
+          "spokenAliases": [
+            "보이스필터",
+            "보이스 필터"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "LibriSpeech",
+          "english": "LibriSpeech",
+          "spokenAliases": [
+            "리브리스피치"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "d-vector",
+          "english": "d-vector",
+          "spokenAliases": [
+            "디벡터",
+            "디 벡터"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "Speaker Recognition",
+          "english": "Speaker Recognition",
+          "spokenAliases": [
+            "스피커 레코그니션",
+            "화자 인식"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "VoxCeleb",
+          "english": "VoxCeleb",
+          "spokenAliases": [
+            "복스셀럽"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "Spectrogram Masking",
+          "english": "Spectrogram Masking",
+          "spokenAliases": [
+            "스펙트로그램 마스킹"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "Deep Attractor Network",
+          "english": "Deep Attractor Network",
+          "spokenAliases": [
+            "딥 어트랙터 네트워크"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "Voice Filtering",
+          "english": "Voice Filtering",
+          "spokenAliases": [
+            "보이스 필터링"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "Inverse STFT",
+          "english": "Inverse STFT",
+          "spokenAliases": [
+            "인버스 에스티에프티"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Speaker Diarization",
+          "english": "Speaker Diarization",
+          "spokenAliases": [
+            "스피커 다이어라이제이션",
+            "화자 분할"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "Deep Clustering",
+          "english": "Deep Clustering",
+          "spokenAliases": [
+            "딥 클러스터링"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "GEV beamformer",
+          "english": "GEV beamformer",
+          "spokenAliases": [
+            "지이브이 빔포머"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "MultiReader",
+          "english": "MultiReader",
+          "spokenAliases": [
+            "멀티리더"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Equal Error Rate",
+          "english": "Equal Error Rate",
+          "spokenAliases": [
+            "이퀄 에러 레이트",
+            "이이알"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "log-mel filterbank",
+          "english": "log-mel filterbank",
+          "spokenAliases": [
+            "로그멜 필터뱅크"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "Sigmoid",
+          "english": "Sigmoid",
+          "spokenAliases": [
+            "시그모이드"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "ReLU",
+          "english": "ReLU",
+          "spokenAliases": [
+            "렐루"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T12:16:30.654Z",
+      "readyAfterMs": 19,
+      "audioDurationMs": 81823,
+      "wallClockMs": 84211,
+      "interimCount": 11,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 VoiceFilter를 설명하겠습니다.",
+          "rawText": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 보이스 필터를 설명하겠습니다.",
+          "detectedTermIds": [
+            "pdf-06"
+          ],
+          "corrections": [
+            {
+              "originalText": "보이스 필터",
+              "correctedText": "VoiceFilter",
+              "termId": "pdf-06",
+              "displayStart": 41,
+              "displayEnd": 52,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "필터는 타겟티드 보이스 세퍼레이션을 위해 스피커 컨디션드 Spectrogram Masking을 사용합니다.",
+          "rawText": "필터는 타겟티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다.",
+          "detectedTermIds": [
+            "pdf-11"
+          ],
+          "corrections": [
+            {
+              "originalText": "스펙트로그램 마스킹",
+              "correctedText": "Spectrogram Masking",
+              "termId": "pdf-11",
+              "displayStart": 32,
+              "displayEnd": 51,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리에 학습한 두 개의 뉴럴 네트워크를 결합합니다.",
+          "rawText": "시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리에 학습한 두 개의 뉴럴 네트워크를 결합합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "첫 번째 Speaker Recognition 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다.",
+          "rawText": "첫 번째 스피커 레코그니션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다.",
+          "detectedTermIds": [
+            "pdf-09"
+          ],
+          "corrections": [
+            {
+              "originalText": "스피커 레코그니션",
+              "correctedText": "Speaker Recognition",
+              "termId": "pdf-09",
+              "displayStart": 5,
+              "displayEnd": 24,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "LSM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 Spectrogram Masking 네트워크가 노이즈 스펙트로그램과 스피커 임베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다.",
+          "rawText": "LSM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 스펙트로그램 마스킹 네트워크가 노이즈 스펙트로그램과 스피커 임베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다.",
+          "detectedTermIds": [
+            "pdf-11"
+          ],
+          "corrections": [
+            {
+              "originalText": "스펙트로그램 마스킹",
+              "correctedText": "Spectrogram Masking",
+              "termId": "pdf-11",
+              "displayStart": 41,
+              "displayEnd": 60,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT",
+          "rawText": "마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT",
+          "detectedTermIds": [
+            "pdf-05"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "로 음성을 복원합니다.",
+          "rawText": "로 음성을 복원합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다.",
+          "rawText": "평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다.",
+          "detectedTermIds": [
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "VoiceFilter, d-vector, LSTM, STFT처럼 짧은 약어와 고유 모델명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다.",
+          "rawText": "보이스 필터, d-vector, LSTM, STFT처럼 짧은 약어와 고유 모델명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다.",
+          "detectedTermIds": [
+            "pdf-06",
+            "pdf-08",
+            "pdf-02",
+            "pdf-05"
+          ],
+          "corrections": [
+            {
+              "originalText": "보이스 필터",
+              "correctedText": "VoiceFilter",
+              "termId": "pdf-06",
+              "displayStart": 0,
+              "displayEnd": 11,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "또한 소스 세퍼레이션과 Speaker Recognition이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+          "rawText": "또한 소스 세퍼레이션과 스피커 레코그니션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+          "detectedTermIds": [
+            "pdf-09"
+          ],
+          "corrections": [
+            {
+              "originalText": "스피커 레코그니션",
+              "correctedText": "Speaker Recognition",
+              "termId": "pdf-09",
+              "displayStart": 13,
+              "displayEnd": 32,
+              "reason": "spokenAlias"
+            }
+          ]
+        }
+      ],
+      "transcript": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 VoiceFilter를 설명하겠습니다. 필터는 타겟티드 보이스 세퍼레이션을 위해 스피커 컨디션드 Spectrogram Masking을 사용합니다. 시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리에 학습한 두 개의 뉴럴 네트워크를 결합합니다. 첫 번째 Speaker Recognition 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다. LSM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 Spectrogram Masking 네트워크가 노이즈 스펙트로그램과 스피커 임베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다. 마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT 로 음성을 복원합니다. 평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다. VoiceFilter, d-vector, LSTM, STFT처럼 짧은 약어와 고유 모델명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다. 또한 소스 세퍼레이션과 Speaker Recognition이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+      "rawTranscript": "오늘은 여러 사람들이 동시에 말하는 신호에서 목표 화자 음성만을 분리하는 보이스 필터를 설명하겠습니다. 필터는 타겟티드 보이스 세퍼레이션을 위해 스피커 컨디션드 스펙트로그램 마스킹을 사용합니다. 시스템은 타깃 스피커의 레퍼런스 시그널을 먼저 받고 서로 분리에 학습한 두 개의 뉴럴 네트워크를 결합합니다. 첫 번째 스피커 레코그니션 네트워크는 스피커 디스크리미네이티브 임베딩을 생성합니다. LSM 기반 스피커 인코더가 고정된 256 차원의 벡터를 만들면 두 번째 스펙트로그램 마스킹 네트워크가 노이즈 스펙트로그램과 스피커 임베딩을 함께 입력받아 타임 프리퀀시 마스크를 예측합니다. 마스크 매그니튜드 스펙트로그램에 적용된 뒤 인버스 STFT 로 음성을 복원합니다. 평가에서는 멀티 스피커 시그널의 WER이 크게 줄어드는지 확인하고 싱글 스피커 시그널에서는 성능 저하가 작은지도 살펴봅니다. 보이스 필터, d-vector, LSTM, STFT처럼 짧은 약어와 고유 모델명이 연속으로 등장해도 정확한 표기가 유지되어야 합니다. 또한 소스 세퍼레이션과 스피커 레코그니션이 서로 다른 기능으로 설명되는지 확인하겠습니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 5,
+        "aliasCorrectionSuccesses": 4,
+        "misses": 4,
+        "falseCorrections": 2,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 13,
+        "productLinkRate": 0.6923076923076923
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoiceFilter",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 0,
+          "rawText": "보이스 필터"
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoiceFilter",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Spectrogram Masking",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 1,
+          "rawText": "스펙트로그램 마스킹"
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "LSTM",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "d-vector",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-06",
+          "canonicalTerm": "Spectrogram Masking",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 4,
+          "rawText": "스펙트로그램 마스킹"
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-07",
+          "canonicalTerm": "Inverse STFT",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "STFT",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 5,
+          "rawText": "STFT"
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "WER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 7,
+          "rawText": "WER"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoiceFilter",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 8,
+          "rawText": "보이스 필터"
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "d-vector",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "d-vector"
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "LSTM",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "LSTM"
+        },
+        {
+          "sequence": 13,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "STFT",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "STFT"
+        }
+      ],
+      "unexpectedObservations": [
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 3,
+          "rawText": "스피커 레코그니션"
+        },
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 9,
+          "rawText": "스피커 레코그니션"
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

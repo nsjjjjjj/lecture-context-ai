@@ -11,6 +11,12 @@ import {
 import path from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
+import { ExperimentStudyStoreService } from "./experiment-studies.js";
+import {
+  experimentIdentitySchema,
+  parseFixtureScripts,
+  type FixtureScript
+} from "./stt-comparison.js";
 
 export const FIXTURE_SAMPLE_RATE = 16_000;
 export const FIXTURE_CHANNELS = 1;
@@ -29,20 +35,7 @@ const fixtureFileNameSchema = z.string().regex(/^\d{14}-[0-9a-f]{8}-[0-9a-f-]{27
 export const fixtureSpeakerLabelSchema = z.enum(["speaker-a", "speaker-b"]);
 export const fixtureEnvironmentSchema = z.enum(["quiet", "noisy"]);
 
-const fixtureScriptSchema = z.object({
-  id: safeIdSchema,
-  title: z.string().min(1).max(120),
-  languageCode: z.literal("ko-KR"),
-  text: z.string().min(1).max(5_000),
-  targetTerms: z.array(z.string().min(1).max(120)).max(50)
-}).strict();
-
-const fixtureScriptsSchema = z.object({
-  version: z.literal(1),
-  scripts: z.array(fixtureScriptSchema).min(1).max(20)
-}).strict();
-
-const fixtureRecordingSchema = z.object({
+const fixtureRecordingFields = {
   id: z.string().uuid(),
   fileName: fixtureFileNameSchema,
   relativePath: z.string().regex(/^audio\/\d{14}-[0-9a-f]{8}-[0-9a-f-]{27}\.wav$/),
@@ -55,14 +48,27 @@ const fixtureRecordingSchema = z.object({
   channels: z.literal(FIXTURE_CHANNELS),
   bitsPerSample: z.literal(FIXTURE_BITS_PER_SAMPLE),
   dataBytes: z.number().int().positive().max(FIXTURE_MAX_WAV_BYTES - FIXTURE_WAV_HEADER_BYTES).refine((value) => value % 2 === 0)
+};
+
+export const fixtureRecordingSchema = z.object({
+  ...fixtureRecordingFields,
+  speakerReadReferenceScriptVerbatim: z.boolean(),
+  experimentIdentity: experimentIdentitySchema.optional()
 }).strict();
 
-const fixtureManifestSchema = z.object({
-  version: z.literal(1),
+const legacyFixtureRecordingSchema = z.object(fixtureRecordingFields).strict();
+
+export const fixtureManifestSchema = z.object({
+  version: z.literal(2),
   recordings: z.array(fixtureRecordingSchema).max(1_000)
 }).strict();
 
-export type FixtureScript = z.infer<typeof fixtureScriptSchema>;
+const legacyFixtureManifestSchema = z.object({
+  version: z.literal(1),
+  recordings: z.array(legacyFixtureRecordingSchema).max(1_000)
+}).strict();
+
+export type { FixtureScript } from "./stt-comparison.js";
 export type FixtureSpeakerLabel = z.infer<typeof fixtureSpeakerLabelSchema>;
 export type FixtureEnvironment = z.infer<typeof fixtureEnvironmentSchema>;
 export type FixtureRecording = z.infer<typeof fixtureRecordingSchema>;
@@ -78,6 +84,7 @@ export type SaveAudioFixtureInput = {
   scriptId: string;
   speakerLabel: string;
   environment: string;
+  speakerReadReferenceScriptVerbatim?: boolean;
   wav: Buffer;
 };
 
@@ -185,6 +192,7 @@ export class AudioFixtureStore {
   private readonly now: () => Date;
   private readonly randomId: () => string;
   private readonly commitManifest: (manifestPath: string, manifest: FixtureManifest) => Promise<void>;
+  private readonly studyStore: ExperimentStudyStoreService;
 
   constructor(
     private readonly root: string,
@@ -193,6 +201,7 @@ export class AudioFixtureStore {
     this.now = dependencies.now ?? (() => new Date());
     this.randomId = dependencies.randomId ?? randomUUID;
     this.commitManifest = dependencies.commitManifest ?? defaultCommitManifest;
+    this.studyStore = new ExperimentStudyStoreService(root);
   }
 
   private get audioRoot(): string {
@@ -218,7 +227,14 @@ export class AudioFixtureStore {
 
   private async readScripts(): Promise<FixtureScript[]> {
     try {
-      return fixtureScriptsSchema.parse(await readJsonFile(this.scriptsPath)).scripts;
+      const fixedScripts = parseFixtureScripts(await readJsonFile(this.scriptsPath)).scripts;
+      const studyScripts = await this.studyStore.getScripts();
+      const ids = new Set(fixedScripts.map((script) => script.id));
+      for (const script of studyScripts) {
+        if (ids.has(script.id)) throw new AudioFixtureError("고정 대본과 실험 케이스 대본 ID가 충돌합니다.", 500);
+        ids.add(script.id);
+      }
+      return [...fixedScripts, ...studyScripts];
     } catch (error) {
       if (error instanceof AudioFixtureError) throw error;
       throw new AudioFixtureError("고정 실험 문장 파일이 없거나 형식이 올바르지 않습니다.", 500);
@@ -227,9 +243,19 @@ export class AudioFixtureStore {
 
   private async readManifest(): Promise<FixtureManifest> {
     try {
-      return fixtureManifestSchema.parse(await readJsonFile(this.manifestPath));
+      const value = await readJsonFile(this.manifestPath);
+      const current = fixtureManifestSchema.safeParse(value);
+      if (current.success) return current.data;
+      const legacy = legacyFixtureManifestSchema.parse(value);
+      return fixtureManifestSchema.parse({
+        version: 2,
+        recordings: legacy.recordings.map((recording) => ({
+          ...recording,
+          speakerReadReferenceScriptVerbatim: false
+        }))
+      });
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return { version: 1, recordings: [] };
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return { version: 2, recordings: [] };
       if (error instanceof AudioFixtureError) throw error;
       throw new AudioFixtureError("로컬 fixture manifest가 손상되었습니다. 파일을 확인하거나 삭제해 주세요.", 500);
     }
@@ -308,7 +334,8 @@ export class AudioFixtureStore {
     const scriptId = safeIdSchema.parse(input.scriptId);
     const speakerLabel = fixtureSpeakerLabelSchema.parse(input.speakerLabel);
     const environment = fixtureEnvironmentSchema.parse(input.environment);
-    if (!scripts.some((script) => script.id === scriptId)) throw new AudioFixtureError("선택한 고정 실험 문장을 찾을 수 없습니다.");
+    const selectedScript = scripts.find((script) => script.id === scriptId);
+    if (!selectedScript) throw new AudioFixtureError("선택한 고정 실험 문장을 찾을 수 없습니다.");
 
     const inspected = inspectCanonicalWav(input.wav);
     if (manifest.recordings.length >= 1_000) throw new AudioFixtureError("로컬 녹음 fixture가 1,000개에 도달했습니다. 기존 파일을 정리해 주세요.", 409);
@@ -328,7 +355,9 @@ export class AudioFixtureStore {
       sampleRate: FIXTURE_SAMPLE_RATE,
       channels: FIXTURE_CHANNELS,
       bitsPerSample: FIXTURE_BITS_PER_SAMPLE,
-      dataBytes: inspected.dataBytes
+      dataBytes: inspected.dataBytes,
+      speakerReadReferenceScriptVerbatim: input.speakerReadReferenceScriptVerbatim ?? false,
+      ...(selectedScript.experimentIdentity ? { experimentIdentity: selectedScript.experimentIdentity } : {})
     });
 
     const finalPath = path.join(this.audioRoot, fileName);
@@ -341,7 +370,7 @@ export class AudioFixtureStore {
       await rename(temporaryPath, finalPath);
       finalCreated = true;
       const nextManifest = fixtureManifestSchema.parse({
-        version: 1,
+        version: 2,
         recordings: [...manifest.recordings, recording]
       });
       await this.commitManifest(this.manifestPath, nextManifest);

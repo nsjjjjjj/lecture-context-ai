@@ -33,12 +33,21 @@ describe("sanitizeGlossaryTerms", () => {
     expect(result.some((candidate) => candidate.id === "duplicate")).toBe(false);
   });
 
-  it("제공된 검토 별칭만 정리하고 알려진 별칭도 몰래 보완하지 않는다", () => {
+  it("제공된 안전한 자동 발음만 정리하고 알려진 별칭도 몰래 보완하지 않는다", () => {
     const result = sanitizeGlossaryTerms([
       term({ spokenAliases: [" 레그 ", "모델", "not-korean", "레그"] })
     ]);
 
     expect(result[0]?.spokenAliases).toEqual(["레그"]);
+  });
+
+  it("고정 목록에 없는 안전한 자동 발음을 WebSocket 경계에서 보존한다", () => {
+    const result = sanitizeGlossaryTerms([
+      term({ id: "bert", term: "BERT", english: "", spokenAliases: ["버트"] })
+    ]);
+
+    expect(result[0]?.spokenAliases).toEqual(["버트"]);
+    expect(sanitizePhraseSet(["BERT", "버트"], result)).toEqual(["BERT", "버트"]);
   });
 
   it("중복 ID는 첫 번째 유효 용어만 보존해 canonical term과 소유권을 일치시킨다", () => {
@@ -81,12 +90,30 @@ describe("sanitizePhraseSet", () => {
     expect(result).toEqual(["RAG", "Retrieval-Augmented Generation", "레그"]);
   });
 
-  it("허용된 표기가 많아도 PhraseSet을 50개로 제한한다", () => {
-    const terms = Array.from({ length: 60 }, (_, index) =>
-      term({ id: `term-${index}`, term: `Term ${index}`, english: "" })
-    );
+  it("원본 용어 50개에 딸린 한글 발음은 50개 제한에 포함하지 않는다", () => {
+    const terms = sanitizeGlossaryTerms(Array.from({ length: 50 }, (_, index) =>
+      term({
+        id: `term-${index}`,
+        term: `Term ${index}`,
+        english: "",
+        spokenAliases: [`${String.fromCharCode(0xac00 + index)}음`]
+      })
+    ));
+    const phrases = terms.flatMap((candidate) => [candidate.term, ...candidate.spokenAliases]);
 
-    expect(sanitizePhraseSet(terms.map((candidate) => candidate.term), terms)).toHaveLength(50);
+    expect(sanitizePhraseSet(phrases, terms)).toHaveLength(100);
+    expect(sanitizePhraseSet(phrases, terms)).toContain(`${String.fromCharCode(0xac00 + 49)}음`);
+  });
+
+  it("원본 용어가 50개로 정리된 뒤에는 허용되지 않은 추가 표기를 제외한다", () => {
+    const rawTerms = Array.from({ length: 60 }, (_, index) =>
+      term({ id: `term-${index}`, term: `Term ${index}`, english: "", spokenAliases: [] })
+    );
+    const terms = sanitizeGlossaryTerms(rawTerms);
+
+    expect(sanitizePhraseSet(rawTerms.map((candidate) => candidate.term), terms)).toEqual(
+      terms.map((candidate) => candidate.term)
+    );
   });
 
   it("과도하게 큰 문자열과 너무 짧은 표기는 정규화 대상에서 제외한다", () => {
@@ -99,7 +126,7 @@ describe("sanitizePhraseSet", () => {
   });
 
   it("원시 후보 검사량을 PhraseSet 상한의 합리적인 배수로 제한한다", () => {
-    const candidates = [...Array.from({ length: 200 }, () => null), "RAG"];
+    const candidates = [...Array.from({ length: 1_600 }, () => null), "RAG"];
 
     expect(sanitizePhraseSet(candidates, [term()])).toEqual([]);
   });

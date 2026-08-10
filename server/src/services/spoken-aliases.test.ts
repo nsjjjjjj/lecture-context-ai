@@ -30,6 +30,7 @@ describe("spoken alias validation", () => {
     const result = withValidatedSpokenAliases([
       term(),
       term({ id: "transformer", term: "Transformer", english: "Transformer" }),
+      term({ id: "attention", term: "Attention", english: "Attention" }),
       term({ id: "fine-tuning", term: "Fine-tuning", english: "Fine-tuning" }),
       term({ id: "phrase-set", term: "PhraseSet", english: "PhraseSet" })
     ]);
@@ -37,17 +38,30 @@ describe("spoken alias validation", () => {
     expect(result.map((candidate) => candidate.spokenAliases)).toEqual([
       ["래그", "레그", "알에이지"],
       ["트랜스포머"],
-      ["파인 튜닝"],
+      ["어텐션"],
+      ["파인튜닝", "파인 튜닝"],
       ["프레이즈셋", "프레이즈 세트", "프레이저스 셋"]
     ]);
+  });
+
+  it("accepts safe generated Korean pronunciations outside the deterministic fallback list", () => {
+    expect(sanitizeSpokenAliases("Prompt Engineering", "", ["프롬프트 엔지니어링", "프롬프트 설계"])).toEqual([
+      "프롬프트 엔지니어링",
+      "프롬프트 설계"
+    ]);
+    expect(sanitizeSpokenAliases("BERT", "", ["버트"])).toEqual(["버트"]);
+    expect(sanitizeSpokenAliases("ResNet", "", ["레즈넷"])).toEqual(["레즈넷"]);
   });
 
   it("rejects non-Hangul forms, unsafe common words, and every alias for Korean-only terms", () => {
     expect(sanitizeSpokenAliases("전문용어", "", ["alias", "모델", "용어", "충분한별칭"])).toEqual([]);
   });
 
-  it("rejects plausible-looking aliases that are not a reviewed term-pronunciation pair", () => {
-    expect(sanitizeSpokenAliases("API", "Application Programming Interface", ["사과", "에이피아이"])).toEqual([]);
+  it("accepts generated pronunciations while rejecting blocked common-word aliases", () => {
+    expect(sanitizeSpokenAliases("API", "Application Programming Interface", ["사과", "에이피아이"])).toEqual([
+      "에이피아이"
+    ]);
+    expect(sanitizeSpokenAliases("Large Language Model", "LLM", ["엘엘엠", "거대 언어 모델"])).toEqual(["엘엘엠", "거대 언어 모델"]);
   });
 
   it("drops aliases shared by different terms or equal to another canonical term", () => {
@@ -60,7 +74,7 @@ describe("spoken alias validation", () => {
     expect(result[1]?.spokenAliases).toEqual([]);
   });
 
-  it("sanitizes supplied aliases without silently adding reviewed aliases", () => {
+  it("sanitizes supplied aliases without silently adding deterministic fallback aliases", () => {
     expect(withSanitizedSpokenAliases([term({ spokenAliases: [] })])[0]?.spokenAliases).toEqual([]);
     expect(withSanitizedSpokenAliases([term({ spokenAliases: [" 레그 ", "사과"] })])[0]?.spokenAliases)
       .toEqual(["레그"]);

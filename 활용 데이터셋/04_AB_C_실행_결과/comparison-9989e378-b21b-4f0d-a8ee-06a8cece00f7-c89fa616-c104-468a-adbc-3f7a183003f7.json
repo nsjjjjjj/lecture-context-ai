@@ -1,0 +1,1915 @@
+{
+  "version": 4,
+  "createdAt": "2026-08-09T10:50:27.139Z",
+  "recording": {
+    "id": "9989e378-b21b-4f0d-a8ee-06a8cece00f7",
+    "scriptId": "case-35ecfd58-1fae-487c-a9f3-704e2d4a012a",
+    "speakerReadReferenceScriptVerbatim": true,
+    "evaluationMode": "accuracy",
+    "experimentIdentity": {
+      "studyId": "study-d19b1102-60ad-4093-a44b-59d1901e9e9b",
+      "caseId": "case-35ecfd58-1fae-487c-a9f3-704e2d4a012a",
+      "caseSnapshotId": "snapshot-283345fa30c846340a09e87f",
+      "glossaryId": "da998d15-f6a4-4af4-8224-ebbd1ea2d418",
+      "glossaryName": "3",
+      "glossaryHash": "d6ac1144063fe85e46c8e0861653fdbd1ace974a9d506011ea9f019026fa2f24",
+      "scriptHash": "0e064d3776e0e36f672eb2c20a07b30ca61e21179f2c180ded67fea65c1b7b74"
+    }
+  },
+  "script": {
+    "id": "case-35ecfd58-1fae-487c-a9f3-704e2d4a012a",
+    "title": "test 03",
+    "languageCode": "ko-KR",
+    "text": "오늘은 에카파 티디엔엔을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 엑스 벡터 아키텍처는 타임 딜레이 뉴럴 네트워크, 즉 티디엔엔과 스태티스틱스 풀링을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다. 에카파 티디엔엔은 이 구조에 채널 어텐션과 계층 간 피처 결합을 추가합니다.\n\n초기 프레임 레이어는 원 디멘셔널 레스투넷 모듈로 재구성되고, 에스이 레스넷과 비슷한 스퀴즈 앤드 익사이테이션 블록이 채널 인터디펜던시를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤 멀티 레이어 피처 어그리게이션을 수행합니다. 마지막 어텐티브 스태티스틱스 풀링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다.\n\n성능은 복스셀렙 원과 복스에스알씨 이천십구 테스트 세트에서 평가합니다. 지표로는 이이알과 민 디씨에프를 함께 사용하며, 어댑티브 에스 놈도 적용합니다. 에카파 티디엔엔, 티디엔엔, 엑스 벡터, 레스투넷, 에스이 레스넷처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+    "targetTerms": [
+      {
+        "id": "gold-01",
+        "canonicalTerm": "TDNN",
+        "english": "Time Delay Neural Network",
+        "spokenAliases": [
+          "티디엔엔"
+        ],
+        "expectedOccurrences": [
+          2,
+          4,
+          6,
+          10,
+          11
+        ]
+      },
+      {
+        "id": "gold-02",
+        "canonicalTerm": "ECAPA-TDNN",
+        "english": "Emphasized Channel Attention, Propagation and Aggregation in TDNN",
+        "spokenAliases": [
+          "에카파 티디엔엔"
+        ],
+        "expectedOccurrences": [
+          1,
+          5,
+          9
+        ]
+      },
+      {
+        "id": "gold-03",
+        "canonicalTerm": "EER",
+        "english": "Equal Error Rate",
+        "spokenAliases": [
+          "이이알"
+        ],
+        "expectedOccurrences": [
+          8
+        ]
+      },
+      {
+        "id": "gold-04",
+        "canonicalTerm": "VoxSRC",
+        "english": "VoxCeleb Speaker Recognition Challenge",
+        "spokenAliases": [
+          "복스에스알씨"
+        ],
+        "expectedOccurrences": [
+          7
+        ]
+      },
+      {
+        "id": "gold-05",
+        "canonicalTerm": "x-vectors",
+        "english": "",
+        "spokenAliases": [
+          "엑스벡터",
+          "엑스 벡터"
+        ],
+        "expectedOccurrences": [
+          3,
+          12
+        ]
+      }
+    ],
+    "adaptationTerms": [
+      {
+        "id": "pdf-01",
+        "canonicalTerm": "TDNN",
+        "english": "Time Delay Neural Network",
+        "spokenAliases": [
+          "티디엔엔"
+        ]
+      },
+      {
+        "id": "pdf-02",
+        "canonicalTerm": "ECAPA-TDNN",
+        "english": "Emphasized Channel Attention, Propagation and Aggregation in TDNN",
+        "spokenAliases": [
+          "에카파 티디엔엔"
+        ]
+      },
+      {
+        "id": "pdf-03",
+        "canonicalTerm": "EER",
+        "english": "Equal Error Rate",
+        "spokenAliases": [
+          "이이알"
+        ]
+      },
+      {
+        "id": "pdf-04",
+        "canonicalTerm": "MFA",
+        "english": "Multi-layer Feature Aggregation",
+        "spokenAliases": [
+          "엠에프에이"
+        ]
+      },
+      {
+        "id": "pdf-05",
+        "canonicalTerm": "MUSAN",
+        "english": "",
+        "spokenAliases": [
+          "무산"
+        ]
+      },
+      {
+        "id": "pdf-06",
+        "canonicalTerm": "PLDA",
+        "english": "Probabilistic Linear Discriminant Analysis",
+        "spokenAliases": [
+          "피엘디에이"
+        ]
+      },
+      {
+        "id": "pdf-07",
+        "canonicalTerm": "VAD",
+        "english": "Voice Activity Detection",
+        "spokenAliases": [
+          "브이에이디"
+        ]
+      },
+      {
+        "id": "pdf-08",
+        "canonicalTerm": "VoxCeleb",
+        "english": "",
+        "spokenAliases": [
+          "복스셀럽"
+        ]
+      },
+      {
+        "id": "pdf-09",
+        "canonicalTerm": "MinDCF",
+        "english": "",
+        "spokenAliases": [
+          "민디씨에프"
+        ]
+      },
+      {
+        "id": "pdf-10",
+        "canonicalTerm": "ResNet",
+        "english": "",
+        "spokenAliases": [
+          "레즈넷"
+        ]
+      },
+      {
+        "id": "pdf-11",
+        "canonicalTerm": "VoxSRC",
+        "english": "VoxCeleb Speaker Recognition Challenge",
+        "spokenAliases": [
+          "복스에스알씨"
+        ]
+      },
+      {
+        "id": "pdf-12",
+        "canonicalTerm": "Res2Net",
+        "english": "",
+        "spokenAliases": [
+          "레즈투넷"
+        ]
+      },
+      {
+        "id": "pdf-13",
+        "canonicalTerm": "x-vectors",
+        "english": "",
+        "spokenAliases": [
+          "엑스벡터",
+          "엑스 벡터"
+        ]
+      },
+      {
+        "id": "pdf-14",
+        "canonicalTerm": "Conv1D",
+        "english": "",
+        "spokenAliases": [
+          "콘브원디",
+          "컨브원디"
+        ]
+      },
+      {
+        "id": "pdf-15",
+        "canonicalTerm": "Voice Activity Detection",
+        "english": "",
+        "spokenAliases": [
+          "보이스 액티비티 디텍션"
+        ]
+      },
+      {
+        "id": "pdf-16",
+        "canonicalTerm": "r-vector",
+        "english": "",
+        "spokenAliases": [
+          "알벡터",
+          "알 벡터"
+        ]
+      },
+      {
+        "id": "pdf-17",
+        "canonicalTerm": "Batch Normalization",
+        "english": "",
+        "spokenAliases": [
+          "배치 노멀라이제이션"
+        ]
+      },
+      {
+        "id": "pdf-18",
+        "canonicalTerm": "MFCCs",
+        "english": "",
+        "spokenAliases": [
+          "엠에프씨씨"
+        ]
+      },
+      {
+        "id": "pdf-19",
+        "canonicalTerm": "Adam",
+        "english": "",
+        "spokenAliases": [
+          "아담"
+        ]
+      },
+      {
+        "id": "pdf-20",
+        "canonicalTerm": "AAM-softmax",
+        "english": "",
+        "spokenAliases": [
+          "에이에이엠 소프트맥스"
+        ]
+      },
+      {
+        "id": "pdf-21",
+        "canonicalTerm": "SE-ResNet",
+        "english": "",
+        "spokenAliases": [
+          "에스이 레즈넷"
+        ]
+      },
+      {
+        "id": "pdf-22",
+        "canonicalTerm": "Brecht Desplanques",
+        "english": "",
+        "spokenAliases": [
+          "브레히트 데스플랑크"
+        ]
+      },
+      {
+        "id": "pdf-23",
+        "canonicalTerm": "ReLU",
+        "english": "Rectified Linear Units",
+        "spokenAliases": [
+          "렐루"
+        ]
+      },
+      {
+        "id": "pdf-24",
+        "canonicalTerm": "Kaldi",
+        "english": "",
+        "spokenAliases": [
+          "칼디"
+        ]
+      },
+      {
+        "id": "pdf-25",
+        "canonicalTerm": "Squeeze-and-Excitation",
+        "english": "",
+        "spokenAliases": [
+          "스퀴즈 앤 엑사이테이션"
+        ]
+      },
+      {
+        "id": "pdf-26",
+        "canonicalTerm": "SpecAugment",
+        "english": "",
+        "spokenAliases": [
+          "스펙오그먼트"
+        ]
+      }
+    ],
+    "experimentIdentity": {
+      "studyId": "study-d19b1102-60ad-4093-a44b-59d1901e9e9b",
+      "caseId": "case-35ecfd58-1fae-487c-a9f3-704e2d4a012a",
+      "caseSnapshotId": "snapshot-283345fa30c846340a09e87f",
+      "glossaryId": "da998d15-f6a4-4af4-8224-ebbd1ea2d418",
+      "glossaryName": "3",
+      "glossaryHash": "d6ac1144063fe85e46c8e0861653fdbd1ace974a9d506011ea9f019026fa2f24",
+      "scriptHash": "0e064d3776e0e36f672eb2c20a07b30ca61e21179f2c180ded67fea65c1b7b74"
+    }
+  },
+  "websocketUrl": "ws://127.0.0.1:8787/ws",
+  "measurementNote": "화자가 기준 문장을 그대로 읽었다고 명시적으로 선언한 녹음입니다. occurrence-level 지표를 정확도 비교에 사용할 수 있습니다.",
+  "runs": [
+    {
+      "label": "without-phrase-set",
+      "status": "completed",
+      "phraseSet": [],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "TDNN",
+          "english": "Time Delay Neural Network",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "ECAPA-TDNN",
+          "english": "Emphasized Channel Attention, Propagation and Aggregation in TDNN",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "EER",
+          "english": "Equal Error Rate",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "MFA",
+          "english": "Multi-layer Feature Aggregation",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "MUSAN",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "PLDA",
+          "english": "Probabilistic Linear Discriminant Analysis",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "VAD",
+          "english": "Voice Activity Detection",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "VoxCeleb",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "MinDCF",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "ResNet",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "VoxSRC",
+          "english": "VoxCeleb Speaker Recognition Challenge",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "Res2Net",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "x-vectors",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "Conv1D",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Voice Activity Detection",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "r-vector",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "Batch Normalization",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "MFCCs",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Adam",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "AAM-softmax",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "SE-ResNet",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "Brecht Desplanques",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "ReLU",
+          "english": "Rectified Linear Units",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "Kaldi",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "Squeeze-and-Excitation",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-26",
+          "term": "SpecAugment",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T10:45:05.253Z",
+      "readyAfterMs": 6,
+      "audioDurationMs": 103649,
+      "wallClockMs": 106670,
+      "interimCount": 14,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 에카파 TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 타임 딜레이 뉴럴 네트워크, 즉 TDNN과 스태티스틱스 풀링을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다.",
+          "rawText": "오늘은 에카파 TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 타임 딜레이 뉴럴 네트워크, 즉 TDNN과 스태티스틱스 풀링을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다.",
+          "detectedTermIds": [
+            "pdf-01",
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "메가파티 DNN은 이 구조의 채널 어텐션과 계층간 피처 결합을 추가합니다.",
+          "rawText": "메가파티 DNN은 이 구조의 채널 어텐션과 계층간 피처 결합을 추가합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "프레임 레이어는 1-dimensional Res2Net 모듈로 재구성하고 SE-ResNet과 비슷한 Squeeze-and-Excitation 블록이 채널 inter-dependency를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤",
+          "rawText": "프레임 레이어는 1-dimensional Res2Net 모듈로 재구성하고 SE-ResNet과 비슷한 Squeeze-and-Excitation 블록이 채널 inter-dependency를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤",
+          "detectedTermIds": [
+            "pdf-12",
+            "pdf-21",
+            "pdf-25"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "피처 어그리게이션을 수행합니다.",
+          "rawText": "피처 어그리게이션을 수행합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "마지막 어텐티브 스테티스틱스 스테티스틱스 플링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다.",
+          "rawText": "마지막 어텐티브 스테티스틱스 스테티스틱스 플링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "성능은 복스 셀렉과",
+          "rawText": "성능은 복스 셀렉과",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "성능은 복스 셀렉원과 복스 SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 민 DCF를 함께 사용하며",
+          "rawText": "성능은 복스 셀렉원과 복스 SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 민 DCF를 함께 사용하며",
+          "detectedTermIds": [
+            "pdf-03"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "어댑티브 S 놈도 적용합니다.",
+          "rawText": "어댑티브 S 놈도 적용합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "에카파티디에는, 티디에는, X 벡터, 레스투넷, SE 레스넷처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+          "rawText": "에카파티디에는, 티디에는, X 벡터, 레스투넷, SE 레스넷처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        }
+      ],
+      "transcript": "오늘은 에카파 TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 타임 딜레이 뉴럴 네트워크, 즉 TDNN과 스태티스틱스 풀링을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다. 메가파티 DNN은 이 구조의 채널 어텐션과 계층간 피처 결합을 추가합니다. 프레임 레이어는 1-dimensional Res2Net 모듈로 재구성하고 SE-ResNet과 비슷한 Squeeze-and-Excitation 블록이 채널 inter-dependency를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤 피처 어그리게이션을 수행합니다. 마지막 어텐티브 스테티스틱스 스테티스틱스 플링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다. 성능은 복스 셀렉과 성능은 복스 셀렉원과 복스 SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 민 DCF를 함께 사용하며 어댑티브 S 놈도 적용합니다. 에카파티디에는, 티디에는, X 벡터, 레스투넷, SE 레스넷처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+      "rawTranscript": "오늘은 에카파 TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 타임 딜레이 뉴럴 네트워크, 즉 TDNN과 스태티스틱스 풀링을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다. 메가파티 DNN은 이 구조의 채널 어텐션과 계층간 피처 결합을 추가합니다. 프레임 레이어는 1-dimensional Res2Net 모듈로 재구성하고 SE-ResNet과 비슷한 Squeeze-and-Excitation 블록이 채널 inter-dependency를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤 피처 어그리게이션을 수행합니다. 마지막 어텐티브 스테티스틱스 스테티스틱스 플링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다. 성능은 복스 셀렉과 성능은 복스 셀렉원과 복스 SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 민 DCF를 함께 사용하며 어댑티브 S 놈도 적용합니다. 에카파티디에는, 티디에는, X 벡터, 레스투넷, SE 레스넷처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 3,
+        "aliasCorrectionSuccesses": 0,
+        "misses": 9,
+        "falseCorrections": 0,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 12,
+        "productLinkRate": 0.25
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "ECAPA-TDNN",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 0,
+          "rawText": "TDNN"
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "x-vectors",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 0,
+          "rawText": "TDNN"
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "ECAPA-TDNN",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoxSRC",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "EER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "EER"
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "ECAPA-TDNN",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "x-vectors",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        }
+      ],
+      "unexpectedObservations": [],
+      "errors": []
+    },
+    {
+      "label": "canonical-phrase-set",
+      "status": "completed",
+      "phraseSet": [
+        "TDNN",
+        "Time Delay Neural Network",
+        "ECAPA-TDNN",
+        "Emphasized Channel Attention, Propagation and Aggregation in TDNN",
+        "EER",
+        "Equal Error Rate",
+        "MFA",
+        "Multi-layer Feature Aggregation",
+        "MUSAN",
+        "PLDA",
+        "Probabilistic Linear Discriminant Analysis",
+        "VAD",
+        "Voice Activity Detection",
+        "VoxCeleb",
+        "MinDCF",
+        "ResNet",
+        "VoxSRC",
+        "VoxCeleb Speaker Recognition Challenge",
+        "Res2Net",
+        "x-vectors",
+        "Conv1D",
+        "r-vector",
+        "Batch Normalization",
+        "MFCCs",
+        "Adam",
+        "AAM-softmax",
+        "SE-ResNet",
+        "Brecht Desplanques",
+        "ReLU",
+        "Rectified Linear Units",
+        "Kaldi",
+        "Squeeze-and-Excitation",
+        "SpecAugment"
+      ],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "TDNN",
+          "english": "Time Delay Neural Network",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "ECAPA-TDNN",
+          "english": "Emphasized Channel Attention, Propagation and Aggregation in TDNN",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "EER",
+          "english": "Equal Error Rate",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "MFA",
+          "english": "Multi-layer Feature Aggregation",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "MUSAN",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "PLDA",
+          "english": "Probabilistic Linear Discriminant Analysis",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "VAD",
+          "english": "Voice Activity Detection",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "VoxCeleb",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "MinDCF",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "ResNet",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "VoxSRC",
+          "english": "VoxCeleb Speaker Recognition Challenge",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "Res2Net",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "x-vectors",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "Conv1D",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Voice Activity Detection",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "r-vector",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "Batch Normalization",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "MFCCs",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Adam",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "AAM-softmax",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "SE-ResNet",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "Brecht Desplanques",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "ReLU",
+          "english": "Rectified Linear Units",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "Kaldi",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "Squeeze-and-Excitation",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-26",
+          "term": "SpecAugment",
+          "english": "",
+          "spokenAliases": [],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T10:46:52.926Z",
+      "readyAfterMs": 9,
+      "audioDurationMs": 103649,
+      "wallClockMs": 106765,
+      "interimCount": 14,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 ECAPA-TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 Time Delay Neural Network, 즉 TDNN과 Statistics Pooling을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다.",
+          "rawText": "오늘은 ECAPA-TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 Time Delay Neural Network, 즉 TDNN과 Statistics Pooling을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다.",
+          "detectedTermIds": [
+            "pdf-02",
+            "pdf-01",
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "ECAPA-TDNN은 이 구조의 채널 어텐션과 계층 간 피처 결합을 추가합니다.",
+          "rawText": "ECAPA-TDNN은 이 구조의 채널 어텐션과 계층 간 피처 결합을 추가합니다.",
+          "detectedTermIds": [
+            "pdf-02"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "프레임 레이어는 1-dimensional Res2Net 모듈로 재구성하고 SE-ResNet과 비슷한 Squeeze-and-Excitation 블록이 채널 엔터 디펜던시를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤",
+          "rawText": "프레임 레이어는 1-dimensional Res2Net 모듈로 재구성하고 SE-ResNet과 비슷한 Squeeze-and-Excitation 블록이 채널 엔터 디펜던시를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤",
+          "detectedTermIds": [
+            "pdf-12",
+            "pdf-21",
+            "pdf-25"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "레이어 피처 어그리게이션을 수행합니다.",
+          "rawText": "레이어 피처 어그리게이션을 수행합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "마지막 어텐티브 스테티스틱스 스테티스틱스 풀링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다.",
+          "rawText": "마지막 어텐티브 스테티스틱스 스테티스틱스 풀링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "성능은 복스셀랩과",
+          "rawText": "성능은 복스셀랩과",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "성능은 VoxCeleb 1과 Vox-SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 MinDCF를 함께 사용하며",
+          "rawText": "성능은 VoxCeleb 1과 Vox-SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 MinDCF를 함께 사용하며",
+          "detectedTermIds": [
+            "pdf-08",
+            "pdf-03",
+            "pdf-09"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "어댑티브 S 놈도 적용합니다.",
+          "rawText": "어댑티브 S 놈도 적용합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "ECAPA-TDNN, TDNN, x-vector, Res2Net, SE-ResNet처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+          "rawText": "ECAPA-TDNN, TDNN, x-vector, Res2Net, SE-ResNet처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+          "detectedTermIds": [
+            "pdf-02",
+            "pdf-01",
+            "pdf-12",
+            "pdf-21"
+          ],
+          "corrections": []
+        }
+      ],
+      "transcript": "오늘은 ECAPA-TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 Time Delay Neural Network, 즉 TDNN과 Statistics Pooling을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다. ECAPA-TDNN은 이 구조의 채널 어텐션과 계층 간 피처 결합을 추가합니다. 프레임 레이어는 1-dimensional Res2Net 모듈로 재구성하고 SE-ResNet과 비슷한 Squeeze-and-Excitation 블록이 채널 엔터 디펜던시를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤 레이어 피처 어그리게이션을 수행합니다. 마지막 어텐티브 스테티스틱스 스테티스틱스 풀링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다. 성능은 복스셀랩과 성능은 VoxCeleb 1과 Vox-SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 MinDCF를 함께 사용하며 어댑티브 S 놈도 적용합니다. ECAPA-TDNN, TDNN, x-vector, Res2Net, SE-ResNet처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+      "rawTranscript": "오늘은 ECAPA-TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 Time Delay Neural Network, 즉 TDNN과 Statistics Pooling을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다. ECAPA-TDNN은 이 구조의 채널 어텐션과 계층 간 피처 결합을 추가합니다. 프레임 레이어는 1-dimensional Res2Net 모듈로 재구성하고 SE-ResNet과 비슷한 Squeeze-and-Excitation 블록이 채널 엔터 디펜던시를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤 레이어 피처 어그리게이션을 수행합니다. 마지막 어텐티브 스테티스틱스 스테티스틱스 풀링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다. 성능은 복스셀랩과 성능은 VoxCeleb 1과 Vox-SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 MinDCF를 함께 사용하며 어댑티브 S 놈도 적용합니다. ECAPA-TDNN, TDNN, x-vector, Res2Net, SE-ResNet처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 9,
+        "aliasCorrectionSuccesses": 0,
+        "misses": 3,
+        "falseCorrections": 0,
+        "falseInsertions": 1,
+        "expectedOccurrenceCount": 12,
+        "productLinkRate": 0.75
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "ECAPA-TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 0,
+          "rawText": "ECAPA-TDNN"
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 0,
+          "rawText": "TDNN"
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "x-vectors",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 0,
+          "rawText": "Time Delay Neural Network"
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "ECAPA-TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "ECAPA-TDNN"
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "TDNN"
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoxSRC",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "EER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "EER"
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "ECAPA-TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "ECAPA-TDNN"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "TDNN"
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 8,
+          "rawText": "TDNN"
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "x-vectors",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        }
+      ],
+      "unexpectedObservations": [
+        {
+          "kind": "false-insertion",
+          "reason": "unexpected-direct-match",
+          "targetTermId": "gold-01",
+          "finalTranscriptIndex": 0,
+          "rawText": "TDNN"
+        }
+      ],
+      "errors": []
+    },
+    {
+      "label": "spoken-alias-phrase-set",
+      "status": "completed",
+      "phraseSet": [
+        "TDNN",
+        "Time Delay Neural Network",
+        "티디엔엔",
+        "ECAPA-TDNN",
+        "Emphasized Channel Attention, Propagation and Aggregation in TDNN",
+        "에카파 티디엔엔",
+        "EER",
+        "Equal Error Rate",
+        "이이알",
+        "MFA",
+        "Multi-layer Feature Aggregation",
+        "엠에프에이",
+        "MUSAN",
+        "무산",
+        "PLDA",
+        "Probabilistic Linear Discriminant Analysis",
+        "피엘디에이",
+        "VAD",
+        "Voice Activity Detection",
+        "브이에이디",
+        "VoxCeleb",
+        "복스셀럽",
+        "MinDCF",
+        "민디씨에프",
+        "ResNet",
+        "레즈넷",
+        "VoxSRC",
+        "VoxCeleb Speaker Recognition Challenge",
+        "복스에스알씨",
+        "Res2Net",
+        "레즈투넷",
+        "x-vectors",
+        "엑스벡터",
+        "엑스 벡터",
+        "Conv1D",
+        "콘브원디",
+        "컨브원디",
+        "보이스 액티비티 디텍션",
+        "r-vector",
+        "알벡터",
+        "알 벡터",
+        "Batch Normalization",
+        "배치 노멀라이제이션",
+        "MFCCs",
+        "엠에프씨씨",
+        "Adam",
+        "아담",
+        "AAM-softmax",
+        "에이에이엠 소프트맥스",
+        "SE-ResNet",
+        "에스이 레즈넷",
+        "Brecht Desplanques",
+        "브레히트 데스플랑크",
+        "ReLU",
+        "Rectified Linear Units",
+        "렐루",
+        "Kaldi",
+        "칼디",
+        "Squeeze-and-Excitation",
+        "스퀴즈 앤 엑사이테이션",
+        "SpecAugment",
+        "스펙오그먼트"
+      ],
+      "terms": [
+        {
+          "id": "pdf-01",
+          "term": "TDNN",
+          "english": "Time Delay Neural Network",
+          "spokenAliases": [
+            "티디엔엔"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-02",
+          "term": "ECAPA-TDNN",
+          "english": "Emphasized Channel Attention, Propagation and Aggregation in TDNN",
+          "spokenAliases": [
+            "에카파 티디엔엔"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-03",
+          "term": "EER",
+          "english": "Equal Error Rate",
+          "spokenAliases": [
+            "이이알"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-04",
+          "term": "MFA",
+          "english": "Multi-layer Feature Aggregation",
+          "spokenAliases": [
+            "엠에프에이"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-05",
+          "term": "MUSAN",
+          "english": "",
+          "spokenAliases": [
+            "무산"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-06",
+          "term": "PLDA",
+          "english": "Probabilistic Linear Discriminant Analysis",
+          "spokenAliases": [
+            "피엘디에이"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-07",
+          "term": "VAD",
+          "english": "Voice Activity Detection",
+          "spokenAliases": [
+            "브이에이디"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-08",
+          "term": "VoxCeleb",
+          "english": "",
+          "spokenAliases": [
+            "복스셀럽"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-09",
+          "term": "MinDCF",
+          "english": "",
+          "spokenAliases": [
+            "민디씨에프"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-10",
+          "term": "ResNet",
+          "english": "",
+          "spokenAliases": [
+            "레즈넷"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-11",
+          "term": "VoxSRC",
+          "english": "VoxCeleb Speaker Recognition Challenge",
+          "spokenAliases": [
+            "복스에스알씨"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-12",
+          "term": "Res2Net",
+          "english": "",
+          "spokenAliases": [
+            "레즈투넷"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-13",
+          "term": "x-vectors",
+          "english": "",
+          "spokenAliases": [
+            "엑스벡터",
+            "엑스 벡터"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-14",
+          "term": "Conv1D",
+          "english": "",
+          "spokenAliases": [
+            "콘브원디",
+            "컨브원디"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-15",
+          "term": "Voice Activity Detection",
+          "english": "",
+          "spokenAliases": [
+            "보이스 액티비티 디텍션"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-16",
+          "term": "r-vector",
+          "english": "",
+          "spokenAliases": [
+            "알벡터",
+            "알 벡터"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-17",
+          "term": "Batch Normalization",
+          "english": "",
+          "spokenAliases": [
+            "배치 노멀라이제이션"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-18",
+          "term": "MFCCs",
+          "english": "",
+          "spokenAliases": [
+            "엠에프씨씨"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-19",
+          "term": "Adam",
+          "english": "",
+          "spokenAliases": [
+            "아담"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-20",
+          "term": "AAM-softmax",
+          "english": "",
+          "spokenAliases": [
+            "에이에이엠 소프트맥스"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-21",
+          "term": "SE-ResNet",
+          "english": "",
+          "spokenAliases": [
+            "에스이 레즈넷"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-22",
+          "term": "Brecht Desplanques",
+          "english": "",
+          "spokenAliases": [
+            "브레히트 데스플랑크"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-23",
+          "term": "ReLU",
+          "english": "Rectified Linear Units",
+          "spokenAliases": [
+            "렐루"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-24",
+          "term": "Kaldi",
+          "english": "",
+          "spokenAliases": [
+            "칼디"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-25",
+          "term": "Squeeze-and-Excitation",
+          "english": "",
+          "spokenAliases": [
+            "스퀴즈 앤 엑사이테이션"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        },
+        {
+          "id": "pdf-26",
+          "term": "SpecAugment",
+          "english": "",
+          "spokenAliases": [
+            "스펙오그먼트"
+          ],
+          "easyExplanation": "고정음원 STT 비교용 전문용어",
+          "pageNumber": 1,
+          "occurrences": 0,
+          "source": "demo"
+        }
+      ],
+      "startedAt": "2026-08-09T10:48:40.694Z",
+      "readyAfterMs": 11,
+      "audioDurationMs": 103649,
+      "wallClockMs": 106444,
+      "interimCount": 14,
+      "finalTranscripts": [
+        {
+          "text": "오늘은 에카파 TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 타임 딜레이 뉴럴 네트워크, 즉 TDNN과 스태티스틱스 풀링을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다.",
+          "rawText": "오늘은 에카파 TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 타임 딜레이 뉴럴 네트워크, 즉 TDNN과 스태티스틱스 풀링을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다.",
+          "detectedTermIds": [
+            "pdf-01",
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "에카파 TDNN은 이 구조의 채널 어텐션과 계층간 피처 결합을 추가합니다.",
+          "rawText": "에카파 TDNN은 이 구조의 채널 어텐션과 계층간 피처 결합을 추가합니다.",
+          "detectedTermIds": [
+            "pdf-01"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "프레임 레이어는 1-dimensional Res2Net 모듈로 재구성하고 SE-ResNet과 비슷한 스퀴즈 앤드 익사이테이션 블록이 채널 엔터 디펜던시를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤",
+          "rawText": "프레임 레이어는 1-dimensional 레즈투넷 모듈로 재구성하고 SE-ResNet과 비슷한 스퀴즈 앤드 익사이테이션 블록이 채널 엔터 디펜던시를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤",
+          "detectedTermIds": [
+            "pdf-12",
+            "pdf-21"
+          ],
+          "corrections": [
+            {
+              "originalText": "레즈투넷",
+              "correctedText": "Res2Net",
+              "termId": "pdf-12",
+              "displayStart": 23,
+              "displayEnd": 30,
+              "reason": "spokenAlias"
+            }
+          ]
+        },
+        {
+          "text": "레이어 피처 어그리게이션을 수행합니다.",
+          "rawText": "레이어 피처 어그리게이션을 수행합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "마지막 어텐티브 스테티스틱스 스테티스틱스 풀링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다.",
+          "rawText": "마지막 어텐티브 스테티스틱스 스테티스틱스 풀링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "성능은 복스셀랩과",
+          "rawText": "성능은 복스셀랩과",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "성능은 복스셀렙 1과 복스 SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 민DCF를 함께 사용하며",
+          "rawText": "성능은 복스셀렙 1과 복스 SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 민DCF를 함께 사용하며",
+          "detectedTermIds": [
+            "pdf-03"
+          ],
+          "corrections": []
+        },
+        {
+          "text": "어댑티브 S 놈도 적용합니다.",
+          "rawText": "어댑티브 S 놈도 적용합니다.",
+          "detectedTermIds": [],
+          "corrections": []
+        },
+        {
+          "text": "ECAPA-TDNN TDNN x-vectors Res2Net SE-ResNet처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+          "rawText": "에카파 티디엔엔 티디엔엔 엑스벡터 레즈투넷 에스이 레즈넷처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+          "detectedTermIds": [
+            "pdf-02",
+            "pdf-01",
+            "pdf-13",
+            "pdf-12",
+            "pdf-21"
+          ],
+          "corrections": [
+            {
+              "originalText": "에카파 티디엔엔",
+              "correctedText": "ECAPA-TDNN",
+              "termId": "pdf-02",
+              "displayStart": 0,
+              "displayEnd": 10,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "티디엔엔",
+              "correctedText": "TDNN",
+              "termId": "pdf-01",
+              "displayStart": 11,
+              "displayEnd": 15,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "엑스벡터",
+              "correctedText": "x-vectors",
+              "termId": "pdf-13",
+              "displayStart": 16,
+              "displayEnd": 25,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "레즈투넷",
+              "correctedText": "Res2Net",
+              "termId": "pdf-12",
+              "displayStart": 26,
+              "displayEnd": 33,
+              "reason": "spokenAlias"
+            },
+            {
+              "originalText": "에스이 레즈넷",
+              "correctedText": "SE-ResNet",
+              "termId": "pdf-21",
+              "displayStart": 34,
+              "displayEnd": 43,
+              "reason": "spokenAlias"
+            }
+          ]
+        }
+      ],
+      "transcript": "오늘은 에카파 TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 타임 딜레이 뉴럴 네트워크, 즉 TDNN과 스태티스틱스 풀링을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다. 에카파 TDNN은 이 구조의 채널 어텐션과 계층간 피처 결합을 추가합니다. 프레임 레이어는 1-dimensional Res2Net 모듈로 재구성하고 SE-ResNet과 비슷한 스퀴즈 앤드 익사이테이션 블록이 채널 엔터 디펜던시를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤 레이어 피처 어그리게이션을 수행합니다. 마지막 어텐티브 스테티스틱스 스테티스틱스 풀링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다. 성능은 복스셀랩과 성능은 복스셀렙 1과 복스 SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 민DCF를 함께 사용하며 어댑티브 S 놈도 적용합니다. ECAPA-TDNN TDNN x-vectors Res2Net SE-ResNet처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+      "rawTranscript": "오늘은 에카파 TDNN을 이용한 화자 검증 시스템을 설명하겠습니다. 기존 x-vector 아키텍처는 타임 딜레이 뉴럴 네트워크, 즉 TDNN과 스태티스틱스 풀링을 사용해 길이가 다른 발화를 고정 길이 스피커 임베딩으로 바꿉니다. 에카파 TDNN은 이 구조의 채널 어텐션과 계층간 피처 결합을 추가합니다. 프레임 레이어는 1-dimensional 레즈투넷 모듈로 재구성하고 SE-ResNet과 비슷한 스퀴즈 앤드 익사이테이션 블록이 채널 엔터 디펜던시를 모델링합니다. 스킵 커넥션으로 서로 다른 계층의 출력을 모은 뒤 레이어 피처 어그리게이션을 수행합니다. 마지막 어텐티브 스테티스틱스 스테티스틱스 풀링에서는 채널 디펜던트 프레임 어텐션으로 중요한 프레임을 선택합니다. 성능은 복스셀랩과 성능은 복스셀렙 1과 복스 SRC 2019 테스트 테스트 세트에서 평가합니다. 지표로는 EER과 민DCF를 함께 사용하며 어댑티브 S 놈도 적용합니다. 에카파 티디엔엔 티디엔엔 엑스벡터 레즈투넷 에스이 레즈넷처럼 비슷한 약어와 모델명이 연속될 때도 하이픈과 숫자를 포함한 원래 표기가 유지되어야 합니다.",
+      "metrics": {
+        "evaluationMode": "accuracy",
+        "accuracyValid": true,
+        "directRecognitions": 4,
+        "aliasCorrectionSuccesses": 3,
+        "misses": 5,
+        "falseCorrections": 3,
+        "falseInsertions": 0,
+        "expectedOccurrenceCount": 12,
+        "productLinkRate": 0.5833333333333334
+      },
+      "occurrenceResults": [
+        {
+          "sequence": 1,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "ECAPA-TDNN",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 2,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 0,
+          "rawText": "TDNN"
+        },
+        {
+          "sequence": 3,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "x-vectors",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 4,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 0,
+          "rawText": "TDNN"
+        },
+        {
+          "sequence": 5,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "ECAPA-TDNN",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 6,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 1,
+          "rawText": "TDNN"
+        },
+        {
+          "sequence": 7,
+          "targetTermId": "gold-04",
+          "canonicalTerm": "VoxSRC",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 8,
+          "targetTermId": "gold-03",
+          "canonicalTerm": "EER",
+          "outcome": "direct-recognition",
+          "finalTranscriptIndex": 6,
+          "rawText": "EER"
+        },
+        {
+          "sequence": 9,
+          "targetTermId": "gold-02",
+          "canonicalTerm": "ECAPA-TDNN",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 8,
+          "rawText": "에카파 티디엔엔"
+        },
+        {
+          "sequence": 10,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 8,
+          "rawText": "티디엔엔"
+        },
+        {
+          "sequence": 11,
+          "targetTermId": "gold-01",
+          "canonicalTerm": "TDNN",
+          "outcome": "miss",
+          "finalTranscriptIndex": null,
+          "rawText": null
+        },
+        {
+          "sequence": 12,
+          "targetTermId": "gold-05",
+          "canonicalTerm": "x-vectors",
+          "outcome": "alias-correction",
+          "finalTranscriptIndex": 8,
+          "rawText": "엑스벡터"
+        }
+      ],
+      "unexpectedObservations": [
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 2,
+          "rawText": "레즈투넷"
+        },
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 8,
+          "rawText": "레즈투넷"
+        },
+        {
+          "kind": "false-correction",
+          "reason": "invalid-correction",
+          "targetTermId": null,
+          "finalTranscriptIndex": 8,
+          "rawText": "에스이 레즈넷"
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

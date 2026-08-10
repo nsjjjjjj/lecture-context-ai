@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import type { AnalysisResult, GlossaryTerm, PageText } from "../types.js";
 import { findTranscriptTermMatches } from "./caption.js";
-import { isKnownSpokenAlias, withValidatedSpokenAliases } from "./spoken-aliases.js";
+import { MAX_GLOSSARY_TERMS, MAX_PHRASE_SET_FORMS } from "./phrase-set-limits.js";
+import { withSanitizedSpokenAliases, withValidatedSpokenAliases } from "./spoken-aliases.js";
 
-const MAX_TERMS = 50;
 const MAX_GEMINI_CHARACTERS = 120_000;
 
 const DOMAIN_HINTS: Array<[string, string, string]> = [
@@ -60,6 +60,17 @@ function isUsefulTerm(term: string): boolean {
   return true;
 }
 
+function nounPhraseExplanation(term: string, value: unknown): string {
+  const fallback = `${term}와 관련된 강연 핵심 개념`;
+  if (typeof value !== "string") return fallback;
+
+  const explanation = value.trim().slice(0, 240).replace(/[.!?。！？]+$/u, "").trim();
+  if (explanation.length < 2) return fallback;
+
+  const withoutCopula = explanation.replace(/(?:입니다|이다)$/u, "").trim();
+  return withoutCopula.length >= 2 ? withoutCopula : fallback;
+}
+
 function validateCandidates(
   pages: PageText[],
   candidates: GeminiTerm[],
@@ -78,10 +89,7 @@ function validateCandidates(
     if (!location) continue;
 
     const english = typeof candidate.english === "string" ? candidate.english.trim() : "";
-    const explanation =
-      typeof candidate.easyExplanation === "string" && candidate.easyExplanation.trim().length >= 2
-        ? candidate.easyExplanation.trim().slice(0, 240)
-        : `${term}에 관한 강연 핵심 용어입니다.`;
+    const explanation = nounPhraseExplanation(term, candidate.easyExplanation);
 
     seen.add(key);
     terms.push({
@@ -102,8 +110,19 @@ function validateCandidates(
       const acronymB = /^[A-Z][A-Z0-9-]{1,12}$/.test(b.term) ? 1 : 0;
       return acronymB - acronymA || b.occurrences - a.occurrences || a.pageNumber - b.pageNumber;
     })
-      .slice(0, MAX_TERMS)
+      .slice(0, MAX_GLOSSARY_TERMS)
   );
+}
+
+function mergeValidatedTerms(primary: GlossaryTerm[], supplements: GlossaryTerm[]): GlossaryTerm[] {
+  const seen = new Set<string>();
+  const merged = [...primary, ...supplements].filter((term) => {
+    const key = normalize(term.term);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return withValidatedSpokenAliases(merged).slice(0, MAX_GLOSSARY_TERMS);
 }
 
 function extractHeuristicCandidates(pages: PageText[]): GeminiTerm[] {
@@ -116,12 +135,12 @@ function extractHeuristicCandidates(pages: PageText[]): GeminiTerm[] {
 
   const acronyms = fullText.match(/\b[A-Z][A-Z0-9-]{1,11}\b/g) ?? [];
   for (const term of acronyms) {
-    candidates.push({ term, english: "", easyExplanation: `${term}에 관한 강연 전문용어입니다.` });
+    candidates.push({ term, english: "", easyExplanation: `${term}와 관련된 강연 전문용어` });
   }
 
   const namedTerms = fullText.match(/\b[A-Z][a-z]+(?:[A-Z][a-z0-9]+)+\b/g) ?? [];
   for (const term of namedTerms) {
-    candidates.push({ term, english: term, easyExplanation: `${term}에 관한 강연 전문용어입니다.` });
+    candidates.push({ term, english: term, easyExplanation: `${term}와 관련된 강연 전문용어` });
   }
 
   return candidates;
@@ -143,9 +162,12 @@ async function extractWithGemini(pages: PageText[]): Promise<GeminiTerm[]> {
 규칙:
 - term은 반드시 제공된 PDF에 그대로 존재하는 표기를 복사한다.
 - 일상적인 단어와 너무 긴 문장은 제외한다.
-- easyExplanation은 비전공자가 이해할 수 있는 한국어 한 문장으로 60자 이내로 작성한다.
+- easyExplanation은 비전공자가 이해할 수 있는 60자 이내의 한국어 명사구로 작성한다.
+- 반드시 '~하는 기술', '~하는 방식', '~을 위한 모델', '~하는 과정', '~인 현상'처럼 명사로 끝낸다.
+- '이다', '입니다', '한다', '합니다' 같은 서술형 종결과 문장 끝 마침표를 사용하지 않는다.
 - english는 PDF에 명시된 경우에만 넣고, 없으면 빈 문자열로 둔다.
-- spokenAliases에는 한국인이 실제로 말했을 때 STT가 만들 수 있는 한글 발음 표기만 최대 3개 넣는다. 예: RAG는 ["래그", "레그", "알에이지"]. 일반 단어는 넣지 않는다.
+- term 또는 english에 영문 알파벳이 하나라도 있으면 spokenAliases에 한국인이 실제로 읽을 때 STT가 만들 수 있는 한글 발음을 반드시 1개 이상, 최대 3개 넣는다. 예: BERT는 ["버트"], ResNet은 ["레즈넷"], RAG는 ["래그", "레그", "알에이지"].
+- spokenAliases는 완성형 한글과 단어 사이 공백 또는 하이픈만 사용한다. 일반 단어, 번역어, 설명 문구는 넣지 않는다. 영문 알파벳이 전혀 없는 용어는 빈 배열로 둔다.
 - 같은 용어의 중복은 제거한다.
 
 PDF 텍스트:
@@ -201,17 +223,15 @@ ${documentText}`;
 
 export function buildPhraseSet(terms: GlossaryTerm[], pages: PageText[]): string[] {
   const phrases = new Map<string, string>();
-  for (const term of terms) {
+  for (const term of withSanitizedSpokenAliases(terms).slice(0, MAX_GLOSSARY_TERMS)) {
     const hasCanonicalEvidence = Boolean(locateTerm(pages, term.term));
     const hasEnglishEvidence = Boolean(term.english && locateTerm(pages, term.english));
     if (!hasCanonicalEvidence && !hasEnglishEvidence) continue;
     if (hasCanonicalEvidence) phrases.set(normalize(term.term), term.term);
-    for (const alias of term.spokenAliases) {
-      if (isKnownSpokenAlias(term.term, term.english, alias)) phrases.set(normalize(alias), alias);
-    }
+    for (const alias of term.spokenAliases) phrases.set(normalize(alias), alias);
     if (hasEnglishEvidence) phrases.set(normalize(term.english), term.english);
   }
-  return [...phrases.values()].slice(0, MAX_TERMS);
+  return [...phrases.values()].slice(0, MAX_PHRASE_SET_FORMS);
 }
 
 export async function analyzeGlossary(title: string, pages: PageText[]): Promise<AnalysisResult> {
@@ -220,9 +240,20 @@ export async function analyzeGlossary(title: string, pages: PageText[]): Promise
 
   try {
     const geminiCandidates = await extractWithGemini(pages);
-    const terms = validateCandidates(pages, geminiCandidates, "gemini");
-    if (terms.length < 3) throw new Error("검증을 통과한 전문용어가 충분하지 않습니다.");
-    return { title, terms, phraseSet: buildPhraseSet(terms, pages), mode: "gemini" };
+    const geminiTerms = validateCandidates(pages, geminiCandidates, "gemini");
+    if (geminiTerms.length >= 3) {
+      return { title, terms: geminiTerms, phraseSet: buildPhraseSet(geminiTerms, pages), mode: "gemini" };
+    }
+
+    const heuristicTerms = validateCandidates(pages, extractHeuristicCandidates(pages), "heuristic");
+    const terms = mergeValidatedTerms(geminiTerms, heuristicTerms);
+    return {
+      title,
+      terms,
+      phraseSet: buildPhraseSet(terms, pages),
+      mode: geminiTerms.length > 0 ? "gemini" : "heuristic",
+      warning: `AI가 검증 가능한 전문용어를 ${geminiTerms.length}개만 반환해 문서 표기 기반 후보로 보완했습니다.`
+    };
   } catch (error) {
     const terms = validateCandidates(pages, extractHeuristicCandidates(pages), "heuristic");
     return {

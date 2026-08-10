@@ -42,6 +42,8 @@ describe("transparent caption correction", () => {
     expect(html).toContain("bg-cyan-300");
     expect(html.match(/\(레그\)/g)).toHaveLength(2);
     expect(html).toContain("정정 표기: RAG, 원래 음성 인식: 레그");
+    expect(html).toContain('lang="ko"');
+    expect(html).toContain('class="caption-text caption"');
     expect(html).not.toContain("자동 정정");
     expect(html).not.toContain('role="tooltip"');
   });
@@ -54,5 +56,15 @@ describe("transparent caption correction", () => {
 
     expect(parts.map((part) => part.text).join("")).toBe("RAG 문장");
     expect(parts.filter((part) => part.kind === "correction")).toHaveLength(1);
+  });
+
+  it("renders compact history captions without term emphasis or correction annotations", () => {
+    const html = renderToStaticMarkup(
+      <TransparentCaption line={correctedLine} terms={[rag]} className="history" emphasizeTerms={false} />
+    );
+
+    expect(html).toContain("RAG와 RAG를 설명합니다.");
+    expect(html).not.toContain("<mark");
+    expect(html).not.toContain("(레그)");
   });
 });

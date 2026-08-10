@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Accessibility,
   ArrowLeft,
@@ -29,7 +29,7 @@ import {
   X
 } from "lucide-react";
 import { analyzePdf, getDemo, getHealth } from "./lib/api";
-import { AudioFixtureRecorder } from "./components/AudioFixtureRecorder";
+import { ExperimentWorkspace, type ExperimentPanel } from "./components/ExperimentWorkspace";
 import { TransparentCaption } from "./components/TransparentCaption";
 import {
   loadStoredGlossaryReadyState,
@@ -53,6 +53,37 @@ import type { AnalysisResult, GlossaryTerm, ServiceStatus, TranscriptLine } from
 
 type FontScale = "normal" | "large" | "xlarge";
 
+export type AppRoute =
+  | { page: "lecture" }
+  | { page: "experiment"; panel: ExperimentPanel };
+
+const LECTURE_ROUTE: AppRoute = { page: "lecture" };
+
+export function parseAppHash(hash: string): AppRoute {
+  switch (hash) {
+    case "#/experiment/setup":
+      return { page: "experiment", panel: "setup" };
+    case "#/experiment/record":
+      return { page: "experiment", panel: "record" };
+    case "#/experiment/run":
+      return { page: "experiment", panel: "run" };
+    case "#/experiment/results":
+      return { page: "experiment", panel: "results" };
+    case "#/lecture":
+    default:
+      return LECTURE_ROUTE;
+  }
+}
+
+export function appRouteHash(route: AppRoute): string {
+  return route.page === "lecture" ? "#/lecture" : `#/experiment/${route.panel}`;
+}
+
+export function resolveAppRoute(hash: string, development: boolean): AppRoute {
+  const route = parseAppHash(hash);
+  return development || route.page === "lecture" ? route : LECTURE_ROUTE;
+}
+
 export const UPLOAD_CARD_GLOW_PROPS = {
   "aria-hidden": true,
   className: "pointer-events-none absolute -inset-3 rounded-[2.4rem] bg-gradient-to-br from-cyan-300/15 via-transparent to-blue-500/10 blur-2xl"
@@ -65,24 +96,74 @@ function Logo() {
         <Volume2 className="size-5" strokeWidth={2.4} />
       </div>
       <div>
-        <div className="text-[15px] font-extrabold tracking-[-0.03em] text-white">강연맥락 AI</div>
-        <div className="text-[11px] font-medium tracking-[0.12em] text-slate-500">CONTEXT CAPTION</div>
+        <div className="text-[15px] font-extrabold tracking-[-0.03em] text-white">강연 용어 AI</div>
+        <div className="text-[11px] font-medium tracking-[0.12em] text-slate-500">전문용어 자막·설명</div>
       </div>
     </div>
   );
 }
 
-function Header({ stage, onHome }: { stage: Stage; onHome: () => void }) {
+export function Header({
+  stage,
+  route,
+  development,
+  experimentNavigationBlocked,
+  onHome,
+  onNavigate
+}: {
+  stage: Stage;
+  route: AppRoute;
+  development: boolean;
+  experimentNavigationBlocked: boolean;
+  onHome: () => void;
+  onNavigate: (route: AppRoute) => void;
+}) {
   const compact = stage === "live";
+  const lectureActive = route.page === "lecture";
+  const experimentActive = route.page === "experiment";
+  const experimentRoute: AppRoute = experimentActive ? route : { page: "experiment", panel: "setup" };
+  const primaryLinkClass = "inline-flex min-h-10 items-center justify-center rounded-xl px-4 text-xs font-extrabold outline-none ring-cyan-300 transition focus-visible:ring-2";
 
   return (
     <header className="relative z-20 border-b border-white/[0.06] bg-[#07111f]/85 backdrop-blur-xl">
-      <div className={`mx-auto flex max-w-[1440px] items-center justify-between px-5 sm:px-8 ${compact ? "h-16" : "h-20"}`}>
+      <div className={`mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-4 px-5 py-3 sm:px-8 ${compact ? "min-h-16" : "min-h-20"}`}>
         <button onClick={onHome} aria-label="처음 화면으로 이동" className="rounded-2xl text-left outline-none ring-cyan-300 focus-visible:ring-2">
           <Logo />
         </button>
-        <div className="hidden items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] p-1 sm:flex">
-          {["자료 분석", "맥락 자막", "결과 확인"].map((label, index) => {
+        <nav aria-label="주요 메뉴" className="order-3 mt-3 w-full sm:order-none sm:mt-0 sm:w-auto">
+          <ul className="flex items-center gap-1 rounded-2xl border border-white/[0.07] bg-white/[0.035] p-1">
+            <li className="min-w-0 flex-1 sm:flex-none">
+              <a
+                href="#/lecture"
+                aria-current={lectureActive ? "page" : undefined}
+                onClick={(event) => {
+                  event.preventDefault();
+                  onNavigate(LECTURE_ROUTE);
+                }}
+                className={`${primaryLinkClass} w-full ${lectureActive ? "bg-white text-slate-950" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"}`}
+              >
+                강연
+              </a>
+            </li>
+            {development && !experimentNavigationBlocked ? (
+              <li className="min-w-0 flex-1 sm:flex-none">
+                <a
+                  href={appRouteHash(experimentRoute)}
+                  aria-current={experimentActive ? "page" : undefined}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onNavigate(experimentRoute);
+                  }}
+                  className={`${primaryLinkClass} w-full ${experimentActive ? "bg-amber-200 text-slate-950" : "text-slate-400 hover:bg-amber-200/10 hover:text-amber-100"}`}
+                >
+                  STT 실험실
+                </a>
+              </li>
+            ) : null}
+          </ul>
+        </nav>
+        {lectureActive ? <div className="hidden items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] p-1 xl:flex">
+          {["자료 분석", "전문용어 자막", "결과 확인"].map((label, index) => {
             const activeIndex = stage === "upload" || stage === "analyzing" || stage === "ready" ? 0 : stage === "live" ? 1 : 2;
             return (
               <div
@@ -93,8 +174,8 @@ function Header({ stage, onHome }: { stage: Stage; onHome: () => void }) {
               </div>
             );
           })}
-        </div>
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+        </div> : null}
+        <div className="hidden items-center gap-2 text-xs font-semibold text-slate-400 lg:flex">
           <ShieldCheck className="size-4 text-emerald-300" />
           실시간 강연 음성 미저장
         </div>
@@ -239,18 +320,18 @@ function UploadScreen({
             <ServicePill status={serviceStatus} />
           </div>
           <h1 className="text-balance text-[clamp(3.4rem,7vw,7rem)] font-black leading-[0.94] tracking-[-0.075em] text-white">
-            자막을 넘어,
+            자막 속 어려운
             <br />
-            <span className="text-cyan-300">맥락</span>까지.
+            <span className="text-cyan-300">전문용어</span>까지.
           </h1>
           <p className="mt-8 max-w-[590px] text-pretty text-lg font-medium leading-8 text-slate-400 sm:text-xl">
-            강연 PDF에서 전문용어를 자동으로 찾아 Google STT에 전달하고, 용어가 등장할 때마다 쉬운 설명을 최신순으로 기록합니다.
+            강연 PDF에서 전문용어를 자동으로 찾아 Google STT에 전달하고, 용어가 등장할 때마다 쉬운 설명을 최신순으로 보여줍니다.
           </p>
           <div className="mt-9 grid max-w-[610px] gap-3 sm:grid-cols-3">
             {[
               [ScanText, "PDF 자동 분석", "페이지별 용어 추출"],
-              [Mic, "맥락 기반 자막", "Chirp 3 + PhraseSet"],
-              [Accessibility, "이해 접근성", "쉬운 풀이와 큰 글씨"]
+              [Mic, "강연 자료 기반 자막", "Chirp 3 + PhraseSet"],
+              [Accessibility, "쉬운 용어 설명", "쉬운 풀이와 큰 글씨"]
             ].map(([Icon, title, body]) => {
               const ItemIcon = Icon as typeof ScanText;
               return (
@@ -321,7 +402,6 @@ function UploadScreen({
             onDelete={onDeleteGlossary}
             onReset={onResetGlossaries}
           />
-          {import.meta.env.DEV && <AudioFixtureRecorder />}
         </div>
       </section>
     </main>
@@ -344,7 +424,7 @@ function AnalyzingScreen({ fileName, progress }: { fileName: string; progress: n
           </div>
         </div>
         <div className="mt-8 text-xs font-extrabold tracking-[0.2em] text-cyan-300">PDF ANALYSIS</div>
-        <h2 className="mt-3 text-3xl font-black tracking-[-0.045em] text-white sm:text-4xl">강연의 맥락을 준비하고 있어요</h2>
+        <h2 className="mt-3 text-3xl font-black tracking-[-0.045em] text-white sm:text-4xl">강연 자료에서 전문용어를 찾고 있어요</h2>
         <p className="mx-auto mt-3 max-w-[560px] truncate text-sm text-slate-500">{fileName}</p>
         <div className="mx-auto mt-10 h-2 max-w-[580px] overflow-hidden rounded-full bg-white/[0.06]">
           <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-blue-400 transition-all duration-700" style={{ width: `${Math.max(8, progress)}%` }} />
@@ -530,13 +610,21 @@ function LiveScreen({
 }) {
   const termById = useMemo(() => new Map(analysis.terms.map((term) => [term.id, term])), [analysis.terms]);
   const currentLine = stream.lines.at(-1);
-  const previousLines = stream.lines.slice(-4, -1);
+  const historyLines = stream.lines.slice(0, -1);
+  const historyLogRef = useRef<HTMLDivElement>(null);
   const sizeClass = fontScale === "xlarge" ? "caption-xlarge" : fontScale === "large" ? "caption-large" : "caption-normal";
   const fontScaleLabel = fontScale === "xlarge" ? "매우 크게" : fontScale === "large" ? "크게" : "보통";
 
+  useEffect(() => {
+    const historyLog = historyLogRef.current;
+    if (!historyLog) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    historyLog.scrollTo({ top: historyLog.scrollHeight, behavior: reduceMotion ? "auto" : "smooth" });
+  }, [historyLines.length]);
+
   return (
     <main className={`min-h-[calc(100dvh-65px)] lg:h-[calc(100dvh-65px)] lg:overflow-hidden ${highContrast ? "bg-black" : ""}`}>
-      <div className="mx-auto h-full max-w-[1440px] px-3 py-3 sm:px-5 lg:flex lg:flex-col">
+      <div className="h-full w-full px-3 py-3 sm:px-5 lg:flex lg:flex-col lg:px-6 xl:px-8">
         <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             <div className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold ${stream.status === "ready" ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200" : stream.status === "error" ? "border-rose-300/20 bg-rose-300/10 text-rose-100" : "border-white/10 bg-white/[0.04] text-slate-400"}`}>
@@ -567,40 +655,37 @@ function LiveScreen({
           </div>
         </div>
 
-        <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(360px,.48fr)]">
-          <section className={`flex min-h-[340px] min-w-0 flex-col rounded-[1.6rem] border p-5 sm:min-h-[460px] sm:p-6 lg:min-h-0 lg:p-7 ${highContrast ? "border-white bg-black" : "border-white/[0.08] bg-[#0a1625]"}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-slate-500"><Volume2 className="size-4 text-cyan-300" /> LIVE CAPTION</div>
-              <div className="rounded-full bg-white/[0.05] px-3 py-1.5 text-[11px] font-bold text-slate-500">{stream.lines.length}개 문장</div>
+        <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)] lg:grid-rows-[minmax(0,1fr)_auto]">
+          <section className={`flex min-h-[320px] min-w-0 flex-col overflow-hidden rounded-[1.6rem] border lg:min-h-0 ${highContrast ? "border-white bg-black" : "border-white/[0.08] bg-[#0a1625]"}`}>
+            <div className="flex shrink-0 items-center justify-between border-b border-white/[0.07] px-5 py-4 sm:px-6">
+              <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-slate-500"><FileText className="size-4 text-cyan-300" /> 자막 기록</div>
+              <div className="rounded-full bg-white/[0.05] px-3 py-1.5 text-[11px] font-bold text-slate-500">{historyLines.length}개 문장</div>
             </div>
-
-            <div className="flex min-h-0 flex-1 flex-col justify-end overflow-y-auto py-5 sm:py-6">
-              <div className="space-y-3 opacity-35">
-                {previousLines.map((line) => <TransparentCaption key={line.id} line={line} terms={analysis.terms} className="text-sm font-bold leading-relaxed text-slate-300 sm:text-base xl:text-lg" />)}
-              </div>
-              <div className="mt-5 min-h-[120px] border-t border-white/[0.07] pt-5 sm:min-h-[140px]">
-                <div aria-live="polite" aria-atomic="true">
-                  {currentLine ? (
-                    <TransparentCaption line={currentLine} terms={analysis.terms} className={sizeClass} />
-                  ) : (
-                    <p className={`${sizeClass} text-slate-600`}>마이크에 대고 강연을 시작해 주세요.</p>
-                  )}
-                </div>
-                {stream.interim && <p aria-hidden="true" className="mt-3 text-base font-semibold leading-relaxed text-slate-500 sm:text-lg xl:text-xl">{stream.interim}</p>}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.07] pt-4 text-[11px] text-slate-600 sm:text-xs">
-              <div className="flex items-center gap-2"><Mic className="size-4 text-rose-300" /> 실시간 강연 음성을 서버에 저장하지 않습니다</div>
-              <div className="flex items-center gap-2"><Keyboard className="size-4" /> 고대비·큰 글씨 지원</div>
+            <div
+              ref={historyLogRef}
+              role="log"
+              aria-label="확정 자막 기록"
+              tabIndex={0}
+              className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-5 py-4 outline-none ring-inset ring-cyan-300 focus-visible:ring-2 sm:px-6"
+            >
+              {historyLines.length > 0 ? historyLines.map((line) => (
+                <TransparentCaption
+                  key={line.id}
+                  line={line}
+                  terms={analysis.terms}
+                  emphasizeTerms={false}
+                  className="caption-history-entry border-b border-white/[0.055] pb-3 text-sm font-semibold leading-6 text-slate-400 last:border-0 sm:text-base"
+                />
+              )) : (
+                <div className="flex h-full min-h-[190px] items-center justify-center text-center text-sm font-semibold text-slate-600">확정된 자막이 이곳에 쌓입니다.</div>
+              )}
             </div>
           </section>
 
           <aside className="min-w-0 lg:min-h-0" aria-label="실시간 용어 설명">
-            <section className={`flex h-[min(65dvh,560px)] min-h-[360px] min-w-0 flex-col overflow-hidden rounded-[1.6rem] border lg:h-full lg:min-h-0 ${highContrast ? "border-white bg-black" : "border-cyan-300/15 bg-gradient-to-br from-cyan-300/[0.09] to-blue-400/[0.03]"}`}>
-              <div className="shrink-0 border-b border-white/[0.07] px-5 py-4 sm:px-6 sm:py-5">
-                <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-cyan-300"><Sparkles className="size-4" /> TERM FLOW</div>
-                <p className="mt-2 text-xs leading-5 text-slate-500">새로 언급된 용어가 위에 추가되고, 지난 설명은 아래에 남습니다.</p>
+            <section className={`flex h-[min(58dvh,500px)] min-h-[320px] min-w-0 flex-col overflow-hidden rounded-[1.6rem] border lg:h-full lg:min-h-0 ${highContrast ? "border-white bg-black" : "border-cyan-300/15 bg-gradient-to-br from-cyan-300/[0.09] to-blue-400/[0.03]"}`}>
+              <div className="shrink-0 border-b border-white/[0.07] px-5 py-4 sm:px-6">
+                <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-cyan-300"><Sparkles className="size-4" /> 용어 설명</div>
               </div>
 
               <div
@@ -614,18 +699,21 @@ function LiveScreen({
                   const term = termById.get(occurrence.termId);
                   if (!term) return null;
                   return (
-                    <article
-                      key={occurrence.id}
-                      data-term-occurrence-id={occurrence.id}
-                      className={`min-w-0 rounded-2xl border p-4 sm:p-5 ${index === 0 ? "border-cyan-300/25 bg-cyan-300/[0.09]" : "border-white/[0.075] bg-[#07111f]/60"}`}
-                    >
-                      <h2 className="break-words text-xl font-black leading-tight tracking-[-0.04em] text-white [overflow-wrap:anywhere] sm:text-2xl">{term.term}</h2>
-                      {term.english && <p className="mt-1.5 break-words text-xs font-bold leading-5 text-cyan-300/80 [overflow-wrap:anywhere]">{term.english}</p>}
-                      <p className="mt-3 break-words text-sm font-medium leading-6 text-slate-200 [overflow-wrap:anywhere]">{term.easyExplanation}</p>
-                    </article>
+                    <div key={occurrence.id} className="term-card-push">
+                      <article
+                        data-term-occurrence-id={occurrence.id}
+                        className={`term-explanation-card min-w-0 rounded-2xl border p-4 sm:p-5 ${index === 0 ? "border-cyan-300/25 bg-cyan-300/[0.09]" : "border-white/[0.075] bg-[#07111f]/60"}`}
+                      >
+                        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+                          <h2 className="min-w-0 break-words text-xl font-black leading-tight tracking-[-0.04em] text-white [overflow-wrap:anywhere] sm:text-2xl">{term.term}</h2>
+                          {term.english && <p className="min-w-0 break-words text-left text-xs font-bold leading-5 text-cyan-300/80 [overflow-wrap:anywhere]">{term.english}</p>}
+                        </div>
+                        <p className="mt-3 break-words text-sm font-medium leading-6 text-slate-200 [overflow-wrap:anywhere]">{term.easyExplanation}</p>
+                      </article>
+                    </div>
                   );
                 }) : (
-                  <div className="flex min-h-[240px] flex-col items-center justify-center px-5 text-center">
+                  <div className="flex min-h-[210px] flex-col items-center justify-center px-5 text-center">
                     <div className="grid size-12 place-items-center rounded-2xl border border-white/[0.08] bg-white/[0.045] text-cyan-300"><Sparkles className="size-5" /></div>
                     <div className="mt-4 text-sm font-extrabold text-slate-300">아직 언급된 용어가 없습니다</div>
                     <p className="mt-2 max-w-[280px] text-xs leading-5 text-slate-600">확정 자막에 전문용어가 등장하면 쉬운 설명이 이곳에 차례로 쌓입니다.</p>
@@ -634,6 +722,22 @@ function LiveScreen({
               </div>
             </section>
           </aside>
+
+          <section className={`min-w-0 overflow-hidden rounded-[1.6rem] border p-5 sm:p-6 lg:col-span-2 ${highContrast ? "border-white bg-black" : "border-white/[0.08] bg-[#0a1625]"}`} aria-label="현재 라이브 자막">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-slate-500"><Volume2 className="size-4 text-cyan-300" /> LIVE CAPTION</div>
+              <div className="flex items-center gap-2 text-[11px] text-slate-600 sm:text-xs"><Mic className="size-4 text-rose-300" /> 실시간 음성은 저장하지 않습니다</div>
+            </div>
+            <div className="mt-3 border-t border-white/[0.07] pt-4 sm:mt-4 sm:pt-5" aria-live="polite" aria-atomic="true">
+              {currentLine ? (
+                <TransparentCaption key={currentLine.id} line={currentLine} terms={analysis.terms} className={`caption-live-line caption-live-enter ${sizeClass}`} />
+              ) : (
+                <p lang="ko" className={`caption-text caption-live-line ${sizeClass} text-slate-600`}>마이크에 대고 강연을 시작해 주세요.</p>
+              )}
+              {stream.interim && <p lang="ko" aria-hidden="true" className="caption-text caption-interim-enter mt-2 text-base font-semibold leading-relaxed text-slate-500 sm:text-lg xl:text-xl">{stream.interim}</p>}
+            </div>
+            <div className="mt-3 hidden items-center justify-end gap-2 text-[11px] text-slate-600 sm:flex"><Keyboard className="size-4" /> 고대비·큰 글씨 지원</div>
+          </section>
         </div>
       </div>
     </main>
@@ -650,7 +754,7 @@ function ResultsScreen({ analysis, lines, onRestart, onHome }: { analysis: Analy
       <div className="eyebrow"><Gauge className="size-3.5" /> SESSION REPORT</div>
       <div className="mt-5 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div>
-          <h2 className="text-4xl font-black tracking-[-0.055em] text-white sm:text-5xl">강연 맥락 연결 결과</h2>
+          <h2 className="text-4xl font-black tracking-[-0.055em] text-white sm:text-5xl">강연 자막 결과</h2>
           <p className="mt-3 text-sm text-slate-500">실제 정확도 비교는 기준 자막이 있는 평가 음원을 사용해 측정합니다.</p>
         </div>
         <div className="flex gap-2">
@@ -662,7 +766,7 @@ function ResultsScreen({ analysis, lines, onRestart, onHome }: { analysis: Analy
       <div className="mt-10 grid gap-4 sm:grid-cols-3">
         {[
           [lines.length, "확정 자막", "문장"],
-          [detectedTerms.length, "연결된 전문용어", `전체 ${analysis.terms.length}개`],
+          [detectedTerms.length, "등장한 전문용어", `전체 ${analysis.terms.length}개`],
           [analysis.phraseSet.length, "준비된 PhraseSet 힌트", "분석 단계 생성"]
         ].map(([value, label, unit]) => (
           <div key={String(label)} className="rounded-[1.6rem] border border-white/[0.08] bg-white/[0.035] p-6">
@@ -675,17 +779,17 @@ function ResultsScreen({ analysis, lines, onRestart, onHome }: { analysis: Analy
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[.65fr_1.35fr]">
         <section className="rounded-[1.6rem] border border-cyan-300/15 bg-cyan-300/[0.055] p-6">
-          <div className="text-xs font-extrabold tracking-[0.15em] text-cyan-300">CONTEXT COVERAGE</div>
+          <div className="text-xs font-extrabold tracking-[0.15em] text-cyan-300">용어집 등장률</div>
           <div className="mt-6 flex items-end gap-2"><span className="text-6xl font-black tracking-[-0.07em] text-white">{Math.min(contextRate, 100)}</span><span className="pb-2 text-xl font-black text-slate-500">%</span></div>
           <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.07]"><div className="h-full rounded-full bg-cyan-300" style={{ width: `${Math.min(contextRate, 100)}%` }} /></div>
-          <p className="mt-5 text-xs leading-5 text-slate-500">분석된 전체 전문용어 가운데 이번 자막에 등장해 설명 카드와 연결된 비율입니다.</p>
+          <p className="mt-5 text-xs leading-5 text-slate-500">분석된 전체 전문용어 가운데 이번 자막에 등장한 용어의 비율입니다.</p>
           <div className="mt-6 flex flex-wrap gap-2">
             {detectedTerms.map((term) => <span key={term.id} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-bold text-slate-300">{term.term}</span>)}
           </div>
         </section>
 
         <section className="rounded-[1.6rem] border border-white/[0.08] bg-white/[0.035] p-6">
-          <div className="flex items-center justify-between"><div className="text-sm font-extrabold text-white">확정 자막 기록</div><div className="text-xs text-slate-600">실시간 강연 음성은 저장하지 않음</div></div>
+          <div className="flex items-center justify-between"><div className="text-sm font-extrabold text-white">확정 자막 목록</div><div className="text-xs text-slate-600">실시간 강연 음성은 저장하지 않음</div></div>
           <div className="mt-5 max-h-[330px] space-y-3 overflow-y-auto pr-2">
             {lines.length ? lines.map((line, index) => (
               <div key={line.id} className="flex gap-4 rounded-2xl border border-white/[0.055] bg-[#07111f]/55 p-4">
@@ -703,7 +807,13 @@ function ResultsScreen({ analysis, lines, onRestart, onHome }: { analysis: Analy
   );
 }
 
-export function App() {
+export function App({ initialHash }: { initialHash?: string } = {}) {
+  const development = import.meta.env.DEV;
+  const [route, setRoute] = useState<AppRoute>(() => resolveAppRoute(
+    initialHash ?? (typeof window === "undefined" ? "#/lecture" : window.location.hash),
+    development
+  ));
+  const [routeFocusRequest, setRouteFocusRequest] = useState(0);
   const [stage, setStage] = useState<Stage>("upload");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [serviceStatus, setServiceStatus] = useState<ServiceStatus | null>(null);
@@ -717,6 +827,51 @@ export function App() {
   const [highContrast, setHighContrast] = useState(false);
   const stream = useLectureStream(analysis?.terms || [], analysis?.phraseSet || []);
   const previousStreamStatusRef = useRef(stream.status);
+  const experimentNavigationBlocked = stage === "analyzing" || stage === "live";
+  const experimentNavigationBlockedRef = useRef(experimentNavigationBlocked);
+  experimentNavigationBlockedRef.current = experimentNavigationBlocked;
+
+  const navigateToRoute = useCallback((nextRoute: AppRoute) => {
+    if (nextRoute.page === "experiment" && experimentNavigationBlocked) return;
+
+    const nextHash = appRouteHash(nextRoute);
+    if (initialHash !== undefined || typeof window === "undefined") {
+      setRoute(nextRoute);
+      setRouteFocusRequest((current) => current + 1);
+      return;
+    }
+    if (window.location.hash === nextHash) {
+      setRoute(nextRoute);
+      setRouteFocusRequest((current) => current + 1);
+      return;
+    }
+    window.location.hash = nextHash;
+  }, [experimentNavigationBlocked, initialHash]);
+
+  useEffect(() => {
+    if (initialHash !== undefined || typeof window === "undefined") return;
+
+    const initialRoute = resolveAppRoute(window.location.hash, development);
+    const canonicalHash = appRouteHash(initialRoute);
+    if (window.location.hash !== canonicalHash) window.history.replaceState(null, "", canonicalHash);
+
+    const syncRoute = () => {
+      const nextRoute = resolveAppRoute(window.location.hash, development);
+      if (nextRoute.page === "experiment" && experimentNavigationBlockedRef.current) {
+        window.history.replaceState(null, "", "#/lecture");
+        setRoute(LECTURE_ROUTE);
+        return;
+      }
+
+      const nextHash = appRouteHash(nextRoute);
+      if (window.location.hash !== nextHash) window.history.replaceState(null, "", nextHash);
+      setRoute(nextRoute);
+      setRouteFocusRequest((current) => current + 1);
+    };
+
+    window.addEventListener("hashchange", syncRoute);
+    return () => window.removeEventListener("hashchange", syncRoute);
+  }, [development, initialHash]);
 
   useEffect(() => {
     void getHealth().then(setServiceStatus).catch(() => setServiceStatus(null));
@@ -760,6 +915,7 @@ export function App() {
     setFileName("");
     setAnalysisSaved(false);
     setStage("upload");
+    navigateToRoute(LECTURE_ROUTE);
   };
 
   const persistAnalysis = (result: AnalysisResult, fallbackName: string): StoredGlossary | null => {
@@ -881,10 +1037,21 @@ export function App() {
     setFontScale((current) => (current === "normal" ? "large" : current === "large" ? "xlarge" : "normal"));
   };
 
+  const handleExperimentResultReady = useCallback((_fileName: string) => {
+    navigateToRoute({ page: "experiment", panel: "results" });
+  }, [navigateToRoute]);
+
   return (
     <div className={`min-h-screen bg-[#07111f] text-slate-100 ${highContrast ? "contrast-more" : ""}`}>
-      <Header stage={stage} onHome={reset} />
-      {stage === "upload" && (
+      <Header
+        stage={stage}
+        route={route}
+        development={development}
+        experimentNavigationBlocked={experimentNavigationBlocked}
+        onHome={reset}
+        onNavigate={navigateToRoute}
+      />
+      {route.page === "lecture" && stage === "upload" && (
         <UploadScreen
           onFile={handleFile}
           onDemo={handleDemo}
@@ -899,8 +1066,8 @@ export function App() {
           onResetGlossaries={handleResetGlossaries}
         />
       )}
-      {stage === "analyzing" && <AnalyzingScreen fileName={fileName} progress={progress} />}
-      {stage === "ready" && analysis && (
+      {route.page === "lecture" && stage === "analyzing" && <AnalyzingScreen fileName={fileName} progress={progress} />}
+      {route.page === "lecture" && stage === "ready" && analysis && (
         <ReadyScreen
           analysis={analysis}
           speechReady={Boolean(serviceStatus?.services.speech)}
@@ -914,8 +1081,17 @@ export function App() {
           onResetGlossaries={handleResetGlossaries}
         />
       )}
-      {stage === "live" && analysis && <LiveScreen analysis={analysis} stream={stream} fontScale={fontScale} onFontScale={cycleFontScale} highContrast={highContrast} onHighContrast={() => setHighContrast((value) => !value)} onFinish={finishLecture} />}
-      {stage === "results" && analysis && <ResultsScreen analysis={analysis} lines={stream.lines} onRestart={() => beginLecture("demo")} onHome={reset} />}
+      {route.page === "lecture" && stage === "live" && analysis && <LiveScreen analysis={analysis} stream={stream} fontScale={fontScale} onFontScale={cycleFontScale} highContrast={highContrast} onHighContrast={() => setHighContrast((value) => !value)} onFinish={finishLecture} />}
+      {route.page === "lecture" && stage === "results" && analysis && <ResultsScreen analysis={analysis} lines={stream.lines} onRestart={() => beginLecture("demo")} onHome={reset} />}
+      {route.page === "experiment" && development ? (
+        <ExperimentWorkspace
+          panel={route.panel}
+          glossaries={storedGlossaries}
+          focusRequest={routeFocusRequest}
+          onPanelChange={(panel) => navigateToRoute({ page: "experiment", panel })}
+          onResultReady={handleExperimentResultReady}
+        />
+      ) : null}
     </div>
   );
 }
