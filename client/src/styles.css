@@ -65,9 +65,6 @@ button:disabled { cursor: default; }
   letter-spacing: -0.035em;
   text-wrap: balance;
 }
-.caption-normal { font-size: clamp(1.65rem, 2.7vw, 2.75rem); }
-.caption-large { font-size: clamp(2rem, 3.4vw, 3.45rem); }
-.caption-xlarge { font-size: clamp(2.35rem, 4.15vw, 4.15rem); }
 
 .caption-live-line {
   min-height: 2.64em;
@@ -77,7 +74,6 @@ button:disabled { cursor: default; }
   animation: caption-rise 420ms cubic-bezier(.22, 1, .36, 1) both;
 }
 
-.caption-interim-enter,
 .caption-history-entry {
   animation: caption-rise-subtle 320ms cubic-bezier(.22, 1, .36, 1) both;
 }
@@ -131,10 +127,4 @@ button:disabled { cursor: default; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-}
-
-@media (max-width: 640px) {
-  .caption-normal { font-size: 1.65rem; }
-  .caption-large { font-size: 2rem; }
-  .caption-xlarge { font-size: 2.35rem; }
 }

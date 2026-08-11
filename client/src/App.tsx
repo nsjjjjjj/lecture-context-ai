@@ -51,7 +51,53 @@ import { useLectureStream } from "./hooks/useLectureStream";
 import { shouldTransitionToResults } from "./hooks/lecture-stream-state";
 import type { AnalysisResult, GlossaryTerm, ServiceStatus, TranscriptLine } from "./types";
 
-type FontScale = "normal" | "large" | "xlarge";
+export type FontScale = "normal" | "large" | "xlarge";
+
+export type LiveCaptionSlotState =
+  | { kind: "interim"; text: string }
+  | { kind: "final"; line: TranscriptLine }
+  | { kind: "placeholder"; text: string };
+
+export type LiveCaptionPresentation = {
+  historyLines: TranscriptLine[];
+  slot: LiveCaptionSlotState;
+};
+
+export const LIVE_CAPTION_SIZE_CLASS: Record<FontScale, string> = {
+  normal: "caption-normal text-xl sm:text-2xl",
+  large: "caption-large text-2xl sm:text-[1.9rem]",
+  xlarge: "caption-xlarge text-[1.8rem] sm:text-[2.3rem]"
+};
+
+const LIVE_CAPTION_PLACEHOLDER = "마이크에 대고 강연을 시작해 주세요.";
+
+export function resolveLiveCaptionPresentation(
+  lines: TranscriptLine[],
+  interim: string
+): LiveCaptionPresentation {
+  if (interim) {
+    return {
+      historyLines: lines,
+      slot: { kind: "interim", text: interim }
+    };
+  }
+
+  const currentLine = lines.at(-1);
+  return {
+    historyLines: lines.slice(0, -1),
+    slot: currentLine
+      ? { kind: "final", line: currentLine }
+      : { kind: "placeholder", text: LIVE_CAPTION_PLACEHOLDER }
+  };
+}
+
+export function calculateHistoryRowScrollTop(
+  currentScrollTop: number,
+  containerBottom: number,
+  rowBottom: number
+): number {
+  return Math.max(0, currentScrollTop, currentScrollTop + rowBottom - containerBottom);
+}
 
 export type AppRoute =
   | { page: "lecture" }
@@ -591,6 +637,32 @@ function ReadyScreen({
   );
 }
 
+export function LiveCaptionSlot({
+  slot,
+  terms,
+  sizeClass
+}: {
+  slot: LiveCaptionSlotState;
+  terms: GlossaryTerm[];
+  sizeClass: string;
+}) {
+  const className = `caption-live-line caption-live-enter ${sizeClass}`;
+
+  if (slot.kind === "final") {
+    return <TransparentCaption key={slot.line.id} line={slot.line} terms={terms} className={className} />;
+  }
+
+  return (
+    <p
+      key={slot.kind}
+      lang="ko"
+      className={`caption-text ${className}${slot.kind === "placeholder" ? " text-slate-600" : ""}`}
+    >
+      {slot.text}
+    </p>
+  );
+}
+
 function LiveScreen({
   analysis,
   stream,
@@ -609,17 +681,24 @@ function LiveScreen({
   onFinish: () => void;
 }) {
   const termById = useMemo(() => new Map(analysis.terms.map((term) => [term.id, term])), [analysis.terms]);
-  const currentLine = stream.lines.at(-1);
-  const historyLines = stream.lines.slice(0, -1);
+  const { historyLines, slot } = resolveLiveCaptionPresentation(stream.lines, stream.interim);
   const historyLogRef = useRef<HTMLDivElement>(null);
-  const sizeClass = fontScale === "xlarge" ? "caption-xlarge" : fontScale === "large" ? "caption-large" : "caption-normal";
+  const sizeClass = LIVE_CAPTION_SIZE_CLASS[fontScale];
   const fontScaleLabel = fontScale === "xlarge" ? "매우 크게" : fontScale === "large" ? "크게" : "보통";
 
   useEffect(() => {
+    if (historyLines.length === 0) return;
     const historyLog = historyLogRef.current;
     if (!historyLog) return;
+    const latestHistoryRow = historyLog.lastElementChild;
+    if (!latestHistoryRow) return;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    historyLog.scrollTo({ top: historyLog.scrollHeight, behavior: reduceMotion ? "auto" : "smooth" });
+    const historyLogRect = historyLog.getBoundingClientRect();
+    const latestRowRect = latestHistoryRow.getBoundingClientRect();
+    historyLog.scrollTo({
+      top: calculateHistoryRowScrollTop(historyLog.scrollTop, historyLogRect.bottom, latestRowRect.bottom),
+      behavior: reduceMotion ? "auto" : "smooth"
+    });
   }, [historyLines.length]);
 
   return (
@@ -729,12 +808,7 @@ function LiveScreen({
               <div className="flex items-center gap-2 text-[11px] text-slate-600 sm:text-xs"><Mic className="size-4 text-rose-300" /> 실시간 음성은 저장하지 않습니다</div>
             </div>
             <div className="mt-3 border-t border-white/[0.07] pt-4 sm:mt-4 sm:pt-5" aria-live="polite" aria-atomic="true">
-              {currentLine ? (
-                <TransparentCaption key={currentLine.id} line={currentLine} terms={analysis.terms} className={`caption-live-line caption-live-enter ${sizeClass}`} />
-              ) : (
-                <p lang="ko" className={`caption-text caption-live-line ${sizeClass} text-slate-600`}>마이크에 대고 강연을 시작해 주세요.</p>
-              )}
-              {stream.interim && <p lang="ko" aria-hidden="true" className="caption-text caption-interim-enter mt-2 text-base font-semibold leading-relaxed text-slate-500 sm:text-lg xl:text-xl">{stream.interim}</p>}
+              <LiveCaptionSlot slot={slot} terms={analysis.terms} sizeClass={sizeClass} />
             </div>
             <div className="mt-3 hidden items-center justify-end gap-2 text-[11px] text-slate-600 sm:flex"><Keyboard className="size-4" /> 고대비·큰 글씨 지원</div>
           </section>

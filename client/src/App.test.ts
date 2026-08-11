@@ -4,19 +4,166 @@ import { describe, expect, it } from "vitest";
 import {
   App,
   Header,
+  LIVE_CAPTION_SIZE_CLASS,
+  LiveCaptionSlot,
   UPLOAD_CARD_GLOW_PROPS,
   appRouteHash,
+  calculateHistoryRowScrollTop,
   parseAppHash,
+  resolveLiveCaptionPresentation,
   resolveAppRoute,
   type AppRoute
 } from "./App";
 import { requireNonEmptyGlossary, shouldSyncGlossaryStorageEvent } from "./app-state";
-import type { AnalysisResult } from "./types";
+import { createInitialLectureStreamState, lectureStreamReducer } from "./hooks/lecture-stream-state";
+import type { AnalysisResult, TranscriptLine } from "./types";
+
+const transcriptLine = (id: string, text: string): TranscriptLine => ({
+  id,
+  text,
+  rawText: text,
+  termIds: [],
+  corrections: []
+});
 
 describe("upload screen interaction layers", () => {
   it("keeps the decorative glow out of pointer hit-testing", () => {
     expect(UPLOAD_CARD_GLOW_PROPS["aria-hidden"]).toBe(true);
     expect(UPLOAD_CARD_GLOW_PROPS.className.split(/\s+/)).toContain("pointer-events-none");
+  });
+});
+
+describe("live caption presentation", () => {
+  const firstFinal = transcriptLine("line-1", "첫 번째 확정 자막");
+  const correctedFinal = transcriptLine("line-2", "RAG 정정 확정 자막");
+
+  it("prioritizes raw interim text and moves only the previous final into history", () => {
+    const firstInterim = resolveLiveCaptionPresentation([firstFinal], "알에이지 임시 자막");
+    const continuedInterim = resolveLiveCaptionPresentation([firstFinal], "알에이지 임시 자막 이어짐");
+
+    expect(firstInterim).toEqual({
+      historyLines: [firstFinal],
+      slot: { kind: "interim", text: "알에이지 임시 자막" }
+    });
+    expect(continuedInterim.historyLines).toEqual([firstFinal]);
+    expect(continuedInterim.slot).toEqual({ kind: "interim", text: "알에이지 임시 자막 이어짐" });
+  });
+
+  it("falls back to the corrected final in the same slot and otherwise uses the placeholder", () => {
+    expect(resolveLiveCaptionPresentation([firstFinal, correctedFinal], "")).toEqual({
+      historyLines: [firstFinal],
+      slot: { kind: "final", line: correctedFinal }
+    });
+    expect(resolveLiveCaptionPresentation([], "")).toEqual({
+      historyLines: [],
+      slot: { kind: "placeholder", text: "마이크에 대고 강연을 시작해 주세요." }
+    });
+  });
+
+  it.each(["normal", "large", "xlarge"] as const)(
+    "uses the same %s size class path for interim and final",
+    (fontScale) => {
+      const sizeClass = LIVE_CAPTION_SIZE_CLASS[fontScale];
+      const interimHtml = renderToStaticMarkup(createElement(LiveCaptionSlot, {
+        slot: { kind: "interim", text: "알에이지" },
+        terms: [],
+        sizeClass
+      }));
+      const finalHtml = renderToStaticMarkup(createElement(LiveCaptionSlot, {
+        slot: { kind: "final", line: correctedFinal },
+        terms: [],
+        sizeClass
+      }));
+
+      expect(interimHtml).toContain(sizeClass);
+      expect(finalHtml).toContain(sizeClass);
+    }
+  );
+
+  it("keeps the three responsive accessibility sizes explicit", () => {
+    expect(LIVE_CAPTION_SIZE_CLASS).toEqual({
+      normal: "caption-normal text-xl sm:text-2xl",
+      large: "caption-large text-2xl sm:text-[1.9rem]",
+      xlarge: "caption-xlarge text-[1.8rem] sm:text-[2.3rem]"
+    });
+  });
+
+  it("moves three reducer finals into history one at a time across interim transitions", () => {
+    const correction = {
+      originalText: "레그",
+      correctedText: "RAG",
+      termId: "rag",
+      displayStart: 0,
+      displayEnd: 3,
+      reason: "spokenAlias" as const
+    };
+    const correctedFirstFinal: TranscriptLine = {
+      id: "line-1",
+      text: "RAG를 설명합니다.",
+      rawText: "레그를 설명합니다.",
+      termIds: ["rag"],
+      corrections: [correction]
+    };
+    const secondFinal = transcriptLine("line-2", "두 번째 확정 자막");
+    const thirdFinal = transcriptLine("line-3", "세 번째 확정 자막");
+    let state = createInitialLectureStreamState();
+
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim).slot.kind).toBe("placeholder");
+
+    state = lectureStreamReducer(state, { type: "interim", text: "레그를 설명합니다." });
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toMatchObject({
+      historyLines: [],
+      slot: { kind: "interim", text: "레그를 설명합니다." }
+    });
+
+    state = lectureStreamReducer(state, {
+      type: "final",
+      line: correctedFirstFinal,
+      occurrenceTermIds: ["rag"]
+    });
+    expect(state.interim).toBe("");
+    expect(state.lines[0]).toMatchObject({
+      rawText: "레그를 설명합니다.",
+      corrections: [correction]
+    });
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+      historyLines: [],
+      slot: { kind: "final", line: correctedFirstFinal }
+    });
+
+    state = lectureStreamReducer(state, { type: "interim", text: "두 번째 임시 자막" });
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim).historyLines).toEqual([correctedFirstFinal]);
+    state = lectureStreamReducer(state, { type: "final", line: secondFinal, occurrenceTermIds: [] });
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+      historyLines: [correctedFirstFinal],
+      slot: { kind: "final", line: secondFinal }
+    });
+
+    state = lectureStreamReducer(state, { type: "interim", text: "세 번째 임시 자막" });
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim).historyLines).toEqual([
+      correctedFirstFinal,
+      secondFinal
+    ]);
+    state = lectureStreamReducer(state, { type: "final", line: thirdFinal, occurrenceTermIds: [] });
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+      historyLines: [correctedFirstFinal, secondFinal],
+      slot: { kind: "final", line: thirdFinal }
+    });
+
+    state = lectureStreamReducer(state, { type: "interim", text: "다음 임시 자막" });
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim).historyLines).toEqual([
+      correctedFirstFinal,
+      secondFinal,
+      thirdFinal
+    ]);
+  });
+});
+
+describe("live caption history scrolling", () => {
+  it("derives the internal scroll target from the newest row bottom", () => {
+    expect(calculateHistoryRowScrollTop(120, 500, 560)).toBe(180);
+    expect(calculateHistoryRowScrollTop(120, 500, 480)).toBe(120);
+    expect(calculateHistoryRowScrollTop(0, 500, 900)).toBe(400);
   });
 });
 
