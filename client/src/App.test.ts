@@ -1,8 +1,10 @@
 import { readFileSync } from "node:fs";
 import { createElement, type FunctionComponent } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
+  ANALYSIS_STEP_ORDER,
+  AnalyzingScreen,
   App,
   Header,
   LIVE_CAPTION_CURRENT_KEY,
@@ -12,14 +14,18 @@ import {
   LiveCaptionSlot,
   UPLOAD_CARD_GLOW_PROPS,
   appRouteHash,
+  analysisProgressPercent,
   cancelCaptionAnimations,
   calculateCaptionFlipDelta,
   calculateHistoryRowScrollTop,
+  completedAnalysisStepCount,
+  createAnalysisStepState,
   createLiveCaptionMotionSnapshot,
   parseAppHash,
   resolveLiveCaptionRowKey,
   resolveRetainedFinalPromotions,
   resolveLiveCaptionPresentation,
+  runPdfAnalysisSteps,
   runCaptionPromotionAnimations,
   resolveAppRoute,
   type AppRoute
@@ -40,6 +46,159 @@ describe("upload screen interaction layers", () => {
   it("keeps the decorative glow out of pointer hit-testing", () => {
     expect(UPLOAD_CARD_GLOW_PROPS["aria-hidden"]).toBe(true);
     expect(UPLOAD_CARD_GLOW_PROPS.className.split(/\s+/)).toContain("pointer-events-none");
+  });
+});
+
+describe("PDF analysis progress workflow", () => {
+  it("derives the progress bar and rendered completion count from explicit step statuses", () => {
+    const state = { extract: "complete", analyze: "active", store: "pending" } as const;
+
+    expect(ANALYSIS_STEP_ORDER).toEqual(["extract", "analyze", "store"]);
+    expect(completedAnalysisStepCount(state)).toBe(1);
+    expect(analysisProgressPercent(state)).toBe(33);
+
+    const html = renderToStaticMarkup(createElement(AnalyzingScreen, {
+      fileName: "lecture.pdf",
+      stepState: state
+    }));
+    expect(html).toContain('role="progressbar"');
+    expect(html).toContain('aria-valuemax="3"');
+    expect(html).toContain('aria-valuenow="1"');
+    expect(html).toContain('aria-valuetext="3단계 중 1단계 완료"');
+    expect(html).toContain('data-analysis-step="extract" data-analysis-step-status="complete"');
+    expect(html).toContain('data-analysis-step="analyze" data-analysis-step-status="active"');
+    expect(html).toContain('data-analysis-step="store" data-analysis-step-status="pending"');
+    expect(html).toContain("브라우저 용어집 검증·저장");
+    expect(html).toContain('role="status" aria-live="polite" aria-atomic="true"');
+  });
+
+  it("publishes 1 → 2 → 3 completed steps only after their real operation boundaries", async () => {
+    const states: Array<ReturnType<typeof createAnalysisStepState>> = [];
+    const events: string[] = [];
+
+    const readyValue = await runPdfAnalysisSteps({
+      extract: async () => {
+        events.push("extract");
+        return ["page"];
+      },
+      analyze: async (pages) => {
+        events.push(`analyze:${pages.length}`);
+        return { terms: ["용어"] };
+      },
+      store: (analysis) => {
+        events.push(`store:${analysis.terms.length}`);
+        return { readyValue: "ready", completed: true };
+      },
+      onStateChange: (state) => states.push(state),
+      waitForPresentation: async () => {
+        events.push("present");
+      }
+    });
+
+    expect(readyValue).toBe("ready");
+    expect(states).toEqual([
+      { extract: "active", analyze: "pending", store: "pending" },
+      { extract: "complete", analyze: "active", store: "pending" },
+      { extract: "complete", analyze: "complete", store: "active" },
+      { extract: "complete", analyze: "complete", store: "complete" }
+    ]);
+    expect(states.map(completedAnalysisStepCount)).toEqual([0, 1, 2, 3]);
+    expect(events).toEqual([
+      "extract",
+      "present",
+      "analyze:1",
+      "present",
+      "store:1",
+      "present"
+    ]);
+  });
+
+  it("does not resolve ready until every completed state has passed its presentation gate", async () => {
+    const releases: Array<() => void> = [];
+    const analyze = vi.fn(async () => "analysis");
+    const store = vi.fn(() => ({ readyValue: "ready", completed: true }));
+    let resolved = false;
+    const workflow = runPdfAnalysisSteps({
+      extract: async () => "pages",
+      analyze,
+      store,
+      onStateChange: vi.fn(),
+      waitForPresentation: () => new Promise<void>((resolve) => releases.push(resolve))
+    });
+    void workflow.then(() => {
+      resolved = true;
+    });
+
+    await Promise.resolve();
+    expect(releases).toHaveLength(1);
+    expect(analyze).not.toHaveBeenCalled();
+    expect(resolved).toBe(false);
+
+    releases.shift()?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(analyze).toHaveBeenCalledOnce();
+    expect(releases).toHaveLength(1);
+    expect(store).not.toHaveBeenCalled();
+    expect(resolved).toBe(false);
+
+    releases.shift()?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(store).toHaveBeenCalledOnce();
+    expect(releases).toHaveLength(1);
+    expect(resolved).toBe(false);
+
+    releases.shift()?.();
+    await expect(workflow).resolves.toBe("ready");
+    expect(resolved).toBe(true);
+  });
+
+  it("keeps unfinished steps incomplete when analysis fails", async () => {
+    const states: Array<ReturnType<typeof createAnalysisStepState>> = [];
+    const store = vi.fn();
+    const present = vi.fn(async () => undefined);
+
+    await expect(runPdfAnalysisSteps({
+      extract: async () => ["page"],
+      analyze: async () => {
+        throw new Error("analysis failed");
+      },
+      store,
+      onStateChange: (state) => states.push(state),
+      waitForPresentation: present
+    })).rejects.toThrow("analysis failed");
+
+    expect(states.at(-1)).toEqual({ extract: "complete", analyze: "failed", store: "pending" });
+    expect(completedAnalysisStepCount(states.at(-1)!)).toBe(1);
+    expect(store).not.toHaveBeenCalled();
+    expect(present).toHaveBeenCalledTimes(2);
+
+    const html = renderToStaticMarkup(createElement(AnalyzingScreen, {
+      fileName: "lecture.pdf",
+      stepState: states.at(-1)!
+    }));
+    expect(html).toContain('data-analysis-step="analyze" data-analysis-step-status="failed"');
+    expect(html).toContain('data-analysis-step="store" data-analysis-step-status="pending"');
+    expect(html).toContain('aria-valuenow="1"');
+  });
+
+  it("marks browser storage failure truthfully while preserving the valid analysis for ready", async () => {
+    const states: Array<ReturnType<typeof createAnalysisStepState>> = [];
+    const present = vi.fn(async () => undefined);
+
+    const readyValue = await runPdfAnalysisSteps({
+      extract: async () => ["page"],
+      analyze: async () => ({ title: "valid analysis" }),
+      store: (analysis) => ({ readyValue: analysis, completed: false }),
+      onStateChange: (state) => states.push(state),
+      waitForPresentation: present
+    });
+
+    expect(readyValue).toEqual({ title: "valid analysis" });
+    expect(states.at(-1)).toEqual({ extract: "complete", analyze: "complete", store: "failed" });
+    expect(completedAnalysisStepCount(states.at(-1)!)).toBe(2);
+    expect(present).toHaveBeenCalledTimes(3);
   });
 });
 
