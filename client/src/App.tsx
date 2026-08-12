@@ -58,9 +58,12 @@ export type LiveCaptionSlotState =
   | { kind: "final"; line: TranscriptLine }
   | { kind: "placeholder"; text: string };
 
+export type LiveCaptionUpperState = Extract<LiveCaptionSlotState, { kind: "final" }>;
+
 export type LiveCaptionPresentation = {
   historyLines: TranscriptLine[];
-  slot: LiveCaptionSlotState;
+  upper: LiveCaptionUpperState | null;
+  lower: LiveCaptionSlotState;
 };
 
 export const LIVE_CAPTION_SIZE_CLASS: Record<FontScale, string> = {
@@ -75,18 +78,22 @@ export function resolveLiveCaptionPresentation(
   lines: TranscriptLine[],
   interim: string
 ): LiveCaptionPresentation {
-  if (interim) {
+  if (interim.trim()) {
+    const latestFinal = lines.at(-1);
     return {
-      historyLines: lines,
-      slot: { kind: "interim", text: interim }
+      historyLines: latestFinal ? lines.slice(0, -1) : [],
+      upper: latestFinal ? { kind: "final", line: latestFinal } : null,
+      lower: { kind: "interim", text: interim }
     };
   }
 
-  const currentLine = lines.at(-1);
+  const latestFinal = lines.at(-1);
+  const previousFinal = lines.at(-2);
   return {
-    historyLines: lines.slice(0, -1),
-    slot: currentLine
-      ? { kind: "final", line: currentLine }
+    historyLines: lines.slice(0, -2),
+    upper: previousFinal ? { kind: "final", line: previousFinal } : null,
+    lower: latestFinal
+      ? { kind: "final", line: latestFinal }
       : { kind: "placeholder", text: LIVE_CAPTION_PLACEHOLDER }
   };
 }
@@ -646,20 +653,48 @@ export function LiveCaptionSlot({
   terms: GlossaryTerm[];
   sizeClass: string;
 }) {
-  const className = `caption-live-line caption-live-enter ${sizeClass}`;
+  const className = `caption-live-line ${sizeClass}`;
 
   if (slot.kind === "final") {
-    return <TransparentCaption key={slot.line.id} line={slot.line} terms={terms} className={className} />;
+    return <TransparentCaption line={slot.line} terms={terms} className={className} />;
   }
 
   return (
     <p
-      key={slot.kind}
       lang="ko"
       className={`caption-text ${className}${slot.kind === "placeholder" ? " text-slate-600" : ""}`}
     >
       {slot.text}
     </p>
+  );
+}
+
+export function LiveCaptionRows({
+  presentation,
+  terms,
+  sizeClass
+}: {
+  presentation: LiveCaptionPresentation;
+  terms: GlossaryTerm[];
+  sizeClass: string;
+}) {
+  return (
+    <div className="caption-live-stack" data-testid="live-caption-rows">
+      {presentation.upper ? (
+        <div key="upper" className="caption-live-upper" data-testid="live-caption-upper">
+          <LiveCaptionSlot slot={presentation.upper} terms={terms} sizeClass={sizeClass} />
+        </div>
+      ) : null}
+      <div
+        key="lower"
+        className="caption-live-lower"
+        data-testid="live-caption-lower"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <LiveCaptionSlot slot={presentation.lower} terms={terms} sizeClass={sizeClass} />
+      </div>
+    </div>
   );
 }
 
@@ -681,7 +716,8 @@ function LiveScreen({
   onFinish: () => void;
 }) {
   const termById = useMemo(() => new Map(analysis.terms.map((term) => [term.id, term])), [analysis.terms]);
-  const { historyLines, slot } = resolveLiveCaptionPresentation(stream.lines, stream.interim);
+  const captionPresentation = resolveLiveCaptionPresentation(stream.lines, stream.interim);
+  const { historyLines } = captionPresentation;
   const historyLogRef = useRef<HTMLDivElement>(null);
   const sizeClass = LIVE_CAPTION_SIZE_CLASS[fontScale];
   const fontScaleLabel = fontScale === "xlarge" ? "매우 크게" : fontScale === "large" ? "크게" : "보통";
@@ -807,8 +843,8 @@ function LiveScreen({
               <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-slate-500"><Volume2 className="size-4 text-cyan-300" /> LIVE CAPTION</div>
               <div className="flex items-center gap-2 text-[11px] text-slate-600 sm:text-xs"><Mic className="size-4 text-rose-300" /> 실시간 음성은 저장하지 않습니다</div>
             </div>
-            <div className="mt-3 border-t border-white/[0.07] pt-4 sm:mt-4 sm:pt-5" aria-live="polite" aria-atomic="true">
-              <LiveCaptionSlot slot={slot} terms={analysis.terms} sizeClass={sizeClass} />
+            <div className="mt-3 border-t border-white/[0.07] pt-4 sm:mt-4 sm:pt-5">
+              <LiveCaptionRows presentation={captionPresentation} terms={analysis.terms} sizeClass={sizeClass} />
             </div>
             <div className="mt-3 hidden items-center justify-end gap-2 text-[11px] text-slate-600 sm:flex"><Keyboard className="size-4" /> 고대비·큰 글씨 지원</div>
           </section>

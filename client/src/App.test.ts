@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createElement, type FunctionComponent } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -5,6 +6,7 @@ import {
   App,
   Header,
   LIVE_CAPTION_SIZE_CLASS,
+  LiveCaptionRows,
   LiveCaptionSlot,
   UPLOAD_CARD_GLOW_PROPS,
   appRouteHash,
@@ -35,28 +37,83 @@ describe("upload screen interaction layers", () => {
 
 describe("live caption presentation", () => {
   const firstFinal = transcriptLine("line-1", "첫 번째 확정 자막");
-  const correctedFinal = transcriptLine("line-2", "RAG 정정 확정 자막");
+  const secondFinal = transcriptLine("line-2", "두 번째 확정 자막");
+  const thirdFinal = transcriptLine("line-3", "세 번째 확정 자막");
+  const placeholder = { kind: "placeholder", text: "마이크에 대고 강연을 시작해 주세요." } as const;
 
-  it("prioritizes raw interim text and moves only the previous final into history", () => {
-    const firstInterim = resolveLiveCaptionPresentation([firstFinal], "알에이지 임시 자막");
-    const continuedInterim = resolveLiveCaptionPresentation([firstFinal], "알에이지 임시 자막 이어짐");
-
-    expect(firstInterim).toEqual({
-      historyLines: [firstFinal],
-      slot: { kind: "interim", text: "알에이지 임시 자막" }
-    });
-    expect(continuedInterim.historyLines).toEqual([firstFinal]);
-    expect(continuedInterim.slot).toEqual({ kind: "interim", text: "알에이지 임시 자막 이어짐" });
+  it.each([
+    {
+      name: "none",
+      lines: [],
+      interim: "",
+      expected: { historyLines: [], upper: null, lower: placeholder }
+    },
+    {
+      name: "interim1",
+      lines: [],
+      interim: "첫 임시 자막",
+      expected: { historyLines: [], upper: null, lower: { kind: "interim", text: "첫 임시 자막" } }
+    },
+    {
+      name: "final1",
+      lines: [firstFinal],
+      interim: "",
+      expected: { historyLines: [], upper: null, lower: { kind: "final", line: firstFinal } }
+    },
+    {
+      name: "interim2a",
+      lines: [firstFinal],
+      interim: "두 번째 임시 자막",
+      expected: {
+        historyLines: [],
+        upper: { kind: "final", line: firstFinal },
+        lower: { kind: "interim", text: "두 번째 임시 자막" }
+      }
+    },
+    {
+      name: "interim2b",
+      lines: [firstFinal],
+      interim: "두 번째 임시 자막 이어짐",
+      expected: {
+        historyLines: [],
+        upper: { kind: "final", line: firstFinal },
+        lower: { kind: "interim", text: "두 번째 임시 자막 이어짐" }
+      }
+    },
+    {
+      name: "final2",
+      lines: [firstFinal, secondFinal],
+      interim: "",
+      expected: {
+        historyLines: [],
+        upper: { kind: "final", line: firstFinal },
+        lower: { kind: "final", line: secondFinal }
+      }
+    },
+    {
+      name: "interim3",
+      lines: [firstFinal, secondFinal],
+      interim: "세 번째 임시 자막",
+      expected: {
+        historyLines: [firstFinal],
+        upper: { kind: "final", line: secondFinal },
+        lower: { kind: "interim", text: "세 번째 임시 자막" }
+      }
+    }
+  ])("projects $name into the fixed upper/lower window", ({ lines, interim, expected }) => {
+    expect(resolveLiveCaptionPresentation(lines, interim)).toEqual(expected);
   });
 
-  it("falls back to the corrected final in the same slot and otherwise uses the placeholder", () => {
-    expect(resolveLiveCaptionPresentation([firstFinal, correctedFinal], "")).toEqual({
-      historyLines: [firstFinal],
-      slot: { kind: "final", line: correctedFinal }
-    });
-    expect(resolveLiveCaptionPresentation([], "")).toEqual({
+  it("treats blank interim text as absent and rotates finals received without a prior interim", () => {
+    expect(resolveLiveCaptionPresentation([firstFinal, secondFinal], "  \n ")).toEqual({
       historyLines: [],
-      slot: { kind: "placeholder", text: "마이크에 대고 강연을 시작해 주세요." }
+      upper: { kind: "final", line: firstFinal },
+      lower: { kind: "final", line: secondFinal }
+    });
+    expect(resolveLiveCaptionPresentation([firstFinal, secondFinal, thirdFinal], "")).toEqual({
+      historyLines: [firstFinal],
+      upper: { kind: "final", line: secondFinal },
+      lower: { kind: "final", line: thirdFinal }
     });
   });
 
@@ -70,7 +127,7 @@ describe("live caption presentation", () => {
         sizeClass
       }));
       const finalHtml = renderToStaticMarkup(createElement(LiveCaptionSlot, {
-        slot: { kind: "final", line: correctedFinal },
+        slot: { kind: "final", line: firstFinal },
         terms: [],
         sizeClass
       }));
@@ -88,7 +145,7 @@ describe("live caption presentation", () => {
     });
   });
 
-  it("moves three reducer finals into history one at a time across interim transitions", () => {
+  it("updates only the lower projection for consecutive reducer interim events, then replaces it immediately with the final", () => {
     const correction = {
       originalText: "레그",
       correctedText: "RAG",
@@ -104,17 +161,21 @@ describe("live caption presentation", () => {
       termIds: ["rag"],
       corrections: [correction]
     };
-    const secondFinal = transcriptLine("line-2", "두 번째 확정 자막");
-    const thirdFinal = transcriptLine("line-3", "세 번째 확정 자막");
     let state = createInitialLectureStreamState();
 
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim).slot.kind).toBe("placeholder");
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim).lower.kind).toBe("placeholder");
 
     state = lectureStreamReducer(state, { type: "interim", text: "레그를 설명합니다." });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toMatchObject({
-      historyLines: [],
-      slot: { kind: "interim", text: "레그를 설명합니다." }
+    const firstInterim = resolveLiveCaptionPresentation(state.lines, state.interim);
+    expect(firstInterim).toEqual({
+      historyLines: [], upper: null, lower: { kind: "interim", text: "레그를 설명합니다." }
     });
+
+    state = lectureStreamReducer(state, { type: "interim", text: "레그를 자세히 설명합니다." });
+    const continuedInterim = resolveLiveCaptionPresentation(state.lines, state.interim);
+    expect(continuedInterim.upper).toBe(firstInterim.upper);
+    expect(continuedInterim.historyLines).toEqual(firstInterim.historyLines);
+    expect(continuedInterim.lower).toEqual({ kind: "interim", text: "레그를 자세히 설명합니다." });
 
     state = lectureStreamReducer(state, {
       type: "final",
@@ -128,34 +189,132 @@ describe("live caption presentation", () => {
     });
     expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
       historyLines: [],
-      slot: { kind: "final", line: correctedFirstFinal }
+      upper: null,
+      lower: { kind: "final", line: correctedFirstFinal }
     });
 
     state = lectureStreamReducer(state, { type: "interim", text: "두 번째 임시 자막" });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim).historyLines).toEqual([correctedFirstFinal]);
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+      historyLines: [],
+      upper: { kind: "final", line: correctedFirstFinal },
+      lower: { kind: "interim", text: "두 번째 임시 자막" }
+    });
     state = lectureStreamReducer(state, { type: "final", line: secondFinal, occurrenceTermIds: [] });
     expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
-      historyLines: [correctedFirstFinal],
-      slot: { kind: "final", line: secondFinal }
+      historyLines: [],
+      upper: { kind: "final", line: correctedFirstFinal },
+      lower: { kind: "final", line: secondFinal }
     });
 
     state = lectureStreamReducer(state, { type: "interim", text: "세 번째 임시 자막" });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim).historyLines).toEqual([
-      correctedFirstFinal,
-      secondFinal
-    ]);
-    state = lectureStreamReducer(state, { type: "final", line: thirdFinal, occurrenceTermIds: [] });
     expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
-      historyLines: [correctedFirstFinal, secondFinal],
-      slot: { kind: "final", line: thirdFinal }
+      historyLines: [correctedFirstFinal],
+      upper: { kind: "final", line: secondFinal },
+      lower: { kind: "interim", text: "세 번째 임시 자막" }
+    });
+  });
+
+  it("rotates three reducer finals in order even when none is preceded by an interim", () => {
+    let state = createInitialLectureStreamState();
+
+    state = lectureStreamReducer(state, { type: "final", line: firstFinal, occurrenceTermIds: [] });
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+      historyLines: [],
+      upper: null,
+      lower: { kind: "final", line: firstFinal }
     });
 
-    state = lectureStreamReducer(state, { type: "interim", text: "다음 임시 자막" });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim).historyLines).toEqual([
-      correctedFirstFinal,
-      secondFinal,
-      thirdFinal
-    ]);
+    state = lectureStreamReducer(state, { type: "final", line: secondFinal, occurrenceTermIds: [] });
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+      historyLines: [],
+      upper: { kind: "final", line: firstFinal },
+      lower: { kind: "final", line: secondFinal }
+    });
+
+    state = lectureStreamReducer(state, { type: "final", line: thirdFinal, occurrenceTermIds: [] });
+    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+      historyLines: [firstFinal],
+      upper: { kind: "final", line: secondFinal },
+      lower: { kind: "final", line: thirdFinal }
+    });
+  });
+
+  it("renders corrected final data through TransparentCaption in the lower row", () => {
+    const correctedFinal: TranscriptLine = {
+      id: "corrected-line",
+      text: "RAG를 설명합니다.",
+      rawText: "레그를 설명합니다.",
+      termIds: ["rag"],
+      corrections: [{
+        originalText: "레그",
+        correctedText: "RAG",
+        termId: "rag",
+        displayStart: 0,
+        displayEnd: 3,
+        reason: "spokenAlias"
+      }]
+    };
+    const presentation = resolveLiveCaptionPresentation([correctedFinal], "");
+    const html = renderToStaticMarkup(createElement(LiveCaptionRows, {
+      presentation,
+      terms: [],
+      sizeClass: LIVE_CAPTION_SIZE_CLASS.normal
+    }));
+
+    expect(presentation.lower).toEqual({ kind: "final", line: correctedFinal });
+    expect(html).toContain("정정 표기: RAG, 원래 음성 인식: 레그");
+    expect(html).toContain(">RAG</mark>");
+    expect(html).toContain(">(레그)</span>");
+  });
+
+  it.each([
+    [[], ""],
+    [[], "임시 자막"],
+    [[firstFinal], ""],
+    [[firstFinal], "다음 임시 자막"],
+    [[firstFinal, secondFinal], ""]
+  ] as const)("renders at most two semantic caption rows for lines=%j interim=%s", (lines, interim) => {
+    const html = renderToStaticMarkup(createElement(LiveCaptionRows, {
+      presentation: resolveLiveCaptionPresentation([...lines], interim),
+      terms: [],
+      sizeClass: LIVE_CAPTION_SIZE_CLASS.normal
+    }));
+    const semanticRows = html.match(/<p\b/g) ?? [];
+
+    expect(semanticRows.length).toBeGreaterThan(0);
+    expect(semanticRows.length).toBeLessThanOrEqual(2);
+    expect(html).not.toContain("caption-live-enter");
+    expect(html).not.toMatch(/line-clamp|truncate/);
+  });
+
+  it("announces only the stable lower row as one atomic live-region update", () => {
+    const html = renderToStaticMarkup(createElement(LiveCaptionRows, {
+      presentation: resolveLiveCaptionPresentation([firstFinal], "다음 임시 자막"),
+      terms: [],
+      sizeClass: LIVE_CAPTION_SIZE_CLASS.normal
+    }));
+    const outerTag = html.match(/^<div[^>]*>/)?.[0] ?? "";
+    const upperTag = html.match(/<div class="caption-live-upper"[^>]*>/)?.[0] ?? "";
+    const lowerTag = html.match(/<div class="caption-live-lower"[^>]*>/)?.[0] ?? "";
+
+    expect(outerTag).toContain('data-testid="live-caption-rows"');
+    expect(outerTag).not.toContain("aria-live");
+    expect(outerTag).not.toContain("aria-atomic");
+    expect(upperTag).toContain('data-testid="live-caption-upper"');
+    expect(upperTag).not.toContain("aria-live");
+    expect(upperTag).not.toContain("aria-atomic");
+    expect(lowerTag).toContain('data-testid="live-caption-lower"');
+    expect(lowerTag).toContain('aria-live="polite"');
+    expect(lowerTag).toContain('aria-atomic="true"');
+  });
+
+  it("keeps the live row free of opacity and translate animations", () => {
+    const stylesheet = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+    const liveLineRule = stylesheet.match(/\.caption-live-line\s*\{([^}]*)\}/)?.[1];
+
+    expect(liveLineRule).toBeDefined();
+    expect(liveLineRule).not.toMatch(/\b(?:animation(?:-[\w-]+)?|opacity|transform)\s*:/);
+    expect(stylesheet).not.toContain(".caption-live-enter");
   });
 });
 

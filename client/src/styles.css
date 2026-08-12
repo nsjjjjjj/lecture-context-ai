@@ -70,8 +70,18 @@ button:disabled { cursor: default; }
   min-height: 2.64em;
 }
 
-.caption-live-enter {
-  animation: caption-rise 420ms cubic-bezier(.22, 1, .36, 1) both;
+.caption-live-stack {
+  display: grid;
+  grid-template-rows: minmax(2.64em, auto) minmax(2.64em, auto);
+  row-gap: .75rem;
+}
+
+.caption-live-upper {
+  grid-row: 1;
+}
+
+.caption-live-lower {
+  grid-row: 2;
 }
 
 .caption-history-entry {
@@ -89,11 +99,6 @@ button:disabled { cursor: default; }
 .term-explanation-card {
   min-height: 0;
   overflow: hidden;
-}
-
-@keyframes caption-rise {
-  from { opacity: 0; transform: translate3d(0, 24px, 0); }
-  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes caption-rise-subtle {
