@@ -1,18 +1,26 @@
 import { readFileSync } from "node:fs";
-import { createElement, type FunctionComponent, type ReactElement } from "react";
+import { createElement, type FunctionComponent } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
   App,
   Header,
+  LIVE_CAPTION_CURRENT_KEY,
+  LIVE_CAPTION_PROMOTION_DURATION_MS,
   LIVE_CAPTION_SIZE_CLASS,
   LiveCaptionRows,
   LiveCaptionSlot,
   UPLOAD_CARD_GLOW_PROPS,
   appRouteHash,
+  cancelCaptionAnimations,
+  calculateCaptionFlipDelta,
   calculateHistoryRowScrollTop,
+  createLiveCaptionMotionSnapshot,
   parseAppHash,
+  resolveLiveCaptionRowKey,
+  resolveRetainedFinalPromotions,
   resolveLiveCaptionPresentation,
+  runCaptionPromotionAnimations,
   resolveAppRoute,
   type AppRoute
 } from "./App";
@@ -455,35 +463,163 @@ describe("live caption presentation", () => {
     expect(currentTag).toContain('aria-atomic="true"');
   });
 
-  it("keeps one fixed-key current wrapper mounted across interim-to-final updates", () => {
-    type Wrapper = ReactElement<{
-      "data-testid": string;
-      "data-caption-kind": string;
-      "aria-live": string;
-      "aria-atomic": string;
-    }>;
-    const currentWrapper = (presentation: ReturnType<typeof resolveLiveCaptionPresentation>) => {
-      const tree = LiveCaptionRows({
-        presentation,
-        terms: [],
-        sizeClass: LIVE_CAPTION_SIZE_CLASS.normal
-      });
-      return (tree.props as { children: [unknown, Wrapper] }).children[1];
-    };
+  it("keeps one fixed current wrapper key across interim-to-final updates", () => {
+    expect(resolveLiveCaptionRowKey({ kind: "interim", text: "두 번째 임시 자막" }, true)).toBe(
+      LIVE_CAPTION_CURRENT_KEY
+    );
+    expect(resolveLiveCaptionRowKey({ kind: "final", line: secondFinal }, true)).toBe(
+      LIVE_CAPTION_CURRENT_KEY
+    );
 
-    const interimWrapper = currentWrapper(resolveLiveCaptionPresentation([firstFinal], "두 번째 임시 자막"));
-    const finalWrapper = currentWrapper(resolveLiveCaptionPresentation([firstFinal, secondFinal], ""));
+    const interimHtml = renderToStaticMarkup(createElement(LiveCaptionRows, {
+      presentation: resolveLiveCaptionPresentation([firstFinal], "두 번째 임시 자막"),
+      terms: [],
+      sizeClass: LIVE_CAPTION_SIZE_CLASS.normal
+    }));
+    const finalHtml = renderToStaticMarkup(createElement(LiveCaptionRows, {
+      presentation: resolveLiveCaptionPresentation([firstFinal, secondFinal], ""),
+      terms: [],
+      sizeClass: LIVE_CAPTION_SIZE_CLASS.normal
+    }));
 
-    expect(interimWrapper.key).toBe("live-caption-current");
-    expect(finalWrapper.key).toBe(interimWrapper.key);
-    expect(interimWrapper.props["data-testid"]).toBe("live-caption-current");
-    expect(finalWrapper.props["data-testid"]).toBe("live-caption-current");
-    expect(interimWrapper.props["data-caption-kind"]).toBe("interim");
-    expect(finalWrapper.props["data-caption-kind"]).toBe("final");
-    expect(finalWrapper.props).toMatchObject({ "aria-live": "polite", "aria-atomic": "true" });
+    expect(interimHtml).toContain('data-testid="live-caption-current"');
+    expect(finalHtml).toContain('data-testid="live-caption-current"');
+    expect(interimHtml).toContain('data-caption-kind="interim"');
+    expect(finalHtml).toContain('data-caption-kind="final"');
+    expect(finalHtml).toContain('aria-live="polite" aria-atomic="true"');
   });
 
-  it("keeps updates instant and reserves three bottom-aligned rows at the selected caption scale", () => {
+  it.each([
+    {
+      name: "first interim",
+      previous: resolveLiveCaptionPresentation([], ""),
+      next: resolveLiveCaptionPresentation([], "첫 임시"),
+      expected: []
+    },
+    {
+      name: "next utterance interim",
+      previous: resolveLiveCaptionPresentation([firstFinal, secondFinal], ""),
+      next: resolveLiveCaptionPresentation([firstFinal, secondFinal], "세 번째 임시"),
+      expected: ["line-1", "line-2"]
+    },
+    {
+      name: "repeated interim",
+      previous: resolveLiveCaptionPresentation([firstFinal], "둘째 임시"),
+      next: resolveLiveCaptionPresentation([firstFinal], "둘째 임시가 늘어남"),
+      expected: []
+    },
+    {
+      name: "interim to final",
+      previous: resolveLiveCaptionPresentation([firstFinal], "둘째 임시"),
+      next: resolveLiveCaptionPresentation([firstFinal, secondFinal], ""),
+      expected: []
+    },
+    {
+      name: "final-only utterance",
+      previous: resolveLiveCaptionPresentation([firstFinal, secondFinal], ""),
+      next: resolveLiveCaptionPresentation([firstFinal, secondFinal, thirdFinal], ""),
+      expected: ["line-1", "line-2"]
+    },
+    {
+      name: "fourth utterance rotates oldest",
+      previous: resolveLiveCaptionPresentation([firstFinal, secondFinal, thirdFinal], ""),
+      next: resolveLiveCaptionPresentation([firstFinal, secondFinal, thirdFinal], "넷째 임시"),
+      expected: ["line-2", "line-3"]
+    }
+  ])("gates promotion for $name", ({ previous, next, expected }) => {
+    expect(resolveRetainedFinalPromotions(
+      createLiveCaptionMotionSnapshot(previous),
+      createLiveCaptionMotionSnapshot(next)
+    )).toEqual(expected);
+  });
+
+  it("uses measured variable-height rect deltas and animates retained finals only", () => {
+    const calls: Array<{ id: string; keyframes: Keyframe[]; options: KeyframeAnimationOptions }> = [];
+    const handles = new Map<string, { cancel: () => void; onfinish: (() => void) | null; oncancel: (() => void) | null }>();
+    const elements = new Map(["line-1", "line-2", "line-3"].map((id) => [id, {
+      animate(keyframes: Keyframe[], options: KeyframeAnimationOptions) {
+        calls.push({ id, keyframes, options });
+        const handle = { cancel: () => undefined, onfinish: null, oncancel: null };
+        handles.set(id, handle);
+        return handle;
+      }
+    }]));
+    const active = new Map();
+
+    expect(calculateCaptionFlipDelta(182.5, 71)).toBe(111.5);
+    expect(runCaptionPromotionAnimations({
+      retainedFinalIds: ["line-1", "line-2"],
+      previousRects: new Map([["line-1", { top: 182.5 }], ["line-2", { top: 230 }]]),
+      nextRects: new Map([["line-1", { top: 71 }], ["line-2", { top: 118.5 }], ["line-3", { top: 230 }]]),
+      elements,
+      reducedMotion: false,
+      activeAnimations: active
+    })).toEqual(["line-1", "line-2"]);
+    expect(calls.map(({ id }) => id)).toEqual(["line-1", "line-2"]);
+    expect(calls[0]?.keyframes).toEqual([
+      { transform: "translate3d(0, 111.5px, 0)" },
+      { transform: "translate3d(0, 0, 0)" }
+    ]);
+    expect(calls[1]?.keyframes[0]).toEqual({ transform: "translate3d(0, 111.5px, 0)" });
+    expect(calls[0]?.options).toMatchObject({ duration: LIVE_CAPTION_PROMOTION_DURATION_MS });
+    expect(calls.some(({ id }) => id === "line-3")).toBe(false);
+  });
+
+  it("cancels owned motion on rapid updates and skips all motion for reduced motion", () => {
+    let cancelled = 0;
+    let animateCalls = 0;
+    const active = new Map<string, { cancel: () => void; onfinish: (() => void) | null; oncancel: (() => void) | null }>([[
+      "line-1",
+      { cancel: () => { cancelled += 1; }, onfinish: null, oncancel: null }
+    ]]);
+    const elements = new Map([["line-1", {
+      animate() {
+        animateCalls += 1;
+        return { cancel: () => { cancelled += 1; }, onfinish: null, oncancel: null };
+      }
+    }]]);
+    const geometry = new Map([["line-1", { top: 100 }]]);
+
+    expect(runCaptionPromotionAnimations({
+      retainedFinalIds: ["line-1"],
+      previousRects: new Map([["line-1", { top: 180 }]]),
+      nextRects: geometry,
+      elements,
+      reducedMotion: true,
+      activeAnimations: active
+    })).toEqual([]);
+    expect(cancelled).toBe(1);
+    expect(animateCalls).toBe(0);
+    expect(active.size).toBe(0);
+  });
+
+  it("clears owned animation bookkeeping before cancel callbacks run", () => {
+    const active = new Map<string, { cancel: () => void; onfinish: Animation["onfinish"]; oncancel: Animation["oncancel"] }>();
+    const sizeSeenDuringCancel: number[] = [];
+    active.set("line-1", {
+      cancel: () => sizeSeenDuringCancel.push(active.size),
+      onfinish: null,
+      oncancel: null
+    });
+
+    cancelCaptionAnimations(active);
+
+    expect(sizeSeenDuringCancel).toEqual([0]);
+    expect(active.size).toBe(0);
+  });
+
+  it("degrades to an immediate layout when Web Animations is unavailable", () => {
+    expect(runCaptionPromotionAnimations({
+      retainedFinalIds: ["line-1"],
+      previousRects: new Map([["line-1", { top: 180 }]]),
+      nextRects: new Map([["line-1", { top: 100 }]]),
+      elements: new Map(),
+      reducedMotion: false,
+      activeAnimations: new Map()
+    })).toEqual([]);
+  });
+
+  it("keeps the new bottom row instant and reserves three bottom-aligned rows at the selected caption scale", () => {
     const stylesheet = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
     const liveLineRule = stylesheet.match(/\.caption-live-line\s*\{([^}]*)\}/)?.[1];
     const stackRule = stylesheet.match(/\.caption-live-stack\s*\{([^}]*)\}/)?.[1];
@@ -507,6 +643,7 @@ describe("live caption presentation", () => {
     expect(stylesheet).not.toContain("caption-live-promote");
     expect(stylesheet).not.toContain(".caption-live-enter");
     expect(stylesheet).not.toContain("min-height: calc(3.96em + 1.5rem)");
+    expect(stylesheet.match(/\.caption-live-current\s*\{([^}]*)\}/)?.[1]).toMatch(/background:\s*var\(--caption-live-surface\)/);
   });
 
   it("keeps interim darker without changing its selected font-size path", () => {

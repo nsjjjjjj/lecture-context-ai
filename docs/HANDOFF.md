@@ -37,7 +37,7 @@
 - 직접 인식·별칭 정정 성공·누락·잘못된 정정·잘못된 삽입·제품 용어 연결률을 출현 단위로 계산하는 비교 결과 v3
 - `comparison-<recordingId>-<jobId>.json` immutable 결과 저장과 기존 파일 보존, 수정 시각 최신순 페이지 목록·파일별 상세 조회
 - 저장된 v3/v4 결과의 조건 차트·A/B/C 원문/표시 자막·용어별 표와, 정확도·세 run 정상 완료 조건에서만 활성화되는 TSV 복사를 제공하고 v1/v2를 안내-only legacy로 격리하는 localhost 개발 결과 화면
-- 약 1.25~1.5rem의 기본 글꼴과 비례 확대한 큰 글씨·매우 큰 글씨 3단계, Google STT 응답의 비어 있지 않은 임시 원문 구간을 응답마다 하나로 이어 확정 자막과 같은 크기의 어두운 아래 행에 즉시 갱신하고 final 수신 즉시 밝은 정정 확정 자막으로 전환하는 최대 세 행 실시간 자막. 행은 선택한 글꼴 크기에 맞춘 높이와 12px 간격으로 아래부터 공간을 채우며, 다음 발화가 시작되면 이전 확정 자막이 한 행 위로 재배치되고 새 임시 자막은 아래 행에 표시됩니다. 래핑 높이에 따라 겹치는 잘못된 승격 모션은 적용하지 않습니다.
+- 약 1.25~1.5rem의 기본 글꼴과 비례 확대한 큰 글씨·매우 큰 글씨 3단계, Google STT 응답의 비어 있지 않은 임시 원문 구간을 응답마다 하나로 이어 확정 자막과 같은 크기의 어두운 아래 행에 즉시 갱신하고 final 수신 즉시 밝은 정정 확정 자막으로 전환하는 최대 세 행 실시간 자막. 행은 선택한 글꼴 크기에 맞춘 높이와 12px 간격으로 아래부터 공간을 채웁니다. 다음 발화가 아래 행에 즉시 생길 때만 남아 있는 확정 행을 실제 이전·현재 DOM 위치 차이로 약 240ms 동안 위로 이동하며, 반복 interim과 interim→final 치환은 재애니메이션하지 않습니다. 빠른 갱신·unmount와 reduced-motion 전환에서는 앱이 소유한 모션을 취소하고 새 아래 행과 고정 `aria-live` wrapper를 유지합니다.
 - 용어 강조, 반복 언급마다 생성되는 최신순 쉬운 설명 목록
 - PDF 전문용어를 원문 검증한 뒤 원본 용어를 최대 50개로 제한하고, 영문 표기와 Gemini 한글 발음은 원본 개수에 포함하지 않은 채 PhraseSet에 추가합니다. 한글 발음은 안전 규칙으로 자동 승인하며 알려진 기술용어 발음은 누락 보완에만 사용합니다.
 - 임시 자막 원문 유지, 확정 자막의 위치 기반 canonical 정정, `rawText`·정정 내역 보존
@@ -72,6 +72,10 @@
 - 인라인 PhraseSet 1개 + 0.25초 무음: 스트림 정상 수락·종료, 임시 0개·확정 1개
 - 빈 PhraseSet + 로컬 한국어 음성: 3,200바이트 단위 16kHz mono LINEAR16 전송, 임시 1개·확정 1개
 - 저장 WAV 106초 legacy A/B 스모크: 당시 PhraseSet 없음과 영문 targetTerms 17개 적용 조건 모두 전체 음원 재생·확정 자막 12개·오류 0개
+
+별도의 한 번의 로컬 실시간 마이크 진단에서는 provider 설정 write가 세션 시작 후 약 31.42ms, 첫 PCM 전송이 약 371.86ms에 끝났습니다. 첫 발화는 VAD begin 뒤 interim 없이 약 3.465초 만에 final이 왔고, 뒤의 다른 발화에서는 VAD begin 뒤 첫 interim까지 약 5.456초가 걸렸습니다. 클라이언트와 서버는 비어 있지 않은 interim을 필터·debounce·final 대기 없이 즉시 전달하므로, 이 관찰에서는 provider 응답 생성 시점이 체감 지연을 지배했습니다. 다만 한 세션 관찰일 뿐 기기·화자·네트워크 전체의 지연 보장이나 일반 벤치마크가 아닙니다.
+
+Google V2의 [`interimResults`](https://cloud.google.com/speech-to-text/v2/docs/reference/rpc/google.cloud.speech.v2#streamingrecognitionfeatures)는 interim 반환 여부만 제공합니다. 단어별·고정 주기 cadence나 첫 interim SLA는 제공하지 않습니다. Chirp 3에는 `ENDPOINTING_SENSITIVITY_SHORT`를 적용해 발화 뒤 침묵에서 final을 더 민감하게 확정하도록 요청합니다. 이는 final endpointing의 지연·분절 절충이며, 짧은 멈춤에서 문장이 더 잘게 나뉠 수 있고 interim 생성 빈도나 속도 개선을 보장하지 않습니다.
 - 같은 과거 스모크에서 영문 정확 표기는 0개에서 1개(`PhraseSet`)로 증가했지만 `RAG`는 `레그`, `Transformer`는 `트랜스포머`, `Fine-tuning`은 `파인 튜닝`으로 남았습니다.
 - 최신 기준 문장을 그대로 읽었다고 선언한 한 녹음의 완전한 accuracy 리포트에서 제품 용어 연결률 A/B/C가 각각 **17.6% / 17.6% / 94.1%**로 관찰됐습니다.
 
@@ -83,7 +87,7 @@
 
 - Gemini 3.6 Flash 실제 PDF 호출
 - 실제 발표용 브라우저·마이크 권한과 음질
-- 실제 마이크 발화에서 VAD begin→첫 interim 지연 및 서로 다른 기기·네트워크의 backpressure 동작. 단위 테스트와 무과금 브라우저 QA는 전송·상태 계약만 검증하며 Google이 interim을 보내는 주기 자체는 보장하지 않습니다.
+- 실제 마이크 발화에서 SHORT endpointing 전후의 VAD begin→final 분포·문장 분절률, VAD begin→첫 interim 지연 및 서로 다른 기기·네트워크의 backpressure 동작. 현재 수치는 한 세션 관찰이고, 단위 테스트와 무과금 브라우저 QA는 전송·상태·모션 계약만 검증하며 Google이 interim을 보내는 주기 자체는 보장하지 않습니다.
 - 보존된 exact-script WAV의 반복 A/B/C 실행과 논문용 요약 통계
 - Cloud Run 배포 환경의 WebSocket 장시간 연결
 - Secret Manager와 Cloud Run 서비스 계정 연결
@@ -127,7 +131,7 @@ pnpm dev
 3. `샘플 강연 바로 체험하기`를 누릅니다.
 4. 자동 용어집 5개가 표시되는지 확인합니다.
 5. `데모 자막으로 미리보기`를 누르고 `live` 동안 `STT 실험실` 이동이 차단되는지 확인합니다. PDF 분석 중인 `analyzing` 상태에도 같은 차단이 적용됩니다.
-6. 기본 자막이 약 1.25~1.5rem로 표시되고 글자 크기 버튼이 `보통`·`크게`·`매우 크게` 3단계를 순환하는지 확인합니다. `LIVE CAPTION`에는 최대 세 행이 아래부터 채워져야 하며 선택한 자막 크기를 기준으로 3개 한 줄 높이와 두 번의 12px 간격이 예약되어야 합니다. 첫 임시 자막은 어두운 색의 가장 아래 행에 즉시 나타나고 final 수신 즉시 같은 행의 밝은 정정 확정 자막으로 바뀌어야 합니다. 한 Google STT 응답에 여러 interim 구간이 있으면 제공자가 준 문자열 경계를 그대로 이어 하나의 아래 행 업데이트로 표시하고, 다음 응답에서는 그 전체를 다시 교체해야 합니다. 다음 발화가 시작되면 이전 확정 자막이 위 행으로 재배치되고 새 임시 자막이 아래에 생겨야 하며, final 수신 시 행을 추가로 밀지 않고 아래 행을 `RAG(레그)` 같은 정정 자막으로 교체해야 합니다. 네 번째 발화가 시작되면 가장 오래된 확정 자막만 기록 영역으로 이동해야 합니다. 라이브 행에는 opacity·translate·승격 애니메이션이 없어야 하며 긴 한글·영문 자막은 생략하지 않고 행 안에서 줄바꿈되어야 합니다.
+6. 기본 자막이 약 1.25~1.5rem로 표시되고 글자 크기 버튼이 `보통`·`크게`·`매우 크게` 3단계를 순환하는지 확인합니다. `LIVE CAPTION`에는 최대 세 행이 아래부터 채워져야 하며 선택한 자막 크기를 기준으로 3개 한 줄 높이와 두 번의 12px 간격이 예약되어야 합니다. 첫 임시 자막은 어두운 색의 가장 아래 행에 즉시 나타나고 final 수신 즉시 같은 행의 밝은 정정 확정 자막으로 바뀌어야 합니다. 한 Google STT 응답에 여러 interim 구간이 있으면 제공자가 준 문자열 경계를 그대로 이어 하나의 아래 행 업데이트로 표시하고, 다음 응답에서는 그 전체를 다시 교체해야 합니다. 다음 발화가 시작되면 새 아래 행은 opacity 없이 즉시 보이고, 남아 있는 확정 행만 직전 rect에서 새 rect까지 약 240ms transform-only FLIP으로 위로 이동해야 합니다. final 수신 시와 반복 interim에는 다시 움직이지 않아야 하며, 네 번째 발화에서는 가장 오래된 확정 자막만 기록 영역으로 이동해야 합니다. 320px·639px·desktop 너비와 모든 글꼴 단계에서 1~3줄로 래핑되는 한글·영문을 확인하고, 시작/종료 rect와 delta·12px 간격·겹침 없음·최대 3행을 검증합니다. 빠른 연속 갱신은 이전 owned animation을 취소하고 최종 DOM이 맞아야 하며, `prefers-reduced-motion: reduce`에서는 승격 애니메이션이 없어야 합니다. 고정 current `aria-live` wrapper는 interim→final에서도 유지되어야 합니다.
 7. 정정된 `RAG`가 오른쪽 피드 맨 위에 새 쉬운 설명 카드를 만들고 이전 카드가 아래에 남는지 확인합니다.
 8. 마지막 데모 자막 뒤 자동으로 결과 리포트가 표시되고 확정 자막 4개와 `RAG(레그)` 표기가 유지되는지 확인합니다.
 9. `처음으로` 이동해 `#/lecture`의 `이 브라우저의 용어집`에 샘플 용어집이 표시되는지 확인합니다.
@@ -178,6 +182,8 @@ pnpm dev
 - 발음 별칭은 영문 원어가 있는 용어에만 허용하며 용어당 최대 6개·별칭당 2~40자, 완성형 한글과 내부 공백/하이픈만 허용합니다. Gemini가 제안한 값은 이 안전 규칙을 통과하면 자동 승인하고, 알려진 기술용어 목록은 결정적 보완에만 사용합니다. 고빈도 일반 표현 차단 목록·다른 canonical/영문 표기·다른 용어의 별칭과 충돌하면 제거하거나 저장을 거부합니다. `레그`는 별도 한글 단어 앞에서 모호하므로 `레그는`은 찾지만 `레그레이즈`와 `레그 프레스`는 찾지 않습니다. 이는 오탐을 줄이는 대신 일부 RAG 발화를 놓치는 의도된 절충입니다.
 - WebSocket 용어 입력은 정규화된 canonical 표기뿐 아니라 ID도 중복 제거하며, 같은 ID에는 첫 번째 유효 용어를 결정적으로 보존합니다. 이로써 서버 정정의 canonical 용어와 클라이언트 `termById` 소유권이 어긋나지 않습니다.
 - Google STT V2의 한 응답에는 새 final prefix 뒤에 여러 interim 구간이 올 수 있습니다. 서버는 final을 순서대로 먼저 전달하고, interim 원문은 제공자가 준 각 문자열을 구분자 없이 이어 합친 바깥 공백만 제거한 뒤 응답당 정확히 한 번 전달합니다. 임의의 공백·단어·문자를 만들거나 interim을 정정하지 않으며, 다음 응답의 interim 전체가 현재 아래 행을 교체합니다. 확정 자막은 `text`와 별도로 `rawText`, `corrections`를 보존하고, 원문 위치 기준 왼쪽→오른쪽 최장 일치로 겹침·반복 치환을 방지합니다. UI는 `RAG(레그)`처럼 canonical 용어 옆에 원문을 괄호로 항상 표시하며 결과 화면에서도 같은 표기를 유지합니다. 앱은 throttle/debounce하지 않지만 제공자가 첫 interim을 보내는 시점이나 매우 빠른 연속 이벤트를 브라우저가 각각 별도의 physical paint로 보여주는 것은 보장하지 않습니다.
+- Chirp 3 스트리밍 설정은 설치된 `@google-cloud/speech` enum의 `ENDPOINTING_SENSITIVITY_SHORT`를 사용합니다. 이 설정은 발화 뒤 침묵에서 final endpoint를 더 민감하게 잡는 대신 짧은 멈춤에서 문장을 분절할 수 있으며 interim cadence를 바꾸는 근거는 아닙니다. 모델·리전·오디오 프레임·PhraseSet·자동 문장부호는 이 지연 조정에서 변경하지 않았습니다.
+- 라이브 자막 승격은 semantic final ID별 이전·현재 DOM rect를 `useLayoutEffect`에서 측정해 retained final에만 WAAPI transform을 적용합니다. 새 current 아래 행은 불투명 surface 위에 즉시 표시해 이동 중인 이전 글자와 겹쳐 보이지 않으며 clone·ghost·opacity 전환을 만들지 않습니다. 반복 interim, interim→final, placeholder→첫 발화에는 승격을 적용하지 않고 final-only 새 발화는 retained final을 승격합니다. 갱신·unmount·reduced-motion에서는 앱 소유 animation을 취소합니다.
 - 개발 빌드는 비어 있지 않은 interim/final 이벤트를 받은 뒤 `requestAnimationFrame` 다음 task까지의 시간을 `caption-receive-to-after-paint-estimate` 디버그 로그로 남깁니다. 로그에는 일련번호·이벤트 종류·시각·기간만 있고 자막·음성 내용은 없습니다. 이 수치는 앱 수신부터 다음 렌더링 기회 이후까지의 추정치이며 실제 화면 제시 완료나 제공자 발화→응답 지연을 증명하지 않습니다. production 빌드에서는 수집하지 않습니다.
 - 개발 빌드의 `live-stt-diagnostic`은 브라우저에서 WebSocket open·recorder running·first PCM·provider ready·첫 interim/final을, 서버에서 client initialized·config written·first PCM·gRPC backpressure/drain·VAD begin/end·첫 interim/final을 단계별로 기록합니다. 세션 난수 ID와 경과 시간·청크/바이트 카운터만 사용하며 음성 내용·진폭·자막/원문·용어·프로젝트 ID·장치 label은 기록하지 않습니다. Google VAD는 발화 감지 경계를 관찰하기 위한 것이며 interim 생성 빈도를 높이거나 단어 단위 결과를 보장하지 않습니다.
 - 브라우저 capture-ready는 provider-ready handshake 뒤 AudioContext `running`과 첫 PCM이 모두 확인되어야 하며 첫 PCM이 3초 안에 없으면 오류로 종료합니다. 서버 provider-ready는 공유 SpeechClient의 `initialize()`와 첫 설정 write callback 완료 뒤에만 전송합니다. handshake 전 PCM은 전송하지 않으므로 비동기 서버 초기화 중 첫 청크가 `active` 세션 없이 버려지는 경쟁 조건을 만들지 않습니다. 설치된 `@google-cloud/speech` 7.5.0의 `_streamingRecognize()`는 내부에서 초기화를 비동기로 시작하고 gax StreamProxy가 실제 gRPC writable 연결 전 write를 cork하므로, 초기화를 선행하고 config callback까지 기다리는 순서를 유지해야 합니다. callback은 설정 write가 실제 writable에 전달됐다는 경계이지 첫 인식 응답이나 성공한 발화 인식을 보장하지 않습니다.

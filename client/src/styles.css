@@ -76,6 +76,7 @@ button:disabled { cursor: default; }
 
 .caption-live-stack {
   display: grid;
+  isolation: isolate;
   min-height: calc(3.96em + 24px);
   grid-auto-rows: minmax(1.32em, auto);
   align-content: end;
@@ -84,6 +85,20 @@ button:disabled { cursor: default; }
 
 .caption-live-row {
   min-width: 0;
+}
+
+.caption-live-panel {
+  --caption-live-surface: #0a1625;
+}
+
+.caption-live-panel-contrast {
+  --caption-live-surface: #000;
+}
+
+.caption-live-current {
+  position: relative;
+  z-index: 1;
+  background: var(--caption-live-surface);
 }
 
 .caption-history-entry {

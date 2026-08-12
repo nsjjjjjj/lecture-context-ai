@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Accessibility,
   ArrowLeft,
@@ -62,6 +62,27 @@ export type LiveCaptionPresentation = {
   rows: LiveCaptionSlotState[];
 };
 
+export type LiveCaptionMotionSnapshot = {
+  currentKind: LiveCaptionSlotState["kind"];
+  currentFinalId: string | null;
+  finalIds: string[];
+};
+
+type CaptionAnimationLike = {
+  cancel: () => void;
+  onfinish: Animation["onfinish"];
+  oncancel: Animation["oncancel"];
+};
+
+type CaptionAnimatable = {
+  animate: (keyframes: Keyframe[], options: KeyframeAnimationOptions) => CaptionAnimationLike;
+};
+
+type CaptionRect = { top: number };
+
+export const LIVE_CAPTION_PROMOTION_DURATION_MS = 240;
+export const LIVE_CAPTION_CURRENT_KEY = "live-caption-current";
+
 export const LIVE_CAPTION_SIZE_CLASS: Record<FontScale, string> = {
   normal: "caption-normal text-xl sm:text-2xl",
   large: "caption-large text-2xl sm:text-[1.9rem]",
@@ -89,6 +110,96 @@ export function resolveLiveCaptionPresentation(
     historyLines: lines.slice(0, Math.max(0, lines.length - visibleFinalLimit)),
     rows
   };
+}
+
+export function createLiveCaptionMotionSnapshot(
+  presentation: LiveCaptionPresentation
+): LiveCaptionMotionSnapshot {
+  const current = presentation.rows.at(-1)!;
+  return {
+    currentKind: current.kind,
+    currentFinalId: current.kind === "final" ? current.line.id : null,
+    finalIds: presentation.rows.flatMap((row) => row.kind === "final" ? [row.line.id] : [])
+  };
+}
+
+export function resolveRetainedFinalPromotions(
+  previous: LiveCaptionMotionSnapshot | null,
+  next: LiveCaptionMotionSnapshot
+): string[] {
+  if (!previous || previous.currentKind !== "final") return [];
+
+  const startsNewUtterance = next.currentKind === "interim"
+    || (next.currentKind === "final" && next.currentFinalId !== previous.currentFinalId);
+  if (!startsNewUtterance) return [];
+
+  const nextFinalIds = new Set(next.finalIds);
+  return previous.finalIds.filter((id) => nextFinalIds.has(id));
+}
+
+export function calculateCaptionFlipDelta(previousTop: number, nextTop: number): number {
+  return previousTop - nextTop;
+}
+
+export function cancelCaptionAnimations(activeAnimations: Map<string, CaptionAnimationLike>): void {
+  const animations = [...activeAnimations.values()];
+  activeAnimations.clear();
+  for (const animation of animations) animation.cancel();
+}
+
+export function resolveLiveCaptionRowKey(slot: LiveCaptionSlotState, current = false): string {
+  if (current) return LIVE_CAPTION_CURRENT_KEY;
+  return slot.kind === "final" ? slot.line.id : slot.kind;
+}
+
+export function runCaptionPromotionAnimations({
+  retainedFinalIds,
+  previousRects,
+  nextRects,
+  elements,
+  reducedMotion,
+  activeAnimations
+}: {
+  retainedFinalIds: string[];
+  previousRects: ReadonlyMap<string, CaptionRect>;
+  nextRects: ReadonlyMap<string, CaptionRect>;
+  elements: ReadonlyMap<string, CaptionAnimatable>;
+  reducedMotion: boolean;
+  activeAnimations: Map<string, CaptionAnimationLike>;
+}): string[] {
+  cancelCaptionAnimations(activeAnimations);
+  if (reducedMotion) return [];
+
+  const animatedIds: string[] = [];
+  for (const id of retainedFinalIds) {
+    const element = elements.get(id);
+    const previousRect = previousRects.get(id);
+    const nextRect = nextRects.get(id);
+    if (!element || !previousRect || !nextRect) continue;
+
+    const delta = calculateCaptionFlipDelta(previousRect.top, nextRect.top);
+    if (Math.abs(delta) < 0.5) continue;
+
+    const animation = element.animate(
+      [
+        { transform: `translate3d(0, ${delta}px, 0)` },
+        { transform: "translate3d(0, 0, 0)" }
+      ],
+      {
+        duration: LIVE_CAPTION_PROMOTION_DURATION_MS,
+        easing: "cubic-bezier(.22, 1, .36, 1)"
+      }
+    );
+    const release = () => {
+      if (activeAnimations.get(id) === animation) activeAnimations.delete(id);
+    };
+    animation.onfinish = release;
+    animation.oncancel = release;
+    activeAnimations.set(id, animation);
+    animatedIds.push(id);
+  }
+
+  return animatedIds;
 }
 
 export function calculateHistoryRowScrollTop(
@@ -671,26 +782,75 @@ export function LiveCaptionRows({
   terms: GlossaryTerm[];
   sizeClass: string;
 }) {
+  const stackRef = useRef<HTMLDivElement>(null);
+  const previousSnapshotRef = useRef<LiveCaptionMotionSnapshot | null>(null);
+  const previousRectsRef = useRef<Map<string, CaptionRect>>(new Map());
+  const activeAnimationsRef = useRef<Map<string, CaptionAnimationLike>>(new Map());
   const previousRows = presentation.rows.slice(0, -1);
   const currentRow = presentation.rows.at(-1)!;
+  const motionSnapshot = createLiveCaptionMotionSnapshot(presentation);
+  const motionSignature = `${sizeClass}|${presentation.rows.map((row) => {
+    if (row.kind === "final") return `final:${row.line.id}:${row.line.text}`;
+    return `${row.kind}:${row.text}`;
+  }).join("\u0000")}`;
+
+  useLayoutEffect(() => {
+    const stack = stackRef.current;
+    if (!stack) return;
+
+    const elements = new Map<string, CaptionAnimatable>();
+    const nextRects = new Map<string, CaptionRect>();
+    for (const row of stack.querySelectorAll<HTMLElement>("[data-caption-final-id]")) {
+      const id = row.dataset.captionFinalId;
+      if (!id) continue;
+      nextRects.set(id, row.getBoundingClientRect());
+      if (typeof row.animate === "function") elements.set(id, row);
+    }
+
+    runCaptionPromotionAnimations({
+      retainedFinalIds: resolveRetainedFinalPromotions(previousSnapshotRef.current, motionSnapshot),
+      previousRects: previousRectsRef.current,
+      nextRects,
+      elements,
+      reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      activeAnimations: activeAnimationsRef.current
+    });
+    previousSnapshotRef.current = motionSnapshot;
+    previousRectsRef.current = nextRects;
+  }, [motionSignature]);
+
+  useEffect(() => {
+    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const cancelOwnedAnimations = () => {
+      if (!motionPreference.matches) return;
+      cancelCaptionAnimations(activeAnimationsRef.current);
+    };
+    motionPreference.addEventListener("change", cancelOwnedAnimations);
+    return () => {
+      motionPreference.removeEventListener("change", cancelOwnedAnimations);
+      cancelCaptionAnimations(activeAnimationsRef.current);
+    };
+  }, []);
 
   return (
-    <div className={`caption-live-stack ${sizeClass}`} data-testid="live-caption-rows">
+    <div ref={stackRef} className={`caption-live-stack ${sizeClass}`} data-testid="live-caption-rows">
       {previousRows.map((slot) => (
         <div
-          key={slot.kind === "final" ? slot.line.id : slot.kind}
+          key={resolveLiveCaptionRowKey(slot)}
           className="caption-live-row"
           data-testid="live-caption-previous"
           data-caption-kind={slot.kind}
+          data-caption-final-id={slot.kind === "final" ? slot.line.id : undefined}
         >
           <LiveCaptionSlot slot={slot} terms={terms} sizeClass={sizeClass} />
         </div>
       ))}
       <div
-        key="live-caption-current"
+        key={resolveLiveCaptionRowKey(currentRow, true)}
         className="caption-live-row caption-live-current"
         data-testid="live-caption-current"
         data-caption-kind={currentRow.kind}
+        data-caption-final-id={currentRow.kind === "final" ? currentRow.line.id : undefined}
         aria-live="polite"
         aria-atomic="true"
       >
@@ -840,7 +1000,7 @@ function LiveScreen({
             </section>
           </aside>
 
-          <section className={`min-w-0 overflow-hidden rounded-[1.6rem] border p-5 sm:p-6 lg:col-span-2 ${highContrast ? "border-white bg-black" : "border-white/[0.08] bg-[#0a1625]"}`} aria-label="현재 라이브 자막">
+          <section className={`caption-live-panel min-w-0 overflow-hidden rounded-[1.6rem] border p-5 sm:p-6 lg:col-span-2 ${highContrast ? "caption-live-panel-contrast border-white bg-black" : "border-white/[0.08] bg-[#0a1625]"}`} aria-label="현재 라이브 자막">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-slate-500"><Volume2 className="size-4 text-cyan-300" /> LIVE CAPTION</div>
               <div className="flex items-center gap-2 text-[11px] text-slate-600 sm:text-xs"><Mic className="size-4 text-rose-300" /> 실시간 음성은 저장하지 않습니다</div>

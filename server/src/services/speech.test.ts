@@ -1,4 +1,5 @@
 import { Duplex } from "node:stream";
+import { protos } from "@google-cloud/speech";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildStreamingRecognizeRequest,
@@ -94,6 +95,34 @@ describe("Google Speech configuration", () => {
 });
 
 describe("buildStreamingRecognizeRequest", () => {
+  it("Chirp 3 짧은 발화 endpointing을 SDK enum으로 지정하고 나머지 요청 설정을 보존한다", () => {
+    const endpointingSensitivity =
+      protos.google.cloud.speech.v2.StreamingRecognitionFeatures.EndpointingSensitivity
+        .ENDPOINTING_SENSITIVITY_SHORT;
+
+    expect(endpointingSensitivity).toBe(3);
+    expect(buildStreamingRecognizeRequest("project", "us", "chirp_3", [])).toEqual({
+      recognizer: "projects/project/locations/us/recognizers/_",
+      streamingConfig: {
+        config: {
+          explicitDecodingConfig: {
+            encoding: "LINEAR16",
+            sampleRateHertz: 16_000,
+            audioChannelCount: 1
+          },
+          languageCodes: ["ko-KR"],
+          model: "chirp_3",
+          features: { enableAutomaticPunctuation: true }
+        },
+        streamingFeatures: {
+          interimResults: true,
+          enableVoiceActivityEvents: true,
+          endpointingSensitivity
+        }
+      }
+    });
+  });
+
   it("검증된 PhraseSet 값을 Google STT 인라인 적응 설정에 그대로 전달한다", () => {
     const request = buildStreamingRecognizeRequest("project", "us", "chirp_3", [
       "RAG",
@@ -122,7 +151,10 @@ describe("buildStreamingRecognizeRequest", () => {
     expect(request.streamingConfig.config).not.toHaveProperty("adaptation");
     expect(request.streamingConfig.streamingFeatures).toEqual({
       interimResults: true,
-      enableVoiceActivityEvents: true
+      enableVoiceActivityEvents: true,
+      endpointingSensitivity:
+        protos.google.cloud.speech.v2.StreamingRecognitionFeatures.EndpointingSensitivity
+          .ENDPOINTING_SENSITIVITY_SHORT
     });
   });
 });

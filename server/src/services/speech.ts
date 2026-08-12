@@ -47,6 +47,9 @@ type SpeechSessionDependencies = {
 
 const SUPPORTED_STT_LOCATION = "us";
 const SUPPORTED_STT_MODEL = "chirp_3";
+const SHORT_ENDPOINTING_SENSITIVITY =
+  protos.google.cloud.speech.v2.StreamingRecognitionFeatures.EndpointingSensitivity
+    .ENDPOINTING_SENSITIVITY_SHORT;
 const DEFAULT_DRAIN_TIMEOUT_MS = 5_000;
 const DEFAULT_READY_TIMEOUT_MS = 5_000;
 
@@ -233,7 +236,11 @@ export function buildStreamingRecognizeRequest(
     recognizer: `projects/${projectId}/locations/${location}/recognizers/_`,
     streamingConfig: {
       config,
-      streamingFeatures: { interimResults: true, enableVoiceActivityEvents: true }
+      streamingFeatures: {
+        interimResults: true,
+        enableVoiceActivityEvents: true,
+        endpointingSensitivity: SHORT_ENDPOINTING_SENSITIVITY
+      }
     }
   };
 }
