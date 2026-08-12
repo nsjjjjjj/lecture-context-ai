@@ -1,11 +1,115 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   beginLiveStopRequest,
+  createCaptionReceiveToAfterPaintEstimator,
+  createDevelopmentCaptionReceiveToAfterPaintEstimator,
   createFinalTranscriptLine,
   handleSocketTransportFailure,
   resolveMissingLiveStopRequestDisposition,
   resolveSocketTransportFailureDisposition
 } from "./useLectureStream";
+
+describe("useLectureStream development caption paint estimate", () => {
+  it("schedules rAF then a task, assigns distinct sequences, and reports timing metadata only", () => {
+    let nowMs = 100;
+    const animationFrames: Array<() => void> = [];
+    const afterFrameTasks: Array<() => void> = [];
+    const schedulingMarkers: string[] = [];
+    const reports: Array<Record<string, unknown>> = [];
+    const estimator = createCaptionReceiveToAfterPaintEstimator({
+      requestAnimationFrame: (callback) => {
+        schedulingMarkers.push("raf:scheduled");
+        animationFrames.push(() => {
+          schedulingMarkers.push("raf:run");
+          callback();
+        });
+      },
+      scheduleAfterFrameTask: (callback) => {
+        schedulingMarkers.push("task:scheduled");
+        afterFrameTasks.push(() => {
+          schedulingMarkers.push("task:run");
+          callback();
+        });
+      },
+      now: () => nowMs,
+      reporter: (estimate) => reports.push(estimate)
+    });
+
+    expect(estimator.markReceived("interim")).toBe(1);
+    nowMs = 101;
+    expect(estimator.markReceived("final")).toBe(2);
+    expect(schedulingMarkers).toEqual(["raf:scheduled", "raf:scheduled"]);
+    expect(reports).toEqual([]);
+
+    nowMs = 102;
+    animationFrames.shift()?.();
+    nowMs = 103;
+    animationFrames.shift()?.();
+    expect(schedulingMarkers).toEqual([
+      "raf:scheduled",
+      "raf:scheduled",
+      "raf:run",
+      "task:scheduled",
+      "raf:run",
+      "task:scheduled"
+    ]);
+
+    nowMs = 110;
+    afterFrameTasks.shift()?.();
+    nowMs = 114;
+    afterFrameTasks.shift()?.();
+
+    expect(reports).toEqual([
+      {
+        sequenceId: 1,
+        eventKind: "interim",
+        receivedAtMs: 100,
+        afterPaintEstimateAtMs: 110,
+        receiveToAfterPaintEstimateMs: 10
+      },
+      {
+        sequenceId: 2,
+        eventKind: "final",
+        receivedAtMs: 101,
+        afterPaintEstimateAtMs: 114,
+        receiveToAfterPaintEstimateMs: 13
+      }
+    ]);
+    expect(Object.keys(reports[0] ?? {}).sort()).toEqual([
+      "afterPaintEstimateAtMs",
+      "eventKind",
+      "receiveToAfterPaintEstimateMs",
+      "receivedAtMs",
+      "sequenceId"
+    ]);
+    expect(JSON.stringify(reports)).not.toMatch(/transcript|audio|content|text/i);
+    expect(schedulingMarkers).toEqual([
+      "raf:scheduled",
+      "raf:scheduled",
+      "raf:run",
+      "task:scheduled",
+      "raf:run",
+      "task:scheduled",
+      "task:run",
+      "task:run"
+    ]);
+  });
+
+  it("does not create the estimator outside development", () => {
+    const options = {
+      requestAnimationFrame: vi.fn(),
+      scheduleAfterFrameTask: vi.fn(),
+      now: vi.fn(() => 0),
+      reporter: vi.fn()
+    };
+
+    expect(createDevelopmentCaptionReceiveToAfterPaintEstimator(false, options)).toBeNull();
+    expect(options.requestAnimationFrame).not.toHaveBeenCalled();
+    expect(options.scheduleAfterFrameTask).not.toHaveBeenCalled();
+    expect(options.now).not.toHaveBeenCalled();
+    expect(options.reporter).not.toHaveBeenCalled();
+  });
+});
 
 describe("useLectureStream final transcript mapping", () => {
   it("자막 termIds는 고유하게 유지하고 피드용 occurrence 목록은 반복을 보존한다", () => {

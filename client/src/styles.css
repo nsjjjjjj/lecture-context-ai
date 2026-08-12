@@ -67,21 +67,23 @@ button:disabled { cursor: default; }
 }
 
 .caption-live-line {
-  min-height: 2.64em;
+  min-height: 1.32em;
+}
+
+.caption-live-interim {
+  color: #94a3b8;
 }
 
 .caption-live-stack {
   display: grid;
-  grid-template-rows: minmax(2.64em, auto) minmax(2.64em, auto);
-  row-gap: .75rem;
+  min-height: calc(3.96em + 24px);
+  grid-auto-rows: minmax(1.32em, auto);
+  align-content: end;
+  row-gap: 12px;
 }
 
-.caption-live-upper {
-  grid-row: 1;
-}
-
-.caption-live-lower {
-  grid-row: 2;
+.caption-live-row {
+  min-width: 0;
 }
 
 .caption-history-entry {
@@ -126,6 +128,7 @@ button:disabled { cursor: default; }
 
 .contrast-more { --tw-bg-opacity: 1; }
 .contrast-more .text-slate-500, .contrast-more .text-slate-600 { color: #cbd5e1 !important; }
+.contrast-more .caption-live-interim { color: #e2e8f0; }
 .contrast-more .lecture-slide .text-slate-500,
 .contrast-more .lecture-slide .text-slate-600 { color: #334155 !important; }
 .contrast-more .lecture-slide .text-slate-400 { color: #475569 !important; }

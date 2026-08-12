@@ -4,6 +4,11 @@ import { MAX_PHRASE_SET_FORMS } from "./phrase-set-limits.js";
 type StreamingRecognizeRequest = protos.google.cloud.speech.v2.IStreamingRecognizeRequest;
 type StreamingRecognizeResponse = protos.google.cloud.speech.v2.IStreamingRecognizeResponse;
 
+export type TranscriptEmission = {
+  text: string;
+  isFinal: boolean;
+};
+
 type SpeechCallbacks = {
   onTranscript: (text: string, isFinal: boolean) => void;
   onError: (error: Error) => void;
@@ -108,6 +113,31 @@ export function isGoogleSpeechConfigured(): boolean {
   return getGoogleSpeechConfigurationError() === null;
 }
 
+export function projectStreamingRecognizeResponse(
+  response: StreamingRecognizeResponse
+): TranscriptEmission[] {
+  const finalEmissions: TranscriptEmission[] = [];
+  const interimParts: string[] = [];
+
+  for (const result of response.results ?? []) {
+    const transcript = result.alternatives?.[0]?.transcript;
+    if (typeof transcript !== "string") continue;
+
+    if (result.isFinal) {
+      const text = transcript.trim();
+      if (text) finalEmissions.push({ text, isFinal: true });
+      continue;
+    }
+
+    interimParts.push(transcript);
+  }
+
+  const interimText = interimParts.join("").trim();
+  if (!interimText) return finalEmissions;
+
+  return [...finalEmissions, { text: interimText, isFinal: false }];
+}
+
 export function buildStreamingRecognizeRequest(
   projectId: string,
   location: string,
@@ -193,10 +223,8 @@ export function createGoogleSpeechSession(
 
   stream.on("data", (response: StreamingRecognizeResponse) => {
     if (isTerminal()) return;
-    for (const result of response.results ?? []) {
-      const text = result.alternatives?.[0]?.transcript?.trim();
-      if (!text) continue;
-      callbacks.onTranscript(text, Boolean(result.isFinal));
+    for (const emission of projectStreamingRecognizeResponse(response)) {
+      callbacks.onTranscript(emission.text, emission.isFinal);
     }
   });
   stream.on("error", (error: Error) => {

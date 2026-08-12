@@ -7,6 +7,7 @@ import {
   getGoogleSpeechConfigurationError,
   isGoogleSpeechConfigured,
   isSpeechStreamWritable,
+  projectStreamingRecognizeResponse,
   type SpeechClientPort
 } from "./speech.js";
 
@@ -106,6 +107,101 @@ describe("buildStreamingRecognizeRequest", () => {
   });
 });
 
+describe("projectStreamingRecognizeResponse", () => {
+  it("여러 interim 구간을 제공자 원문 경계 그대로 한 번의 업데이트로 합친다", () => {
+    expect(
+      projectStreamingRecognizeResponse({
+        results: [
+          { alternatives: [{ transcript: "  to be" }], isFinal: false },
+          { alternatives: [{ transcript: " or not" }], isFinal: false },
+          { alternatives: [{ transcript: " to be  " }], isFinal: false }
+        ]
+      })
+    ).toEqual([{ text: "to be or not to be", isFinal: false }]);
+
+    expect(
+      projectStreamingRecognizeResponse({
+        results: [
+          { alternatives: [{ transcript: "실시간" }], isFinal: false },
+          { alternatives: [{ transcript: "자막" }], isFinal: false }
+        ]
+      })
+    ).toEqual([{ text: "실시간자막", isFinal: false }]);
+  });
+
+  it("새 final을 먼저 보내고 여러 interim 꼬리를 하나로 합쳐 뒤이어 보낸다", () => {
+    expect(
+      projectStreamingRecognizeResponse({
+        results: [
+          { alternatives: [{ transcript: "  확정 구간  " }], isFinal: true },
+          { alternatives: [{ transcript: "새" }], isFinal: false },
+          { alternatives: [{ transcript: " 임시 구간 " }], isFinal: false }
+        ]
+      })
+    ).toEqual([
+      { text: "확정 구간", isFinal: true },
+      { text: "새 임시 구간", isFinal: false }
+    ]);
+  });
+
+  it("여러 final prefix를 각자 정리해 순서대로 방출한다", () => {
+    expect(
+      projectStreamingRecognizeResponse({
+        results: [
+          { alternatives: [{ transcript: " 첫 번째 " }], isFinal: true },
+          { alternatives: [{ transcript: " 두 번째 " }], isFinal: true },
+          { alternatives: [{ transcript: "세 번째" }], isFinal: true }
+        ]
+      })
+    ).toEqual([
+      { text: "첫 번째", isFinal: true },
+      { text: "두 번째", isFinal: true },
+      { text: "세 번째", isFinal: true }
+    ]);
+  });
+
+  it("공백·빈 transcript·첫 alternative 누락을 건너뛰고 유효한 interim만 한 번 보낸다", () => {
+    expect(
+      projectStreamingRecognizeResponse({
+        results: [
+          { alternatives: [{ transcript: "   " }], isFinal: true },
+          { alternatives: [], isFinal: false },
+          { isFinal: false },
+          { alternatives: [{ transcript: "" }], isFinal: false },
+          { alternatives: [{ transcript: " 유효" }], isFinal: false },
+          { alternatives: [{ transcript: " interim " }], isFinal: false }
+        ]
+      })
+    ).toEqual([{ text: "유효 interim", isFinal: false }]);
+
+    expect(projectStreamingRecognizeResponse({ results: [] })).toEqual([]);
+    expect(projectStreamingRecognizeResponse({})).toEqual([]);
+  });
+
+  it("연속 응답마다 interim 전체를 하나의 교체 단위로 만든다", () => {
+    const responses = [
+      {
+        results: [
+          { alternatives: [{ transcript: "오늘" }], isFinal: false },
+          { alternatives: [{ transcript: " 날씨" }], isFinal: false }
+        ]
+      },
+      {
+        results: [
+          { alternatives: [{ transcript: "오늘" }], isFinal: false },
+          { alternatives: [{ transcript: " 날씨가" }], isFinal: false },
+          { alternatives: [{ transcript: " 좋습니다" }], isFinal: false }
+        ]
+      }
+    ];
+
+    expect(responses.map((response) => projectStreamingRecognizeResponse(response))).toEqual([
+      [{ text: "오늘 날씨", isFinal: false }],
+      [{ text: "오늘 날씨가 좋습니다", isFinal: false }]
+    ]);
+  });
+});
+
 describe("guarded Google Speech writes", () => {
   it("종료되거나 파괴된 스트림에는 쓰지 않는다", () => {
     const write = vi.fn();
@@ -198,7 +294,7 @@ describe("Google Speech V2 bidirectional transport", () => {
     expect(stream.writes).toHaveLength(2);
   });
 
-  it("V2 응답의 임시·확정 자막을 세션 콜백으로 전달한다", () => {
+  it("V2 응답마다 합친 interim을 한 번 보내고 다음 final로 즉시 교체한다", () => {
     configureSupportedSpeech();
     const stream = new RecordingSpeechStream();
     const client = createRecordingClient(stream);
@@ -210,14 +306,26 @@ describe("Google Speech V2 bidirectional transport", () => {
       { client }
     );
     stream.emit("data", {
-      results: [{ alternatives: [{ transcript: " 임시 자막 " }], isFinal: false }]
+      results: [
+        { alternatives: [{ transcript: "임시" }], isFinal: false },
+        { alternatives: [{ transcript: " 자막" }], isFinal: false }
+      ]
+    });
+    stream.emit("data", {
+      results: [
+        { alternatives: [{ transcript: "임시" }], isFinal: false },
+        { alternatives: [{ transcript: " 자막이" }], isFinal: false },
+        { alternatives: [{ transcript: " 늘어남" }], isFinal: false }
+      ]
     });
     stream.emit("data", {
       results: [{ alternatives: [{ transcript: "확정 자막" }], isFinal: true }]
     });
 
     expect(onTranscript).toHaveBeenNthCalledWith(1, "임시 자막", false);
-    expect(onTranscript).toHaveBeenNthCalledWith(2, "확정 자막", true);
+    expect(onTranscript).toHaveBeenNthCalledWith(2, "임시 자막이 늘어남", false);
+    expect(onTranscript).toHaveBeenNthCalledWith(3, "확정 자막", true);
+    expect(onTranscript).toHaveBeenCalledTimes(3);
   });
 
   it("명시적 close 후 지연된 final을 받은 뒤 readable end에서만 클라이언트를 닫는다", () => {

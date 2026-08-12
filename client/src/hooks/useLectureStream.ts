@@ -21,6 +21,60 @@ type LiveStopRequest = {
   waitForServer: Promise<void>;
 };
 
+export type CaptionTimingEventKind = "interim" | "final";
+
+export type CaptionReceiveToAfterPaintEstimate = {
+  sequenceId: number;
+  eventKind: CaptionTimingEventKind;
+  receivedAtMs: number;
+  afterPaintEstimateAtMs: number;
+  receiveToAfterPaintEstimateMs: number;
+};
+
+export type CaptionReceiveToAfterPaintEstimator = {
+  markReceived: (eventKind: CaptionTimingEventKind) => number;
+};
+
+export function createCaptionReceiveToAfterPaintEstimator(options: {
+  requestAnimationFrame: (callback: () => void) => void;
+  scheduleAfterFrameTask: (callback: () => void) => void;
+  now: () => number;
+  reporter: (estimate: CaptionReceiveToAfterPaintEstimate) => void;
+}): CaptionReceiveToAfterPaintEstimator {
+  let sequenceId = 0;
+
+  return {
+    markReceived(eventKind) {
+      const currentSequenceId = ++sequenceId;
+      const receivedAtMs = options.now();
+
+      options.requestAnimationFrame(() => {
+        // rAF runs before a rendering opportunity. A following task is a useful
+        // next-paint estimate, not proof that a particular frame was presented.
+        options.scheduleAfterFrameTask(() => {
+          const afterPaintEstimateAtMs = options.now();
+          options.reporter({
+            sequenceId: currentSequenceId,
+            eventKind,
+            receivedAtMs,
+            afterPaintEstimateAtMs,
+            receiveToAfterPaintEstimateMs: Math.max(0, afterPaintEstimateAtMs - receivedAtMs)
+          });
+        });
+      });
+
+      return currentSequenceId;
+    }
+  };
+}
+
+export function createDevelopmentCaptionReceiveToAfterPaintEstimator(
+  development: boolean,
+  options: Parameters<typeof createCaptionReceiveToAfterPaintEstimator>[0]
+): CaptionReceiveToAfterPaintEstimator | null {
+  return development ? createCaptionReceiveToAfterPaintEstimator(options) : null;
+}
+
 export type SocketTransportFailureSource = "error" | "close";
 
 export type SocketTransportFailureDisposition = {
@@ -113,7 +167,21 @@ export function useLectureStream(terms: GlossaryTerm[], phraseSet: string[]) {
   const stopRequestedSocketRef = useRef<WebSocket | null>(null);
   const stopPromiseRef = useRef<Promise<void> | null>(null);
   const liveStopGateRef = useRef<LiveStopGate | null>(null);
+  const captionTimingEstimatorRef = useRef<CaptionReceiveToAfterPaintEstimator | null>(null);
   if (!liveStopGateRef.current) liveStopGateRef.current = createLiveStopGate();
+
+  useEffect(() => {
+    const estimator = createDevelopmentCaptionReceiveToAfterPaintEstimator(import.meta.env.DEV, {
+      requestAnimationFrame: (callback) => window.requestAnimationFrame(() => callback()),
+      scheduleAfterFrameTask: (callback) => window.setTimeout(callback, 0),
+      now: () => window.performance.now(),
+      reporter: (estimate) => console.debug("[caption-receive-to-after-paint-estimate]", estimate)
+    });
+    captionTimingEstimatorRef.current = estimator;
+    return () => {
+      if (captionTimingEstimatorRef.current === estimator) captionTimingEstimatorRef.current = null;
+    };
+  }, []);
 
   const stopRecorder = useCallback(async () => {
     const recorder = recorderRef.current;
@@ -267,8 +335,10 @@ export function useLectureStream(terms: GlossaryTerm[], phraseSet: string[]) {
         if (event.type === "ready") {
           dispatch({ type: "ready", message: event.message });
         } else if (event.type === "interim") {
+          if ((event.text || "").trim()) captionTimingEstimatorRef.current?.markReceived("interim");
           dispatch({ type: "interim", text: event.text || "" });
-        } else if (event.type === "final" && event.text) {
+        } else if (event.type === "final" && event.text?.trim()) {
+          captionTimingEstimatorRef.current?.markReceived("final");
           const { line, occurrenceTermIds } = createFinalTranscriptLine(
             event,
             `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`

@@ -58,12 +58,9 @@ export type LiveCaptionSlotState =
   | { kind: "final"; line: TranscriptLine }
   | { kind: "placeholder"; text: string };
 
-export type LiveCaptionUpperState = Extract<LiveCaptionSlotState, { kind: "final" }>;
-
 export type LiveCaptionPresentation = {
   historyLines: TranscriptLine[];
-  upper: LiveCaptionUpperState | null;
-  lower: LiveCaptionSlotState;
+  rows: LiveCaptionSlotState[];
 };
 
 export const LIVE_CAPTION_SIZE_CLASS: Record<FontScale, string> = {
@@ -78,23 +75,20 @@ export function resolveLiveCaptionPresentation(
   lines: TranscriptLine[],
   interim: string
 ): LiveCaptionPresentation {
-  if (interim.trim()) {
-    const latestFinal = lines.at(-1);
-    return {
-      historyLines: latestFinal ? lines.slice(0, -1) : [],
-      upper: latestFinal ? { kind: "final", line: latestFinal } : null,
-      lower: { kind: "interim", text: interim }
-    };
+  const hasInterim = Boolean(interim.trim());
+  const visibleFinalLimit = hasInterim ? 2 : 3;
+  const visibleFinals = lines.slice(-visibleFinalLimit);
+  const rows: LiveCaptionSlotState[] = visibleFinals.map((line) => ({ kind: "final", line }));
+
+  if (hasInterim) {
+    rows.push({ kind: "interim", text: interim });
+  } else if (rows.length === 0) {
+    rows.push({ kind: "placeholder", text: LIVE_CAPTION_PLACEHOLDER });
   }
 
-  const latestFinal = lines.at(-1);
-  const previousFinal = lines.at(-2);
   return {
-    historyLines: lines.slice(0, -2),
-    upper: previousFinal ? { kind: "final", line: previousFinal } : null,
-    lower: latestFinal
-      ? { kind: "final", line: latestFinal }
-      : { kind: "placeholder", text: LIVE_CAPTION_PLACEHOLDER }
+    historyLines: lines.slice(0, Math.max(0, lines.length - visibleFinalLimit)),
+    rows
   };
 }
 
@@ -662,7 +656,7 @@ export function LiveCaptionSlot({
   return (
     <p
       lang="ko"
-      className={`caption-text ${className}${slot.kind === "placeholder" ? " text-slate-600" : ""}`}
+      className={`caption-text ${className}${slot.kind === "interim" ? " caption-live-interim" : ""}${slot.kind === "placeholder" ? " text-slate-600" : ""}`}
     >
       {slot.text}
     </p>
@@ -678,21 +672,30 @@ export function LiveCaptionRows({
   terms: GlossaryTerm[];
   sizeClass: string;
 }) {
+  const previousRows = presentation.rows.slice(0, -1);
+  const currentRow = presentation.rows.at(-1)!;
+
   return (
-    <div className="caption-live-stack" data-testid="live-caption-rows">
-      {presentation.upper ? (
-        <div key="upper" className="caption-live-upper" data-testid="live-caption-upper">
-          <LiveCaptionSlot slot={presentation.upper} terms={terms} sizeClass={sizeClass} />
+    <div className={`caption-live-stack ${sizeClass}`} data-testid="live-caption-rows">
+      {previousRows.map((slot) => (
+        <div
+          key={slot.kind === "final" ? slot.line.id : slot.kind}
+          className="caption-live-row"
+          data-testid="live-caption-previous"
+          data-caption-kind={slot.kind}
+        >
+          <LiveCaptionSlot slot={slot} terms={terms} sizeClass={sizeClass} />
         </div>
-      ) : null}
+      ))}
       <div
-        key="lower"
-        className="caption-live-lower"
-        data-testid="live-caption-lower"
+        key="live-caption-current"
+        className="caption-live-row caption-live-current"
+        data-testid="live-caption-current"
+        data-caption-kind={currentRow.kind}
         aria-live="polite"
         aria-atomic="true"
       >
-        <LiveCaptionSlot slot={presentation.lower} terms={terms} sizeClass={sizeClass} />
+        <LiveCaptionSlot slot={currentRow} terms={terms} sizeClass={sizeClass} />
       </div>
     </div>
   );
