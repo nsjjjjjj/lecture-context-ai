@@ -19,6 +19,7 @@ export type LectureStreamState = {
 
 export type LectureStreamAction =
   | { type: "starting"; mode: LectureMode }
+  | { type: "connection-progress"; message: string }
   | { type: "ready"; message?: string }
   | { type: "stopping"; message?: string }
   | { type: "interim"; text: string }
@@ -49,6 +50,8 @@ export function lectureStreamReducer(state: LectureStreamState, action: LectureS
       };
     case "ready":
       return { ...state, status: "ready", statusMessage: action.message || "강연 중" };
+    case "connection-progress":
+      return { ...state, status: "connecting", statusMessage: action.message };
     case "stopping":
       return { ...state, status: "stopping", statusMessage: action.message || "마지막 자막을 정리하고 있습니다." };
     case "interim":

@@ -19,6 +19,10 @@
 - Google STT V2 Chirp 3 인라인 PhraseSet 구성
 - Google STT V2 typed bidi 스트림과 실제 `us` 리전 연결 검증
 - 브라우저 마이크 PCM 변환과 WebSocket 전송
+- 실시간 마이크는 suspended AudioContext를 명시적으로 resume하고 실제 `running` 상태와 첫 PCM을 각각 확인합니다. 캡처에서는 16kHz를 선호하되 기기 기본 샘플레이트를 허용해 다운샘플링하며, 실제 AudioContext sample rate에서 100ms에 가장 가까운 ScriptProcessor power-of-two 크기를 선택합니다. Google 권고에 맞춰 브라우저 echo cancellation·noise suppression·auto gain control을 끕니다. 첫 PCM이 3초 안에 없거나 트랙·AudioContext가 중단되면 준비 완료로 가장하지 않고 오류로 종료합니다.
+- Google SpeechClient는 프로세스에서 재사용하고 비동기 `initialize()`를 한 번만 기다립니다. V2 bidi 스트림의 첫 설정 write callback이 완료된 뒤에만 provider-ready를 보내고, 그 handshake 뒤에 마이크 캡처를 시작하므로 초기화 중인 서버에서 첫 음성 청크를 잃지 않습니다. 클라이언트 화면은 provider-ready와 첫 PCM을 모두 받은 뒤에만 준비 완료를 표시합니다. VAD begin/end 이벤트도 활성화해 실제 발화 감지와 첫 interim 사이를 개발 로그에서 구분할 수 있습니다.
+- 16kHz mono PCM16의 초당 32,000바이트를 기준으로 브라우저 WebSocket과 서버의 이미 전달된 프레임 대기열 적체 한도를 각각 0.5초(16,000바이트)로 계산합니다. 한도를 넘으면 오래된 음성을 몰래 버리거나 늦게 재생하지 않고 세션을 실패시킵니다. 서버도 gRPC write가 backpressure를 알리면 WebSocket 입력을 pause하고, 이미 decode돼 도착한 프레임만 작은 대기열에 순서대로 보존한 뒤 drain에서 flush/resume합니다. 1초 내 drain되지 않으면 오류로 종료합니다.
+- 개발 모드에서만 브라우저·서버의 세션별 단계 시간, PCM 청크 수·바이트 수, 최대 청크 간격, 최대 WebSocket bufferedAmount를 기록합니다. 음성·진폭·자막/원문·용어·프로젝트·장치 정보는 기록하지 않습니다.
 - localhost 개발 화면에서 최대 120초 음성을 canonical 16kHz mono 16-bit PCM WAV로 저장하는 fixture recorder
 - Vite·개발 백엔드의 `127.0.0.1` bind, 개발 녹음 API의 production JSON 404와 localhost 요청 재검증
 - 3,840,000 PCM 바이트 capture hard cap과 manual/timer/limit 종료 단일화
@@ -79,6 +83,7 @@
 
 - Gemini 3.6 Flash 실제 PDF 호출
 - 실제 발표용 브라우저·마이크 권한과 음질
+- 실제 마이크 발화에서 VAD begin→첫 interim 지연 및 서로 다른 기기·네트워크의 backpressure 동작. 단위 테스트와 무과금 브라우저 QA는 전송·상태 계약만 검증하며 Google이 interim을 보내는 주기 자체는 보장하지 않습니다.
 - 보존된 exact-script WAV의 반복 A/B/C 실행과 논문용 요약 통계
 - Cloud Run 배포 환경의 WebSocket 장시간 연결
 - Secret Manager와 Cloud Run 서비스 계정 연결
@@ -174,6 +179,9 @@ pnpm dev
 - WebSocket 용어 입력은 정규화된 canonical 표기뿐 아니라 ID도 중복 제거하며, 같은 ID에는 첫 번째 유효 용어를 결정적으로 보존합니다. 이로써 서버 정정의 canonical 용어와 클라이언트 `termById` 소유권이 어긋나지 않습니다.
 - Google STT V2의 한 응답에는 새 final prefix 뒤에 여러 interim 구간이 올 수 있습니다. 서버는 final을 순서대로 먼저 전달하고, interim 원문은 제공자가 준 각 문자열을 구분자 없이 이어 합친 바깥 공백만 제거한 뒤 응답당 정확히 한 번 전달합니다. 임의의 공백·단어·문자를 만들거나 interim을 정정하지 않으며, 다음 응답의 interim 전체가 현재 아래 행을 교체합니다. 확정 자막은 `text`와 별도로 `rawText`, `corrections`를 보존하고, 원문 위치 기준 왼쪽→오른쪽 최장 일치로 겹침·반복 치환을 방지합니다. UI는 `RAG(레그)`처럼 canonical 용어 옆에 원문을 괄호로 항상 표시하며 결과 화면에서도 같은 표기를 유지합니다. 앱은 throttle/debounce하지 않지만 제공자가 첫 interim을 보내는 시점이나 매우 빠른 연속 이벤트를 브라우저가 각각 별도의 physical paint로 보여주는 것은 보장하지 않습니다.
 - 개발 빌드는 비어 있지 않은 interim/final 이벤트를 받은 뒤 `requestAnimationFrame` 다음 task까지의 시간을 `caption-receive-to-after-paint-estimate` 디버그 로그로 남깁니다. 로그에는 일련번호·이벤트 종류·시각·기간만 있고 자막·음성 내용은 없습니다. 이 수치는 앱 수신부터 다음 렌더링 기회 이후까지의 추정치이며 실제 화면 제시 완료나 제공자 발화→응답 지연을 증명하지 않습니다. production 빌드에서는 수집하지 않습니다.
+- 개발 빌드의 `live-stt-diagnostic`은 브라우저에서 WebSocket open·recorder running·first PCM·provider ready·첫 interim/final을, 서버에서 client initialized·config written·first PCM·gRPC backpressure/drain·VAD begin/end·첫 interim/final을 단계별로 기록합니다. 세션 난수 ID와 경과 시간·청크/바이트 카운터만 사용하며 음성 내용·진폭·자막/원문·용어·프로젝트 ID·장치 label은 기록하지 않습니다. Google VAD는 발화 감지 경계를 관찰하기 위한 것이며 interim 생성 빈도를 높이거나 단어 단위 결과를 보장하지 않습니다.
+- 브라우저 capture-ready는 provider-ready handshake 뒤 AudioContext `running`과 첫 PCM이 모두 확인되어야 하며 첫 PCM이 3초 안에 없으면 오류로 종료합니다. 서버 provider-ready는 공유 SpeechClient의 `initialize()`와 첫 설정 write callback 완료 뒤에만 전송합니다. handshake 전 PCM은 전송하지 않으므로 비동기 서버 초기화 중 첫 청크가 `active` 세션 없이 버려지는 경쟁 조건을 만들지 않습니다. 설치된 `@google-cloud/speech` 7.5.0의 `_streamingRecognize()`는 내부에서 초기화를 비동기로 시작하고 gax StreamProxy가 실제 gRPC writable 연결 전 write를 cork하므로, 초기화를 선행하고 config callback까지 기다리는 순서를 유지해야 합니다. callback은 설정 write가 실제 writable에 전달됐다는 경계이지 첫 인식 응답이나 성공한 발화 인식을 보장하지 않습니다.
+- 실시간 WebSocket 고수위와 서버의 already-delivered frame 대기열은 magic byte가 아니라 PCM16 mono 16kHz의 32,000바이트/초 × 허용 적체 0.5초 = 16,000바이트로 계산합니다. 초과 시 stale audio를 몰래 버리거나 계속 쌓지 않고 세션을 실패시킵니다. 서버 gRPC write가 `false`를 반환하면 이미 수락된 현재 청크는 보존하고 WebSocket ingress를 pause합니다. pause 전에 이미 decode된 후속 프레임은 16,000바이트까지만 순서대로 보존해 `drain`에서 먼저 flush한 다음 resume하며, flush 중 다시 backpressure가 생기면 남은 순서를 유지합니다. 1초 동안 drain되지 않거나 대기열이 넘으면 입력을 재개한 뒤 명시적 오류와 1013 close로 세션을 종료합니다.
 - 공개 사용자 인증은 없으므로 외부 공개 시 Cloud Run·API 할당량으로 비용을 제한해야 합니다.
 - `pnpm dev`의 Vite와 백엔드는 `127.0.0.1`에만 listen합니다. 모든 `/api/dev/*` 경로도 `NODE_ENV=development`와 loopback socket·Host·Origin을 확인하며, production의 모든 미등록 `/api` 경로는 SPA fallback 전에 JSON 404로 종료합니다.
 - 개발 fixture WAV와 `manifest.local.json`은 Git·Docker에서 제외되며 자동 삭제되지 않습니다. 가명 화자 label만 사용하고 개발자가 직접 정리해야 합니다.

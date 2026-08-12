@@ -3,11 +3,134 @@ import {
   beginLiveStopRequest,
   createCaptionReceiveToAfterPaintEstimator,
   createDevelopmentCaptionReceiveToAfterPaintEstimator,
+  createDevelopmentLiveClientDiagnostics,
   createFinalTranscriptLine,
+  forwardLiveAudioChunk,
   handleSocketTransportFailure,
+  LIVE_AUDIO_MAX_BUFFERED_BYTES,
+  LIVE_AUDIO_MAX_BUFFERED_LAG_MS,
+  LIVE_CAPTURE_READY_TIMEOUT_MS,
   resolveMissingLiveStopRequestDisposition,
-  resolveSocketTransportFailureDisposition
+  resolveLiveReadiness,
+  resolveSocketTransportFailureDisposition,
+  sendLiveAudioChunk
 } from "./useLectureStream";
+
+describe("useLectureStream live readiness and bounded audio transport", () => {
+  it("declares ready only after provider config and the first PCM are both ready", () => {
+    expect(resolveLiveReadiness({ providerReady: false, captureReady: false })).toEqual({
+      ready: false,
+      message: "마이크와 Google STT를 연결하고 있습니다."
+    });
+    expect(resolveLiveReadiness({ providerReady: true, captureReady: false })).toEqual({
+      ready: false,
+      message: "마이크 입력을 확인하고 있습니다."
+    });
+    expect(resolveLiveReadiness({ providerReady: false, captureReady: true })).toEqual({
+      ready: false,
+      message: "Google STT 전송을 준비하고 있습니다."
+    });
+    expect(resolveLiveReadiness({ providerReady: true, captureReady: true })).toEqual({
+      ready: true,
+      message: "마이크와 Google STT가 준비되었습니다."
+    });
+  });
+
+  it("derives a 0.5 second browser high-water mark from the PCM byte rate", () => {
+    expect(LIVE_AUDIO_MAX_BUFFERED_LAG_MS).toBe(500);
+    expect(LIVE_AUDIO_MAX_BUFFERED_BYTES).toBe(16_000);
+    expect(LIVE_CAPTURE_READY_TIMEOUT_MS).toBe(3_000);
+  });
+
+  it("sends within the bound and rejects projected stale backlog without adding another chunk", () => {
+    const send = vi.fn();
+    const audio = new ArrayBuffer(3_200);
+
+    expect(sendLiveAudioChunk({ readyState: WebSocket.OPEN, bufferedAmount: 12_000, send }, audio)).toBe("sent");
+    expect(send).toHaveBeenCalledWith(audio);
+
+    send.mockClear();
+    expect(sendLiveAudioChunk({ readyState: WebSocket.OPEN, bufferedAmount: 13_000, send }, audio)).toBe(
+      "backpressure"
+    );
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("does not forward any PCM before the provider-ready handshake", () => {
+    const send = vi.fn();
+    const socket = { readyState: WebSocket.OPEN, bufferedAmount: 0, send };
+    const audio = new ArrayBuffer(3_200);
+
+    expect(forwardLiveAudioChunk(false, socket, audio)).toBe("preparing");
+    expect(send).not.toHaveBeenCalled();
+
+    expect(forwardLiveAudioChunk(true, socket, audio)).toBe("sent");
+    expect(send).toHaveBeenCalledWith(audio);
+  });
+
+  it("turns unavailable and throwing WebSocket sends into explicit failure results", () => {
+    expect(
+      sendLiveAudioChunk({ readyState: WebSocket.CLOSING, bufferedAmount: 0, send: vi.fn() }, new ArrayBuffer(8))
+    ).toBe("unavailable");
+    expect(
+      sendLiveAudioChunk(
+        {
+          readyState: WebSocket.OPEN,
+          bufferedAmount: 0,
+          send: () => {
+            throw new Error("socket closed");
+          }
+        },
+        new ArrayBuffer(8)
+      )
+    ).toBe("send-error");
+  });
+
+  it("keeps development diagnostics to timing and counters only", () => {
+    let nowMs = 100;
+    const reports: Array<Record<string, unknown>> = [];
+    const diagnostics = createDevelopmentLiveClientDiagnostics(true, {
+      sessionId: "session-test",
+      now: () => nowMs,
+      reporter: (record) => reports.push(record)
+    });
+
+    diagnostics?.mark("websocket-open");
+    nowMs = 180;
+    diagnostics?.recordPcm(3_200, 120);
+    nowMs = 270;
+    diagnostics?.recordPcm(3_200, 240);
+    diagnostics?.mark("first-interim");
+
+    expect(reports.map((record) => record.stage)).toEqual(["websocket-open", "first-pcm", "first-interim"]);
+    expect(reports.at(-1)).toEqual({
+      sessionId: "session-test",
+      stage: "first-interim",
+      elapsedMs: 170,
+      pcmChunkCount: 2,
+      pcmBytes: 6_400,
+      maxInterchunkGapMs: 90,
+      maxWebSocketBufferedAmount: 240
+    });
+    expect(Object.keys(reports.at(-1) ?? {}).sort()).toEqual([
+      "elapsedMs",
+      "maxInterchunkGapMs",
+      "maxWebSocketBufferedAmount",
+      "pcmBytes",
+      "pcmChunkCount",
+      "sessionId",
+      "stage"
+    ]);
+    expect(JSON.stringify(reports)).not.toMatch(/transcript|rawText|term|project|device|amplitude|content/i);
+    expect(
+      createDevelopmentLiveClientDiagnostics(false, {
+        sessionId: "unused",
+        now: vi.fn(),
+        reporter: vi.fn()
+      })
+    ).toBeNull();
+  });
+});
 
 describe("useLectureStream development caption paint estimate", () => {
   it("schedules rAF then a task, assigns distinct sequences, and reports timing metadata only", () => {

@@ -9,7 +9,7 @@ import {
 } from "./ws-lifecycle.js";
 
 function session(close: () => void): SpeechSession {
-  return { close, writeAudio: vi.fn() };
+  return { close, writeAudio: vi.fn(() => true) };
 }
 
 describe("WebSocket lecture stop lifecycle", () => {

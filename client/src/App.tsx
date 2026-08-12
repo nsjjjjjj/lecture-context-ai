@@ -8,7 +8,6 @@ import {
   FileText,
   Gauge,
   Highlighter,
-  Keyboard,
   LoaderCircle,
   Maximize2,
   Mic,
@@ -849,7 +848,6 @@ function LiveScreen({
             <div className="mt-3 border-t border-white/[0.07] pt-4 sm:mt-4 sm:pt-5">
               <LiveCaptionRows presentation={captionPresentation} terms={analysis.terms} sizeClass={sizeClass} />
             </div>
-            <div className="mt-3 hidden items-center justify-end gap-2 text-[11px] text-slate-600 sm:flex"><Keyboard className="size-4" /> 고대비·큰 글씨 지원</div>
           </section>
         </div>
       </div>

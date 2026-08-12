@@ -35,6 +35,20 @@ describe("lecture stream protocol", () => {
 });
 
 describe("lecture stream lifecycle", () => {
+  it("provider와 capture가 모두 준비되기 전에는 connecting 상태를 유지한다", () => {
+    const starting = lectureStreamReducer(createInitialLectureStreamState(), { type: "starting", mode: "live" });
+    const providerOnly = lectureStreamReducer(starting, {
+      type: "connection-progress",
+      message: "마이크 입력을 확인하고 있습니다."
+    });
+
+    expect(providerOnly.status).toBe("connecting");
+    expect(providerOnly.statusMessage).toBe("마이크 입력을 확인하고 있습니다.");
+
+    const ready = lectureStreamReducer(providerOnly, { type: "ready", message: "마이크와 Google STT가 준비되었습니다." });
+    expect(ready.status).toBe("ready");
+  });
+
   it("retains final transcript data when the server ends the stream", () => {
     const initial = createInitialLectureStreamState();
     const withFinal = lectureStreamReducer(initial, {

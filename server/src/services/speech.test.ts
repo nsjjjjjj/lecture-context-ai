@@ -2,6 +2,7 @@ import { Duplex } from "node:stream";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildStreamingRecognizeRequest,
+  createDevelopmentSpeechDiagnosticReporter,
   createGoogleSpeechSession,
   createGuardedSpeechWriter,
   getGoogleSpeechConfigurationError,
@@ -30,10 +31,25 @@ class RecordingSpeechStream extends Duplex {
   }
 }
 
+class DelayedWriteSpeechStream extends RecordingSpeechStream {
+  private pendingWrite: ((error?: Error | null) => void) | null = null;
+
+  override _write(value: unknown, _encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
+    this.writes.push(value);
+    this.pendingWrite = callback;
+  }
+
+  releaseWrite(error?: Error): void {
+    const callback = this.pendingWrite;
+    this.pendingWrite = null;
+    callback?.(error);
+  }
+}
+
 function createRecordingClient(stream: RecordingSpeechStream) {
   return {
-    _streamingRecognize: vi.fn(() => stream),
-    close: vi.fn(async () => undefined)
+    initialize: vi.fn(async () => ({})),
+    _streamingRecognize: vi.fn(() => stream)
   } satisfies SpeechClientPort;
 }
 
@@ -56,13 +72,13 @@ describe("Google Speech configuration", () => {
     expect(isGoogleSpeechConfigured()).toBe(true);
   });
 
-  it("global 또는 다른 모델을 fail closed로 거부한다", () => {
+  it("global 또는 다른 모델을 fail closed로 거부한다", async () => {
     configureSupportedSpeech();
     vi.stubEnv("GOOGLE_STT_LOCATION", "global");
 
     expect(getGoogleSpeechConfigurationError()).toContain("'us'");
     expect(isGoogleSpeechConfigured()).toBe(false);
-    expect(() => createGoogleSpeechSession([], { onTranscript: vi.fn(), onError: vi.fn(), onEnd: vi.fn() })).toThrow(
+    await expect(createGoogleSpeechSession([], { onTranscript: vi.fn(), onError: vi.fn(), onEnd: vi.fn() })).rejects.toThrow(
       "GOOGLE_STT_LOCATION"
     );
 
@@ -71,7 +87,7 @@ describe("Google Speech configuration", () => {
 
     expect(getGoogleSpeechConfigurationError()).toContain("'chirp_3'");
     expect(isGoogleSpeechConfigured()).toBe(false);
-    expect(() => createGoogleSpeechSession([], { onTranscript: vi.fn(), onError: vi.fn(), onEnd: vi.fn() })).toThrow(
+    await expect(createGoogleSpeechSession([], { onTranscript: vi.fn(), onError: vi.fn(), onEnd: vi.fn() })).rejects.toThrow(
       "GOOGLE_STT_MODEL"
     );
   });
@@ -104,6 +120,10 @@ describe("buildStreamingRecognizeRequest", () => {
     const request = buildStreamingRecognizeRequest("project", "us", "chirp_3", []);
 
     expect(request.streamingConfig.config).not.toHaveProperty("adaptation");
+    expect(request.streamingConfig.streamingFeatures).toEqual({
+      interimResults: true,
+      enableVoiceActivityEvents: true
+    });
   });
 });
 
@@ -240,13 +260,108 @@ describe("guarded Google Speech writes", () => {
 });
 
 describe("Google Speech V2 bidirectional transport", () => {
-  it("첫 write에 recognizer와 전체 설정을 변형 없이 보내고 typed V2 bidi 메서드를 사용한다", () => {
+  it("awaits one reusable client initialization before opening each stream", async () => {
+    configureSupportedSpeech();
+    const firstStream = new RecordingSpeechStream();
+    const secondStream = new RecordingSpeechStream();
+    let finishInitialization!: () => void;
+    const initialization = new Promise<void>((resolve) => {
+      finishInitialization = resolve;
+    });
+    const client = {
+      initialize: vi.fn(() => initialization.then(() => ({}))),
+      _streamingRecognize: vi.fn()
+        .mockReturnValueOnce(firstStream)
+        .mockReturnValueOnce(secondStream)
+    } satisfies SpeechClientPort;
+
+    const firstSessionPromise = createGoogleSpeechSession(
+      [],
+      { onTranscript: vi.fn(), onError: vi.fn(), onEnd: vi.fn() },
+      { client }
+    );
+    await Promise.resolve();
+    expect(client._streamingRecognize).not.toHaveBeenCalled();
+
+    finishInitialization();
+    const firstSession = await firstSessionPromise;
+    const secondSession = await createGoogleSpeechSession(
+      [],
+      { onTranscript: vi.fn(), onError: vi.fn(), onEnd: vi.fn() },
+      { client }
+    );
+
+    expect(client.initialize).toHaveBeenCalledTimes(1);
+    expect(client._streamingRecognize).toHaveBeenCalledTimes(2);
+    firstSession.close();
+    secondSession.close();
+  });
+
+  it("does not open a stream when shared client initialization fails", async () => {
+    configureSupportedSpeech();
+    const client = {
+      initialize: vi.fn(async () => {
+        throw new Error("ADC initialization failed");
+      }),
+      _streamingRecognize: vi.fn()
+    } satisfies SpeechClientPort;
+
+    await expect(
+      createGoogleSpeechSession([], { onTranscript: vi.fn(), onError: vi.fn(), onEnd: vi.fn() }, { client })
+    ).rejects.toThrow("ADC initialization failed");
+    expect(client._streamingRecognize).not.toHaveBeenCalled();
+  });
+
+  it("does not resolve readiness until the initialized stream accepts the config write", async () => {
+    configureSupportedSpeech();
+    const stream = new DelayedWriteSpeechStream();
+    const client = createRecordingClient(stream);
+    let resolved = false;
+
+    const pendingSession = createGoogleSpeechSession(
+      [],
+      { onTranscript: vi.fn(), onError: vi.fn(), onEnd: vi.fn() },
+      { client, readyTimeoutMs: 500 }
+    ).then((session) => {
+      resolved = true;
+      return session;
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(stream.writes).toHaveLength(1);
+    expect(resolved).toBe(false);
+
+    stream.releaseWrite();
+    await pendingSession;
+    expect(resolved).toBe(true);
+  });
+
+  it("fails instead of deadlocking when the initial config write never becomes writable", async () => {
+    vi.useFakeTimers();
+    configureSupportedSpeech();
+    const stream = new DelayedWriteSpeechStream();
+    const client = createRecordingClient(stream);
+    const onError = vi.fn();
+    const pendingSession = createGoogleSpeechSession(
+      [],
+      { onTranscript: vi.fn(), onError, onEnd: vi.fn() },
+      { client, readyTimeoutMs: 50 }
+    );
+    const rejection = expect(pendingSession).rejects.toThrow("초기 설정 전송 시간이 초과");
+
+    await vi.advanceTimersByTimeAsync(50);
+
+    await rejection;
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it("첫 write에 recognizer와 전체 설정을 변형 없이 보내고 typed V2 bidi 메서드를 사용한다", async () => {
     configureSupportedSpeech();
     const stream = new RecordingSpeechStream();
     const client = createRecordingClient(stream);
     const expected = buildStreamingRecognizeRequest("project", "us", "chirp_3", ["RAG"]);
 
-    createGoogleSpeechSession(
+    await createGoogleSpeechSession(
       ["RAG"],
       { onTranscript: vi.fn(), onError: vi.fn(), onEnd: vi.fn() },
       { client }
@@ -258,13 +373,13 @@ describe("Google Speech V2 bidirectional transport", () => {
     expect(stream.writes[0]).not.toHaveProperty("audioContent");
   });
 
-  it("후속 write에는 15KB 이하 audio만 보내고 audioContent로 감싸지 않는다", () => {
+  it("후속 write에는 15KB 이하 audio만 보내고 audioContent로 감싸지 않는다", async () => {
     configureSupportedSpeech();
     const stream = new RecordingSpeechStream();
     const client = createRecordingClient(stream);
     const onError = vi.fn();
     const onEnd = vi.fn();
-    const session = createGoogleSpeechSession(
+    const session = await createGoogleSpeechSession(
       [],
       { onTranscript: vi.fn(), onError, onEnd },
       { client }
@@ -282,7 +397,6 @@ describe("Google Speech V2 bidirectional transport", () => {
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining("15KB") }));
     expect(onEnd).not.toHaveBeenCalled();
-    expect(client.close).toHaveBeenCalledTimes(1);
 
     stream.emit("end");
     stream.emit("close");
@@ -290,17 +404,16 @@ describe("Google Speech V2 bidirectional transport", () => {
 
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onEnd).not.toHaveBeenCalled();
-    expect(client.close).toHaveBeenCalledTimes(1);
     expect(stream.writes).toHaveLength(2);
   });
 
-  it("V2 응답마다 합친 interim을 한 번 보내고 다음 final로 즉시 교체한다", () => {
+  it("V2 응답마다 합친 interim을 한 번 보내고 다음 final로 즉시 교체한다", async () => {
     configureSupportedSpeech();
     const stream = new RecordingSpeechStream();
     const client = createRecordingClient(stream);
     const onTranscript = vi.fn();
 
-    createGoogleSpeechSession(
+    await createGoogleSpeechSession(
       [],
       { onTranscript, onError: vi.fn(), onEnd: vi.fn() },
       { client }
@@ -328,16 +441,74 @@ describe("Google Speech V2 bidirectional transport", () => {
     expect(onTranscript).toHaveBeenCalledTimes(3);
   });
 
-  it("명시적 close 후 지연된 final을 받은 뒤 readable end에서만 클라이언트를 닫는다", () => {
+  it("propagates gRPC backpressure and drain without dropping the accepted chunk", async () => {
+    configureSupportedSpeech();
+    const stream = new RecordingSpeechStream();
+    const client = createRecordingClient(stream);
+    const onDrain = vi.fn();
+    const session = await createGoogleSpeechSession(
+      [],
+      { onTranscript: vi.fn(), onError: vi.fn(), onEnd: vi.fn(), onDrain },
+      { client }
+    );
+    const originalWrite = stream.write.bind(stream);
+    vi.spyOn(stream, "write").mockImplementation(((value: unknown, callback?: (error?: Error | null) => void) => {
+      originalWrite(value, callback);
+      return false;
+    }) as typeof stream.write);
+
+    expect(session.writeAudio(Buffer.alloc(3_200))).toBe(false);
+    expect(stream.writes.at(-1)).toEqual({ audio: Buffer.alloc(3_200) });
+
+    stream.emit("drain");
+    expect(onDrain).toHaveBeenCalledTimes(1);
+  });
+
+  it("emits VAD and first-result diagnostics containing metadata only", async () => {
+    configureSupportedSpeech();
+    const stream = new RecordingSpeechStream();
+    const client = createRecordingClient(stream);
+    const records: Array<Record<string, unknown>> = [];
+    const onDiagnostic = createDevelopmentSpeechDiagnosticReporter(true, "session-test", (record) => records.push(record));
+    const session = await createGoogleSpeechSession(
+      [],
+      { onTranscript: vi.fn(), onError: vi.fn(), onEnd: vi.fn(), onDiagnostic },
+      { client }
+    );
+
+    session.writeAudio(Buffer.alloc(3_200));
+    stream.emit("data", { speechEventType: 2 });
+    stream.emit("data", { results: [{ alternatives: [{ transcript: "민감한 원문" }], isFinal: false }] });
+    stream.emit("data", { results: [{ alternatives: [{ transcript: "민감한 확정 원문" }], isFinal: true }] });
+    stream.emit("data", { speechEventType: "SPEECH_ACTIVITY_END" });
+
+    expect(records.map((record) => record.stage)).toEqual([
+      "client-initialized",
+      "config-written",
+      "first-pcm",
+      "vad-begin",
+      "first-interim",
+      "first-final",
+      "vad-end"
+    ]);
+    expect(Object.keys(records[0] ?? {}).sort()).toEqual([
+      "elapsedMs",
+      "pcmBytes",
+      "pcmChunkCount",
+      "sessionId",
+      "stage"
+    ]);
+    expect(JSON.stringify(records)).not.toMatch(/민감|transcript|rawText|term|project|device|amplitude/i);
+    expect(createDevelopmentSpeechDiagnosticReporter(false, "unused", vi.fn())).toBeUndefined();
+  });
+
+  it("명시적 close 후 지연된 final을 받은 뒤 readable end에서만 세션을 닫는다", async () => {
     configureSupportedSpeech();
     const stream = new RecordingSpeechStream();
     const client = createRecordingClient(stream);
     const events: string[] = [];
     const end = vi.spyOn(stream, "end");
-    client.close.mockImplementation(async () => {
-      events.push("client-close");
-    });
-    const session = createGoogleSpeechSession(
+    const session = await createGoogleSpeechSession(
       [],
       {
         onTranscript: (_text, isFinal) => events.push(isFinal ? "final" : "interim"),
@@ -352,7 +523,6 @@ describe("Google Speech V2 bidirectional transport", () => {
     session.writeAudio(Buffer.from([1, 2]));
 
     expect(end).toHaveBeenCalledTimes(1);
-    expect(client.close).not.toHaveBeenCalled();
     expect(events).toEqual([]);
     expect(stream.writes).toHaveLength(1);
 
@@ -363,17 +533,16 @@ describe("Google Speech V2 bidirectional transport", () => {
     stream.emit("close");
     stream.emit("error", new Error("late error"));
 
-    expect(events).toEqual(["final", "end", "client-close"]);
-    expect(client.close).toHaveBeenCalledTimes(1);
+    expect(events).toEqual(["final", "end"]);
   });
 
-  it("스트림 error 뒤 end와 close가 와도 onError만 한 번 호출한다", () => {
+  it("스트림 error 뒤 end와 close가 와도 onError만 한 번 호출한다", async () => {
     configureSupportedSpeech();
     const stream = new RecordingSpeechStream();
     const client = createRecordingClient(stream);
     const onError = vi.fn();
     const onEnd = vi.fn();
-    const session = createGoogleSpeechSession(
+    const session = await createGoogleSpeechSession(
       [],
       { onTranscript: vi.fn(), onError, onEnd },
       { client }
@@ -386,7 +555,6 @@ describe("Google Speech V2 bidirectional transport", () => {
 
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onEnd).not.toHaveBeenCalled();
-    expect(client.close).toHaveBeenCalledTimes(1);
     expect(stream.writes).toHaveLength(1);
   });
 
@@ -397,7 +565,7 @@ describe("Google Speech V2 bidirectional transport", () => {
     const client = createRecordingClient(stream);
     const onError = vi.fn();
     const onEnd = vi.fn();
-    const session = createGoogleSpeechSession(
+    const session = await createGoogleSpeechSession(
       [],
       { onTranscript: vi.fn(), onError, onEnd },
       { client, drainTimeoutMs: 50 }
@@ -405,41 +573,16 @@ describe("Google Speech V2 bidirectional transport", () => {
 
     session.close();
     await vi.advanceTimersByTimeAsync(49);
-    expect(client.close).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(1);
     expect(onEnd).toHaveBeenCalledTimes(1);
     expect(onError).not.toHaveBeenCalled();
-    expect(client.close).toHaveBeenCalledTimes(1);
 
     stream.emit("end");
     stream.emit("close");
     stream.emit("error", new Error("after timeout"));
     expect(onEnd).toHaveBeenCalledTimes(1);
     expect(onError).not.toHaveBeenCalled();
-    expect(client.close).toHaveBeenCalledTimes(1);
   });
 
-  it("Google client close가 reject되어도 terminal callback을 뒤집거나 중복하지 않는다", async () => {
-    configureSupportedSpeech();
-    const stream = new RecordingSpeechStream();
-    const client = createRecordingClient(stream);
-    client.close.mockRejectedValue(new Error("close rejected"));
-    const onError = vi.fn();
-    const onEnd = vi.fn();
-    const session = createGoogleSpeechSession(
-      [],
-      { onTranscript: vi.fn(), onError, onEnd },
-      { client, drainTimeoutMs: 100 }
-    );
-
-    session.close();
-    stream.emit("close");
-    await Promise.resolve();
-    stream.emit("end");
-
-    expect(onEnd).toHaveBeenCalledTimes(1);
-    expect(onError).not.toHaveBeenCalled();
-    expect(client.close).toHaveBeenCalledTimes(1);
-  });
 });

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { randomUUID } from "node:crypto";
 import http from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
 import { createApp, resolveListenHost } from "./app.js";
@@ -7,9 +8,11 @@ import { createTranscriptEvent } from "./services/caption.js";
 import { demoTranscript } from "./services/demo.js";
 import {
   createGoogleSpeechSession,
+  createDevelopmentSpeechDiagnosticReporter,
   getGoogleSpeechConfigurationError,
   type SpeechSession
 } from "./services/speech.js";
+import { createLiveAudioFlowController, type LiveAudioFlowController } from "./services/live-audio-flow.js";
 import { resolveStartContext } from "./services/ws-start.js";
 import {
   clearPendingSpeechEnd,
@@ -61,17 +64,20 @@ wss.on("connection", (websocket) => {
   let started = false;
   let ended = false;
   let timers: Array<NodeJS.Timeout> = [];
+  let liveAudioFlow: LiveAudioFlowController | null = null;
 
   const endOnce = (message: string): void => {
     if (ended) return;
     ended = true;
     timers.forEach(clearTimeout);
+    liveAudioFlow?.dispose();
     send(websocket, { type: "ended", message });
   };
 
-  websocket.on("message", (data, isBinary) => {
+  websocket.on("message", async (data, isBinary) => {
     if (isBinary) {
-      if (speechSessionSlot.active) speechSessionSlot.active.writeAudio(Buffer.from(data as Buffer));
+      const session = speechSessionSlot.active;
+      if (session && liveAudioFlow) liveAudioFlow.writeOrQueue(Buffer.from(data as Buffer));
       return;
     }
 
@@ -100,29 +106,77 @@ wss.on("connection", (websocket) => {
         return;
       }
 
-      let createdSession: SpeechSession | null = null;
-      let sessionTerminated = false;
-      createdSession = createGoogleSpeechSession(context.phraseSet, {
-        onTranscript: (text, isFinal) => emitTranscript(websocket, text, isFinal, terms),
-        onError: (error) => {
-          sessionTerminated = true;
-          if (speechSessionSlot.active === createdSession) speechSessionSlot.active = null;
+      const diagnostic = createDevelopmentSpeechDiagnosticReporter(
+        process.env.NODE_ENV === "development",
+        randomUUID(),
+        (record) => console.debug("[live-stt-diagnostic]", record)
+      );
+      liveAudioFlow = createLiveAudioFlowController({
+        writeAudio: (audio) => speechSessionSlot.active?.writeAudio(audio) === true,
+        pauseInput: () => websocket.pause(),
+        resumeInput: () => websocket.resume(),
+        onTimeout: () => {
+          const timedOutSession = speechSessionSlot.active;
+          speechSessionSlot.active = null;
           clearPendingSpeechEnd(speechSessionSlot);
-          createdSession?.close();
-          send(websocket, { type: "error", message: `음성인식 오류: ${error.message}` });
+          timedOutSession?.close();
+          send(websocket, {
+            type: "error",
+            message: "음성 전송이 지연되어 오래된 오디오가 쌓이기 전에 연결을 종료했습니다. 다시 시작해 주세요."
+          });
+          websocket.close(1013, "speech backpressure timeout");
         },
-        onEnd: () => {
-          sessionTerminated = true;
-          if (speechSessionSlot.active === createdSession) speechSessionSlot.active = null;
-          endOnce(consumeSpeechEndMessage(speechSessionSlot, "Google STT 연결이 종료되었습니다."));
+        onOverflow: () => {
+          const overflowedSession = speechSessionSlot.active;
+          speechSessionSlot.active = null;
+          clearPendingSpeechEnd(speechSessionSlot);
+          overflowedSession?.close();
+          send(websocket, {
+            type: "error",
+            message: "음성 전송 적체가 안전 한도를 넘어 오래된 오디오를 버리지 않고 연결을 종료했습니다. 다시 시작해 주세요."
+          });
+          websocket.close(1013, "speech backpressure overflow");
         }
       });
-      if (sessionTerminated) {
+
+      let createdSession: SpeechSession | null = null;
+      let sessionTerminated = false;
+      try {
+        createdSession = await createGoogleSpeechSession(context.phraseSet, {
+          onTranscript: (text, isFinal) => emitTranscript(websocket, text, isFinal, terms),
+          onError: (error) => {
+            sessionTerminated = true;
+            if (speechSessionSlot.active === createdSession) speechSessionSlot.active = null;
+            clearPendingSpeechEnd(speechSessionSlot);
+            liveAudioFlow?.dispose();
+            createdSession?.close();
+            send(websocket, { type: "error", message: `음성인식 오류: ${error.message}` });
+          },
+          onEnd: () => {
+            sessionTerminated = true;
+            if (speechSessionSlot.active === createdSession) speechSessionSlot.active = null;
+            liveAudioFlow?.dispose();
+            endOnce(consumeSpeechEndMessage(speechSessionSlot, "Google STT 연결이 종료되었습니다."));
+          },
+          onDrain: () => liveAudioFlow?.resumeFromGrpc(),
+          onDiagnostic: diagnostic
+        });
+      } catch (error) {
+        liveAudioFlow.dispose();
+        if (!sessionTerminated) {
+          send(websocket, {
+            type: "error",
+            message: `음성인식 오류: ${error instanceof Error ? error.message : "Google STT를 준비하지 못했습니다."}`
+          });
+        }
+        return;
+      }
+      if (sessionTerminated || ended || websocket.readyState !== WebSocket.OPEN) {
         createdSession.close();
         return;
       }
       speechSessionSlot.active = createdSession;
-      send(websocket, { type: "ready", message: "Google STT에 연결되었습니다." });
+      send(websocket, { type: "ready", message: "Google STT 전송이 준비되었습니다." });
     } catch (error) {
       send(websocket, { type: "error", message: error instanceof Error ? error.message : "요청을 처리하지 못했습니다." });
     }
@@ -130,6 +184,7 @@ wss.on("connection", (websocket) => {
 
   websocket.on("close", () => {
     ended = true;
+    liveAudioFlow?.dispose();
     closeSpeechSessionForSocket(speechSessionSlot);
     timers.forEach(clearTimeout);
   });
