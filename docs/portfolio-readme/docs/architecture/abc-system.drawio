@@ -1,4 +1,3 @@
-<?xml version='1.0' encoding='utf-8'?>
 <mxfile host="app.diagrams.net" type="device">
   <diagram id="abc-system" name="강연 용어 AI · 시스템 흐름" alt="강연 용어 AI · 시스템 흐름 · 팀 기준 68e2fa0 · 같은 용어집을 PDF 분석과 실시간 자막에 연결">
     <mxGraphModel page="1" pageScale="1" pageWidth="1370" pageHeight="770" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" math="0" shadow="0" background="#FFFFFF">
@@ -17,7 +16,7 @@
         <mxCell id="prep" parent="1" vertex="1" value="01 · 강연 준비  |  PDF에서 용어집 만들기" style="rounded=1;arcSize=7;html=0;whiteSpace=wrap;fillColor=#F8FBFD;fillOpacity=85;strokeColor=#C8DAE5;dashed=1;dashPattern=7 5;strokeWidth=1.2;align=left;verticalAlign=top;spacingLeft=14;spacingTop=9;fontSize=16;fontStyle=1;fontColor=#435D72;fontFamily=Arial;">
           <mxGeometry x="48" y="133" width="1274" height="255" as="geometry" />
         </mxCell>
-        <mxCell id="live" parent="1" vertex="1" value="02 · 강연 중  |  검증 용어집으로 자막과 해설 표시" style="rounded=1;arcSize=7;html=0;whiteSpace=wrap;fillColor=#F8FBFD;fillOpacity=85;strokeColor=#C8DAE5;dashed=1;dashPattern=7 5;strokeWidth=1.2;align=left;verticalAlign=top;spacingLeft=14;spacingTop=9;fontSize=16;fontStyle=1;fontColor=#435D72;fontFamily=Arial;">
+        <mxCell id="live" parent="1" vertex="1" value="02 · 강연 중  |  실시간 자막과 해설" style="rounded=1;arcSize=7;html=0;whiteSpace=wrap;fillColor=#F8FBFD;fillOpacity=85;strokeColor=#C8DAE5;dashed=1;dashPattern=7 5;strokeWidth=1.2;align=left;verticalAlign=top;spacingLeft=14;spacingTop=9;fontSize=16;fontStyle=1;fontColor=#435D72;fontFamily=Arial;">
           <mxGeometry x="48" y="403" width="1274" height="294" as="geometry" />
         </mxCell>
         <mxCell id="pdf" parent="1" vertex="1" value="" style="rounded=0;fillColor=none;strokeColor=none;whiteSpace=wrap;html=0;">
@@ -178,10 +177,9 @@
             <mxPoint x="0" y="12" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="edge-4" value="세션 시작에 재사용" edge="1" parent="1" source="glossary" target="mic" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=blockThin;endFill=1;strokeColor=#415C70;strokeWidth=2.2;fontColor=#24435A;fontSize=16;labelBackgroundColor=#FFFFFF;labelPadding=2;fontFamily=Arial;dashed=1;dashPattern=6 4;strokeColor=#75818D;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
+        <mxCell id="edge-4" value="용어집 재사용" edge="1" parent="1" source="glossary" target="mic" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=blockThin;endFill=1;strokeColor=#75818D;strokeWidth=2.2;fontColor=#24435A;fontSize=16;labelBackgroundColor=#FFFFFF;labelPadding=2;fontFamily=Arial;dashed=1;dashPattern=6 4;exitX=0.16;exitY=1;exitDx=0;exitDy=0;entryX=0.16;entryY=0;entryDx=0;entryDy=0;">
           <mxGeometry relative="1" as="geometry">
-            <mxPoint x="99" y="0" as="offset" />
-          </mxGeometry>
+            <mxPoint x="20" y="-19" as="offset" /></mxGeometry>
         </mxCell>
         <mxCell id="edge-5" value="WSS · PCM + 용어·PhraseSet" edge="1" parent="1" source="mic" target="session" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=blockThin;endFill=1;strokeColor=#415C70;strokeWidth=2.2;fontColor=#24435A;fontSize=16;labelBackgroundColor=#FFFFFF;labelPadding=2;fontFamily=Arial;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
           <mxGeometry relative="1" as="geometry">

@@ -20,7 +20,7 @@
 
 ![샘플 강연을 열고 용어집을 확인한 뒤, RAG가 강조된 자막과 용어 설명을 보고 최종 결과 화면으로 넘어가는 앱 화면](docs/media/lecture-demo.gif)
 
-**샘플 강연 열기 → 용어집 확인 → 자막 재생 → 용어 설명 → 강연 결과** 순서다. 강연에서 ‘레그’라고 읽으면 확정 자막에 `RAG(레그)`가 표시되고, 오른쪽에 쉬운 설명이 뜬다.
+샘플 자막에서 ‘레그’가 확정되면 **RAG(레그)**로 표시되고 오른쪽에 뜻이 열린다. 재생이 끝나면 확정 자막과 등장 용어를 다시 볼 수 있다.
 
 [시작 화면](docs/media/abc-start.png) · [용어집 화면](docs/media/abc-glossary.png) · [자막과 설명](docs/media/lecture-demo.png) · [결과 화면](docs/media/abc-demo-results.png)
 
@@ -29,7 +29,7 @@
 
 ![원본 강연 화면의 자막 기록 영역 위에 재현용 발표 슬라이드를 띄우고 하단 자막과 오른쪽 용어 설명을 보여주는 모습](docs/media/lecture-presentation.gif)
 
-발표할 때처럼 자막 기록 위에 PPT를 띄웠다. LLM·Transformer, RAG, 환각, 파인튜닝 순으로 슬라이드를 넘기면 화면 아래에서는 자막이, 오른쪽에서는 지금 등장한 용어의 설명이 이어진다.
+발표 때처럼 자막 기록 영역에 별도 PPT를 겹쳐 띄웠다. LLM·Transformer, RAG, 환각, 파인튜닝에 해당하는 슬라이드와 하단 자막, 오른쪽 용어 설명을 나란히 볼 수 있다. PPT는 앱의 내장 기능이 아니다.
 
 [발표 배치 정지 화면](docs/media/lecture-presentation.png) · [슬라이드 제작·합성 기록](docs/slides/REPRODUCE-PRESENTATION.md)
 
@@ -39,7 +39,7 @@
 
 ![STT 실험실에서 팀의 실제 A/B/C 결과 집계를 열고 저장된 보고서에서 인식 지표를 확인하는 화면](docs/media/experiment-results.gif)
 
-로컬 실험실에서 대본과 녹음을 선택한다. 같은 WAV를 **힌트 없음 / 정식 표기 힌트 / 발음 별칭과 확정 자막 연결** 세 조건으로 비교하고, 리포트에서 STT가 바로 인식한 용어와 앱에서 별칭을 연결한 용어를 따로 확인한다. 케이스별 집계를 내려받아 조건을 비교할 수 있다. 시연은 팀의 기존 실험을 열어 5개 케이스의 CSV를 내려받고, 보고서 하나의 상세 지표를 읽는 흐름이다.
+저장된 비교 결과에서 다섯 케이스의 CSV를 내려받고 보고서 하나의 인식 지표를 연다. 보고서에서는 음성인식이 바로 알아들은 용어와 앱이 발음 별칭으로 연결한 용어를 나눠 확인할 수 있다.
 
 [케이스 집계 화면](docs/media/experiment-aggregates.png) · [보고서 상세](docs/media/experiment-report.png) · [팀 실험에서 확인한 수치](#용어-인식-실험) · [실험 화면과 채점 기준 설명](docs/STT_PHRASESET_PILOT.md)
 
