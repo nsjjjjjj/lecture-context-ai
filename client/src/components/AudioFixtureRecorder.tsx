@@ -8,6 +8,7 @@ import {
 import { AudioFixtureCapture } from "../lib/audio-fixture-capture";
 
 const MAX_RECORDING_MS = 120_000;
+const INPUT_FOCUS_RING = "outline-none focus-visible:border-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07111f]";
 
 type RecorderPhase = "idle" | "requesting" | "recording" | "stopping" | "ready" | "saving" | "saved";
 export type AudioFixtureRecorderProps = {
@@ -40,6 +41,18 @@ export function createRecordingSavedNotifier(
   };
 }
 
+export function runSingleFlight<T>(
+  owner: { current: Promise<T> | null },
+  operation: () => Promise<T>
+): Promise<T> {
+  if (owner.current) return owner.current;
+  const pending = operation().finally(() => {
+    if (owner.current === pending) owner.current = null;
+  });
+  owner.current = pending;
+  return pending;
+}
+
 function formatDuration(durationMs: number): string {
   return `${(durationMs / 1_000).toFixed(1)}초`;
 }
@@ -61,6 +74,7 @@ export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, on
   const intervalRef = useRef<number | null>(null);
   const autoStopRef = useRef<number | null>(null);
   const finalizeRef = useRef<Promise<void> | null>(null);
+  const startRef = useRef<Promise<void> | null>(null);
   const saveRef = useRef<Promise<void> | null>(null);
   const preparedRef = useRef<PreparedRecording | null>(null);
   const captureMetadataRef = useRef<Readonly<FixtureCaptureMetadata> | null>(null);
@@ -151,7 +165,7 @@ export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, on
     };
   }, [clearTimers]);
 
-  const startCapture = async () => {
+  const startCapture = (): Promise<void> => runSingleFlight(startRef, async () => {
     if (!selectedScript || sessionIdRef.current !== null || finalizeRef.current || saveRef.current) return;
     releasePrepared();
     setSaved(null);
@@ -184,7 +198,7 @@ export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, on
       setError(microphoneErrorMessage(caught));
       setPhase("idle");
     }
-  };
+  });
 
   const discardAndRetry = () => {
     if (phase === "saving" || sessionIdRef.current !== null) return;
@@ -242,7 +256,7 @@ export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, on
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="flex items-center gap-2 text-sm font-extrabold text-white"><FlaskConical className="size-4 text-amber-300" /> 개발용 고정음원 녹음</h2>
-          <p className="mt-1 text-xs leading-5 text-slate-500">실제 Google API를 호출하지 않고, 같은 음원을 반복 실험할 수 있도록 로컬 WAV를 만듭니다.</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">유료 STT API를 호출하지 않고, 같은 음원을 반복 실험할 수 있도록 로컬 WAV를 만듭니다.</p>
         </div>
         <span className="shrink-0 rounded-full bg-amber-300/10 px-2.5 py-1 text-[10px] font-black text-amber-200">DEV ONLY</span>
       </div>
@@ -250,28 +264,28 @@ export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, on
       {selectedScript ? (
         <>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="text-[11px] font-bold text-slate-500">
+            <label htmlFor="fixture-speaker-label" className="text-[11px] font-bold text-slate-500">
               가명 화자
-              <select value={speakerLabel} onChange={(event) => setSpeakerLabel(event.target.value as "speaker-a" | "speaker-b")} disabled={busy || phase === "recording" || Boolean(prepared)} className="mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 outline-none focus:border-cyan-300">
+              <select id="fixture-speaker-label" name="fixtureSpeakerLabel" value={speakerLabel} onChange={(event) => setSpeakerLabel(event.target.value as "speaker-a" | "speaker-b")} disabled={busy || phase === "recording" || Boolean(prepared)} className={`mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 ${INPUT_FOCUS_RING}`}>
                 <option value="speaker-a">speaker-a</option>
                 <option value="speaker-b">speaker-b</option>
               </select>
             </label>
-            <label className="text-[11px] font-bold text-slate-500">
+            <label htmlFor="fixture-environment" className="text-[11px] font-bold text-slate-500">
               녹음 환경
-              <select value={environment} onChange={(event) => setEnvironment(event.target.value as "quiet" | "noisy")} disabled={busy || phase === "recording" || Boolean(prepared)} className="mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 outline-none focus:border-cyan-300">
+              <select id="fixture-environment" name="fixtureEnvironment" value={environment} onChange={(event) => setEnvironment(event.target.value as "quiet" | "noisy")} disabled={busy || phase === "recording" || Boolean(prepared)} className={`mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 ${INPUT_FOCUS_RING}`}>
                 <option value="quiet">조용한 환경</option>
                 <option value="noisy">소음 환경</option>
               </select>
             </label>
           </div>
 
-          <label className="mt-3 block text-[11px] font-bold text-slate-500">
+          <label htmlFor="fixture-script" className="mt-3 block text-[11px] font-bold text-slate-500">
             고정 실험 문장
-            <select value={selectedScript.id} onChange={(event) => {
+            <select id="fixture-script" name="fixtureScriptId" value={selectedScript.id} onChange={(event) => {
               setScriptId(event.target.value);
               setSpeakerReadReferenceScriptVerbatim(false);
-            }} disabled={busy || phase === "recording" || Boolean(prepared)} className="mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 outline-none focus:border-cyan-300">
+            }} disabled={busy || phase === "recording" || Boolean(prepared)} className={`mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 ${INPUT_FOCUS_RING}`}>
               {catalog?.scripts.map((script) => <option key={script.id} value={script.id}>{script.experimentIdentity ? "[실험 케이스] " : "[고정] "}{script.title}</option>)}
             </select>
           </label>
@@ -284,13 +298,15 @@ export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, on
             {selectedScript.text}
           </div>
 
-          <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 text-xs leading-5 text-slate-300">
+          <label htmlFor="fixture-verbatim-confirmation" className="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.025] p-3 text-xs leading-5 text-slate-300">
             <input
+              id="fixture-verbatim-confirmation"
+              name="fixtureVerbatimConfirmation"
               type="checkbox"
               checked={speakerReadReferenceScriptVerbatim}
               onChange={(event) => setSpeakerReadReferenceScriptVerbatim(event.target.checked)}
               disabled={busy || phase === "recording" || Boolean(prepared)}
-              className="mt-0.5 size-4 shrink-0 accent-cyan-300"
+              className="mt-0.5 size-4 shrink-0 accent-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07111f]"
             />
             <span>
               <strong className="block text-slate-100">기준 문장을 그대로 읽었습니다</strong>
@@ -303,23 +319,25 @@ export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, on
               <button type="button" onClick={() => void stopCapture("manual")} className="danger-button"><CircleStop className="size-4" /> 녹음 종료 · {formatDuration(elapsedMs)}</button>
             ) : phase === "ready" || phase === "saving" || phase === "saved" ? (
               <>
-                <button type="button" onClick={() => void savePrepared()} disabled={phase === "saving" || phase === "saved"} className="primary-button !min-h-10 text-xs disabled:opacity-40">
-                  {phase === "saving" ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />} {phase === "saved" ? "저장됨" : "로컬에 저장"}
+                <button type="button" onClick={() => void savePrepared()} disabled={phase === "saving" || phase === "saved"} aria-busy={phase === "saving"} className="primary-button !min-h-10 text-xs disabled:opacity-40">
+                  {phase === "saving" ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Save className="size-4" />} {phase === "saved" ? "저장됨" : "로컬에 저장"}
                 </button>
                 <button type="button" onClick={discardAndRetry} disabled={phase === "saving"} className="secondary-button !min-h-10 text-xs disabled:opacity-40"><RotateCcw className="size-4" /> 다시 녹음</button>
               </>
             ) : (
-              <button type="button" onClick={() => void startCapture()} disabled={busy || !catalog} className="primary-button !min-h-10 text-xs disabled:opacity-40">
-                {phase === "requesting" ? <LoaderCircle className="size-4 animate-spin" /> : <Mic className="size-4" />} {phase === "requesting" ? "마이크 권한 확인 중" : "녹음 시작"}
+              <button type="button" onClick={() => void startCapture()} disabled={busy || !catalog} aria-busy={phase === "requesting"} className="primary-button !min-h-10 text-xs disabled:opacity-40">
+                {phase === "requesting" ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Mic className="size-4" />} {phase === "requesting" ? "마이크 권한 확인 중" : "녹음 시작"}
               </button>
             )}
-            {phase === "stopping" && <span className="inline-flex items-center gap-2 text-xs text-slate-400"><LoaderCircle className="size-4 animate-spin" /> WAV 만드는 중</span>}
+            {phase === "stopping" && <span role="status" className="inline-flex items-center gap-2 text-xs text-slate-400"><LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> WAV 만드는 중</span>}
+            {phase === "requesting" && <span role="status" className="sr-only">마이크 권한을 확인하는 중입니다.</span>}
+            {phase === "saving" && <span role="status" className="sr-only">녹음을 로컬에 저장하는 중입니다.</span>}
             {(phase === "recording" || prepared) && <span className="text-xs font-bold text-slate-500">{formatDuration(phase === "recording" ? elapsedMs : prepared?.durationMs ?? 0)} / 최대 120초</span>}
           </div>
 
-          {prepared && <audio className="mt-4 w-full" controls preload="metadata" src={prepared.url}>녹음 미리 듣기를 지원하지 않는 브라우저입니다.</audio>}
+          {prepared && <audio aria-label="녹음 미리 듣기" className="mt-4 w-full" controls preload="metadata" src={prepared.url}>녹음 미리 듣기를 지원하지 않는 브라우저입니다.</audio>}
           {displayedError && <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs leading-5 text-rose-100"><AlertTriangle className="mt-0.5 size-4 shrink-0" /> {displayedError}</div>}
-          {notice && <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.06] p-3 text-xs leading-5 text-emerald-100"><Check className="mt-0.5 size-4 shrink-0" /> {notice}</div>}
+          {notice && <div role="status" className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.06] p-3 text-xs leading-5 text-emerald-100"><Check className="mt-0.5 size-4 shrink-0" /> {notice}</div>}
 
           <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3 text-[11px] leading-5 text-slate-500">
             처리된 음성은 <code className="text-slate-300">test-fixtures/stt/audio/</code>에 저장되고 직접 삭제할 때까지 남습니다. 화자 label은 실제 이름이 아닌 가명입니다. WAV와 로컬 manifest는 Git·Docker에 포함되지 않습니다.
@@ -341,7 +359,7 @@ export function AudioFixtureRecorder({ catalog, catalogLoading, catalogError, on
         </>
       ) : (
         catalogLoading ? (
-          <div role="status" className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin" /> 개발용 녹음 설정을 불러오는 중입니다.</div>
+          <div role="status" className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3 text-xs text-slate-500"><LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> 개발용 녹음 설정을 불러오는 중입니다.</div>
         ) : (
           <div role="alert" className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-amber-100">{displayedError || "고정 실험 문장을 불러오지 못했습니다."}</div>
         )

@@ -1,45 +1,221 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   beginLiveStopRequest,
+  createFinalTranscriptLine,
+  createLectureWebSocket
+} from "./useLectureStream";
+import {
+  createLectureSessionDeadlineController,
+  LIVE_CAPTURE_PERMISSION_TIMEOUT_MS,
+  LIVE_FIRST_PCM_TIMEOUT_MS,
+  LIVE_SOCKET_OPEN_TIMEOUT_MS,
+  LIVE_START_HANDSHAKE_TIMEOUT_MS
+} from "./lecture-session-deadlines";
+import {
+  createPreReadyPcmQueue,
+  forwardLiveAudioChunk,
+  LIVE_AUDIO_MAX_BUFFERED_BYTES,
+  LIVE_AUDIO_MAX_BUFFERED_LAG_MS,
+  sendLiveAudioChunk
+} from "./live-audio-transport";
+import {
+  createLiveClientHandshakeState,
+  resolveLiveHandshakeView,
+  transitionLiveClientHandshake,
+  type LiveClientHandshakeEvent,
+  type LiveClientHandshakeState
+} from "./live-client-handshake";
+import {
   createCaptionReceiveToAfterPaintEstimator,
   createDevelopmentCaptionReceiveToAfterPaintEstimator,
   createDevelopmentLiveClientDiagnostics,
-  createFinalTranscriptLine,
-  forwardLiveAudioChunk,
   handleSocketTransportFailure,
-  LIVE_AUDIO_MAX_BUFFERED_BYTES,
-  LIVE_AUDIO_MAX_BUFFERED_LAG_MS,
-  LIVE_CAPTURE_READY_TIMEOUT_MS,
   resolveMissingLiveStopRequestDisposition,
-  resolveLiveReadiness,
-  resolveSocketTransportFailureDisposition,
-  sendLiveAudioChunk
-} from "./useLectureStream";
+  resolveSocketTransportFailureDisposition
+} from "./lecture-stream-diagnostics";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("useLectureStream session deadlines", () => {
+  it("times out a half-open WebSocket only while the same session still owns the deadline", async () => {
+    vi.useFakeTimers();
+    const controller = createLectureSessionDeadlineController();
+    const socket = {};
+    const onTimeout = vi.fn();
+
+    controller.arm("socket-open", socket, 7, LIVE_SOCKET_OPEN_TIMEOUT_MS, onTimeout);
+    await vi.advanceTimersByTimeAsync(LIVE_SOCKET_OPEN_TIMEOUT_MS - 1);
+    expect(onTimeout).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(onTimeout).toHaveBeenCalledOnce();
+    expect(controller.clear("socket-open", socket, 7)).toBe(false);
+  });
+
+  it("clears the open phase on success and independently bounds the start handshake", async () => {
+    vi.useFakeTimers();
+    const controller = createLectureSessionDeadlineController();
+    const socket = {};
+    const openTimedOut = vi.fn();
+    const handshakeTimedOut = vi.fn();
+
+    controller.arm("socket-open", socket, 2, LIVE_SOCKET_OPEN_TIMEOUT_MS, openTimedOut);
+    expect(controller.clear("socket-open", socket, 2)).toBe(true);
+    controller.arm("start-handshake", socket, 2, LIVE_START_HANDSHAKE_TIMEOUT_MS, handshakeTimedOut);
+    await vi.advanceTimersByTimeAsync(LIVE_START_HANDSHAKE_TIMEOUT_MS);
+
+    expect(openTimedOut).not.toHaveBeenCalled();
+    expect(handshakeTimedOut).toHaveBeenCalledOnce();
+  });
+
+  it("successful handshake, stop, and unmount-style clearAll prevent every late timeout", async () => {
+    vi.useFakeTimers();
+    const controller = createLectureSessionDeadlineController();
+    const socket = {};
+    const onTimeout = vi.fn();
+
+    controller.arm("start-handshake", socket, 4, LIVE_START_HANDSHAKE_TIMEOUT_MS, onTimeout);
+    expect(controller.clear("start-handshake", socket, 4)).toBe(true);
+    controller.arm("capture-permission", socket, 4, LIVE_CAPTURE_PERMISSION_TIMEOUT_MS, onTimeout);
+    controller.arm("first-pcm", socket, 4, LIVE_FIRST_PCM_TIMEOUT_MS, onTimeout);
+    expect(controller.clearSession(socket, 4)).toBe(2);
+    controller.arm("socket-open", socket, 4, LIVE_SOCKET_OPEN_TIMEOUT_MS, onTimeout);
+    expect(controller.clearAll()).toBe(1);
+    await vi.runAllTimersAsync();
+
+    expect(onTimeout).not.toHaveBeenCalled();
+  });
+
+  it("an old session cleanup cannot clear a restarted session's deadline", async () => {
+    vi.useFakeTimers();
+    const controller = createLectureSessionDeadlineController();
+    const oldSocket = {};
+    const newSocket = {};
+    const oldTimeout = vi.fn();
+    const newTimeout = vi.fn();
+
+    controller.arm("socket-open", oldSocket, 1, LIVE_SOCKET_OPEN_TIMEOUT_MS, oldTimeout);
+    controller.arm("socket-open", newSocket, 2, LIVE_SOCKET_OPEN_TIMEOUT_MS, newTimeout);
+    expect(controller.clearSession(oldSocket, 1)).toBe(0);
+    await vi.advanceTimersByTimeAsync(LIVE_SOCKET_OPEN_TIMEOUT_MS);
+
+    expect(oldTimeout).not.toHaveBeenCalled();
+    expect(newTimeout).toHaveBeenCalledOnce();
+  });
+});
 
 describe("useLectureStream live readiness and bounded audio transport", () => {
+  it("turns a synchronous WebSocket construction failure into data instead of throwing", () => {
+    const create = vi.fn(() => {
+      throw new Error("invalid WebSocket URL");
+    });
+
+    expect(createLectureWebSocket("ws://invalid.test/ws", create)).toEqual({ ok: false });
+    expect(create).toHaveBeenCalledWith("ws://invalid.test/ws");
+  });
+
+  it("returns the constructed WebSocket on the successful path", () => {
+    const socket = {} as WebSocket;
+    expect(createLectureWebSocket("wss://example.test/ws", () => socket)).toEqual({ ok: true, socket });
+  });
+
   it("declares ready only after provider config and the first PCM are both ready", () => {
-    expect(resolveLiveReadiness({ providerReady: false, captureReady: false })).toEqual({
+    let state: LiveClientHandshakeState = createLiveClientHandshakeState();
+    const advance = (event: LiveClientHandshakeEvent): void => {
+      const result = transitionLiveClientHandshake(state, event);
+      expect(result.ok).toBe(true);
+      if (result.ok) state = result.state;
+    };
+
+    expect(resolveLiveHandshakeView(state)).toEqual({
       ready: false,
-      message: "마이크와 Google STT를 연결하고 있습니다."
+      message: "음성 스트림을 준비하고 있습니다."
     });
-    expect(resolveLiveReadiness({ providerReady: true, captureReady: false })).toEqual({
+    advance({ type: "server-capture-requested" });
+    expect(resolveLiveHandshakeView(state)).toEqual({
       ready: false,
-      message: "마이크 입력을 확인하고 있습니다."
+      message: "마이크 권한과 입력을 확인하고 있습니다."
     });
-    expect(resolveLiveReadiness({ providerReady: false, captureReady: true })).toEqual({
+    advance({ type: "local-first-pcm" });
+    advance({ type: "local-capture-ready-sent" });
+    expect(resolveLiveHandshakeView(state)).toEqual({
       ready: false,
-      message: "Google STT 전송을 준비하고 있습니다."
+      message: "마이크가 준비되어 음성인식을 연결하고 있습니다."
     });
-    expect(resolveLiveReadiness({ providerReady: true, captureReady: true })).toEqual({
+    advance({ type: "server-ready-for-audio" });
+    expect(resolveLiveHandshakeView(state)).toEqual({
+      ready: false,
+      message: "AWS 음성인식 연결을 확인하고 있습니다."
+    });
+    advance({ type: "server-provider-accepted" });
+    expect(resolveLiveHandshakeView(state)).toEqual({
       ready: true,
-      message: "마이크와 Google STT가 준비되었습니다."
+      message: "마이크와 음성인식이 준비되었습니다."
     });
+  });
+
+  it("rejects undocumented and out-of-order live handshake events", () => {
+    const initial = createLiveClientHandshakeState();
+    const earlyAudio = transitionLiveClientHandshake(initial, { type: "server-ready-for-audio" });
+    expect(earlyAudio).toMatchObject({ ok: false, state: initial });
+
+    const requested = transitionLiveClientHandshake(initial, { type: "server-capture-requested" });
+    expect(requested.ok).toBe(true);
+    if (!requested.ok) return;
+    expect(
+      transitionLiveClientHandshake(requested.state, { type: "server-provider-accepted" })
+    ).toMatchObject({ ok: false, state: requested.state });
   });
 
   it("derives a 0.5 second browser high-water mark from the PCM byte rate", () => {
     expect(LIVE_AUDIO_MAX_BUFFERED_LAG_MS).toBe(500);
     expect(LIVE_AUDIO_MAX_BUFFERED_BYTES).toBe(16_000);
-    expect(LIVE_CAPTURE_READY_TIMEOUT_MS).toBe(3_000);
+    expect(LIVE_CAPTURE_PERMISSION_TIMEOUT_MS).toBe(30_000);
+    expect(LIVE_FIRST_PCM_TIMEOUT_MS).toBe(3_000);
+  });
+
+  it("preserves pre-ready PCM in FIFO order and closes the bounded queue after one flush", () => {
+    const queue = createPreReadyPcmQueue(4);
+    const sent: number[] = [];
+
+    expect(queue.enqueue(Uint8Array.from([1, 1]).buffer)).toBe("queued");
+    expect(queue.enqueue(Uint8Array.from([2, 2]).buffer)).toBe("queued");
+    expect(queue.queuedBytes()).toBe(4);
+    expect(queue.flush((audio) => {
+      sent.push(new Uint8Array(audio)[0] ?? -1);
+      return "sent";
+    })).toBe("flushed");
+
+    expect(sent).toEqual([1, 2]);
+    expect(queue.queuedBytes()).toBe(0);
+    expect(queue.enqueue(Uint8Array.from([3]).buffer)).toBe("closed");
+  });
+
+  it("rejects pre-ready audio beyond the 0.5-second memory bound without evicting older PCM", () => {
+    const queue = createPreReadyPcmQueue(3);
+    const first = Uint8Array.from([1, 2]).buffer;
+    const sent: number[] = [];
+
+    expect(queue.enqueue(first)).toBe("queued");
+    expect(queue.enqueue(Uint8Array.from([3, 4]).buffer)).toBe("overflow");
+    expect(queue.queuedBytes()).toBe(2);
+    expect(queue.flush((audio) => {
+      sent.push(...new Uint8Array(audio));
+      return "sent";
+    })).toBe("flushed");
+    expect(sent).toEqual([1, 2]);
+  });
+
+  it("clears unsent pre-ready PCM after the first transport failure", () => {
+    const queue = createPreReadyPcmQueue(8);
+    queue.enqueue(Uint8Array.from([1, 1]).buffer);
+    queue.enqueue(Uint8Array.from([2, 2]).buffer);
+
+    expect(queue.flush(() => "backpressure")).toBe("backpressure");
+    expect(queue.queuedBytes()).toBe(0);
+    expect(queue.flush(() => "sent")).toBe("unavailable");
   });
 
   it("sends within the bound and rejects projected stale backlog without adding another chunk", () => {
@@ -239,6 +415,8 @@ describe("useLectureStream final transcript mapping", () => {
     const result = createFinalTranscriptLine(
       {
         type: "final",
+        segmentId: "segment-rag",
+        revision: 2,
         text: "RAG와 다시 RAG",
         detectedTerms: ["rag", "rag"],
         relatedPage: 3
@@ -268,6 +446,8 @@ describe("useLectureStream final transcript mapping", () => {
     };
     const result = createFinalTranscriptLine({
       type: "final",
+      segmentId: "segment-corrected",
+      revision: 2,
       text: "RAG를 설명합니다.",
       rawText: "레그를 설명합니다.",
       detectedTerms: ["rag"],

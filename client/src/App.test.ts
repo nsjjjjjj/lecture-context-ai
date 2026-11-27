@@ -3,35 +3,49 @@ import { createElement, type FunctionComponent } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
-  ANALYSIS_STEP_ORDER,
   AnalyzingScreen,
   App,
   Header,
-  LIVE_CAPTION_CURRENT_KEY,
-  LIVE_CAPTION_PROMOTION_DURATION_MS,
-  LIVE_CAPTION_SIZE_CLASS,
   LiveCaptionRows,
   LiveCaptionSlot,
-  UPLOAD_CARD_GLOW_PROPS,
-  appRouteHash,
+  PresentationUploadCard,
+  ResultsScreen,
+} from "./App";
+import { presentationUploadFailureMessage } from "./features/upload/upload-card-model";
+import {
+  ANALYSIS_STEP_ORDER,
   analysisProgressPercent,
-  cancelCaptionAnimations,
-  calculateCaptionFlipDelta,
-  calculateHistoryRowScrollTop,
   completedAnalysisStepCount,
   createAnalysisStepState,
+  runPdfAnalysisSteps
+} from "./features/analysis/analysis-workflow";
+import {
+  LIVE_CAPTION_CURRENT_KEY,
+  LIVE_CAPTION_MAX_COMPOSED_CHARACTERS,
+  LIVE_CAPTION_PROMOTION_DURATION_MS,
+  LIVE_CAPTION_SIZE_CLASS,
+  calculateCaptionFlipDelta,
+  calculateHistoryRowScrollTop,
+  cancelCaptionAnimations,
+  captionJoinSeparator,
+  composeContextualCaptionLines,
   createLiveCaptionMotionSnapshot,
-  parseAppHash,
+  endsCaptionSentence,
+  mergeTranscriptLines,
+  resolveCaptionDisplayState,
+  resolveLiveCaptionPresentation,
   resolveLiveCaptionRowKey,
   resolveRetainedFinalPromotions,
-  resolveLiveCaptionPresentation,
-  runPdfAnalysisSteps,
-  runCaptionPromotionAnimations,
-  resolveAppRoute,
-  type AppRoute
-} from "./App";
+  resolveStableInterimPrefixLength,
+  runCaptionPromotionAnimations
+} from "./features/captions/live-caption-model";
+import { UPLOAD_CARD_GLOW_PROPS } from "./features/upload/upload-card-model";
+import { appRouteHash, parseAppHash, resolveAppRoute, type AppRoute } from "./app-route";
 import { requireNonEmptyGlossary, shouldSyncGlossaryStorageEvent } from "./app-state";
 import { createInitialLectureStreamState, lectureStreamReducer } from "./hooks/lecture-stream-state";
+import { materializeTranscriptLines } from "./hooks/transcript-store";
+import { GLOSSARY_STORAGE_KEY, GLOSSARY_STORAGE_RECOVERY_KEY } from "./lib/glossary-storage";
+import type { PresentationAsset } from "./lib/presentation";
 import type { AnalysisResult, TranscriptLine } from "./types";
 
 const transcriptLine = (id: string, text: string): TranscriptLine => ({
@@ -46,6 +60,63 @@ describe("upload screen interaction layers", () => {
   it("keeps the decorative glow out of pointer hit-testing", () => {
     expect(UPLOAD_CARD_GLOW_PROPS["aria-hidden"]).toBe(true);
     expect(UPLOAD_CARD_GLOW_PROPS.className.split(/\s+/)).toContain("pointer-events-none");
+  });
+
+  it("keeps the presentation PDF separate and exposes the analyzed PDF as an explicit shortcut", () => {
+    const emptyHtml = renderToStaticMarkup(createElement(PresentationUploadCard, {
+      presentation: null,
+      busy: false,
+      disabled: false,
+      error: "",
+      analysisFileAvailable: true,
+      onSelect: () => undefined,
+      onUseAnalysisFile: () => undefined,
+      onClear: () => undefined
+    }));
+    expect(emptyHtml).toContain("발표 PDF 선택");
+    expect(emptyHtml).toContain("분석한 PDF를 발표에 사용");
+    expect(emptyHtml).toContain("발표 PDF가 없어도 자막 모드로 시작할 수 있습니다.");
+
+    const presentation = {
+      id: "presentation-1",
+      name: "keynote.pdf",
+      file: {} as File,
+      objectUrl: "blob:presentation",
+      pageCount: 12
+    } satisfies PresentationAsset;
+    const selectedHtml = renderToStaticMarkup(createElement(PresentationUploadCard, {
+      presentation,
+      busy: false,
+      disabled: false,
+      error: "",
+      analysisFileAvailable: true,
+      onSelect: () => undefined,
+      onUseAnalysisFile: () => undefined,
+      onClear: () => undefined
+    }));
+    expect(selectedHtml).toContain("keynote.pdf");
+    expect(selectedHtml).toContain("12페이지 · 첫 페이지 미리보기 확인 가능");
+    expect(selectedHtml).toContain("발표 PDF 첫 페이지 미리보기");
+    expect(selectedHtml).toContain("제거");
+    expect(selectedHtml).not.toContain("분석한 PDF를 발표에 사용");
+  });
+
+  it("names both the attempted and retained presentation when replacement validation fails", () => {
+    const replacementMessage = presentationUploadFailureMessage(
+      new Error("암호화된 PDF는 열 수 없습니다."),
+      "새 발표.pdf",
+      "현재 발표.pdf"
+    );
+    const firstSelectionMessage = presentationUploadFailureMessage(
+      new Error("PDF 파일만 사용할 수 있습니다."),
+      "메모.txt"
+    );
+
+    expect(replacementMessage).toContain("‘새 발표.pdf’ 교체 실패");
+    expect(replacementMessage).toContain("기존 발표 PDF 유지: ‘현재 발표.pdf’");
+    expect(replacementMessage).toContain("그대로 시작하거나 다른 PDF를 선택하세요");
+    expect(firstSelectionMessage).toContain("‘메모.txt’ 선택 실패");
+    expect(firstSelectionMessage).toContain("발표 PDF 없이 자막 모드로 계속하세요");
   });
 });
 
@@ -129,24 +200,23 @@ describe("PDF analysis progress workflow", () => {
       resolved = true;
     });
 
-    await Promise.resolve();
-    expect(releases).toHaveLength(1);
+    await vi.waitFor(() => expect(releases).toHaveLength(1));
     expect(analyze).not.toHaveBeenCalled();
     expect(resolved).toBe(false);
 
     releases.shift()?.();
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(analyze).toHaveBeenCalledOnce();
-    expect(releases).toHaveLength(1);
+    await vi.waitFor(() => {
+      expect(analyze).toHaveBeenCalledOnce();
+      expect(releases).toHaveLength(1);
+    });
     expect(store).not.toHaveBeenCalled();
     expect(resolved).toBe(false);
 
     releases.shift()?.();
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(store).toHaveBeenCalledOnce();
-    expect(releases).toHaveLength(1);
+    await vi.waitFor(() => {
+      expect(store).toHaveBeenCalledOnce();
+      expect(releases).toHaveLength(1);
+    });
     expect(resolved).toBe(false);
 
     releases.shift()?.();
@@ -200,14 +270,141 @@ describe("PDF analysis progress workflow", () => {
     expect(completedAnalysisStepCount(states.at(-1)!)).toBe(2);
     expect(present).toHaveBeenCalledTimes(3);
   });
+
+  it("stops at the current boundary when the user cancels analysis", async () => {
+    const controller = new AbortController();
+    const states: Array<ReturnType<typeof createAnalysisStepState>> = [];
+    let finishExtract!: (pages: string[]) => void;
+    const analyze = vi.fn(async () => "analysis");
+    const store = vi.fn(() => ({ readyValue: "ready", completed: true }));
+    const workflow = runPdfAnalysisSteps({
+      extract: () => new Promise<string[]>((resolve) => {
+        finishExtract = resolve;
+      }),
+      analyze,
+      store,
+      onStateChange: (state) => states.push(state),
+      signal: controller.signal,
+      waitForPresentation: async () => undefined
+    });
+
+    await Promise.resolve();
+    controller.abort();
+    finishExtract(["page"]);
+
+    await expect(workflow).rejects.toMatchObject({ name: "AbortError" });
+    expect(states).toEqual([{ extract: "active", analyze: "pending", store: "pending" }]);
+    expect(analyze).not.toHaveBeenCalled();
+    expect(store).not.toHaveBeenCalled();
+  });
 });
 
 describe("live caption presentation", () => {
-  const firstFinal = transcriptLine("line-1", "첫 번째 확정 자막");
-  const secondFinal = transcriptLine("line-2", "두 번째 확정 자막");
-  const thirdFinal = transcriptLine("line-3", "세 번째 확정 자막");
-  const fourthFinal = transcriptLine("line-4", "네 번째 확정 자막");
+  it("keeps AWS stable partial text visually distinct while the unstable tail can still change", () => {
+    const segments = [
+      { segmentId: "one", revision: 1, text: "생성형 인공지능", stablePrefixLength: 3 },
+      { segmentId: "two", revision: 1, text: "강연" }
+    ];
+    const stablePrefixLength = resolveStableInterimPrefixLength(segments);
+    const presentation = resolveLiveCaptionPresentation([], "생성형 인공지능 강연", stablePrefixLength);
+    const html = renderToStaticMarkup(createElement(LiveCaptionRows, {
+      presentation,
+      terms: [],
+      sizeClass: LIVE_CAPTION_SIZE_CLASS.normal
+    }));
+
+    expect(stablePrefixLength).toBe(3);
+    expect(html).toContain('<span class="caption-live-stable">생성형</span>');
+    expect(html).toContain('<span class="caption-live-interim"> 인공지능 강연</span>');
+  });
+  const firstFinal = transcriptLine("line-1", "첫 번째 확정 자막.");
+  const secondFinal = transcriptLine("line-2", "두 번째 확정 자막.");
+  const thirdFinal = transcriptLine("line-3", "세 번째 확정 자막.");
+  const fourthFinal = transcriptLine("line-4", "네 번째 확정 자막.");
   const placeholder = { kind: "placeholder", text: "마이크에 대고 강연을 시작해 주세요." } as const;
+
+  it("composes provider final fragments until a contextual sentence boundary", () => {
+    const fragments = [
+      transcriptLine("fragment-1", "오늘은"),
+      transcriptLine("fragment-2", "생성형 AI를"),
+      transcriptLine("fragment-3", "설명합니다."),
+      transcriptLine("fragment-4", "다음 문장입니다.")
+    ];
+
+    expect(endsCaptionSentence("설명합니다.")).toBe(true);
+    expect(endsCaptionSentence("설명하는 중")).toBe(false);
+    expect(captionJoinSeparator("생성형 AI를", "설명합니다.")).toBe(" ");
+    expect(captionJoinSeparator("설명합니다", ", 이어집니다")).toBe("");
+    expect(composeContextualCaptionLines(fragments)).toEqual([
+      expect.objectContaining({
+        id: "fragment-1",
+        text: "오늘은 생성형 AI를 설명합니다."
+      }),
+      fragments[3]
+    ]);
+  });
+
+  it("starts a new display row before an unfinished sentence becomes a slide-covering paragraph", () => {
+    const first = transcriptLine("long-1", "가".repeat(LIVE_CAPTION_MAX_COMPOSED_CHARACTERS - 5));
+    const second = transcriptLine("long-2", "나".repeat(10));
+
+    expect(composeContextualCaptionLines([first, second])).toEqual([first, second]);
+  });
+
+  it("labels an empty live caption as waiting instead of confirmed", () => {
+    expect(resolveCaptionDisplayState("placeholder", "connecting")).toEqual({ state: "waiting", label: "대기" });
+    expect(resolveCaptionDisplayState("interim", "ready")).toEqual({ state: "partial", label: "인식 중" });
+    expect(resolveCaptionDisplayState("final", "ready")).toEqual({ state: "final", label: "확정" });
+    expect(resolveCaptionDisplayState("final", "error")).toEqual({ state: "error", label: "오류" });
+  });
+
+  it("keeps an unfinished confirmed prefix and its raw interim tail in one current paragraph", () => {
+    const unfinished = transcriptLine("fragment-1", "오늘은 생성형 AI를");
+    const presentation = resolveLiveCaptionPresentation([unfinished], "설명하고 있습니다");
+    const html = renderToStaticMarkup(createElement(LiveCaptionRows, {
+      presentation,
+      terms: [],
+      sizeClass: LIVE_CAPTION_SIZE_CLASS.normal
+    }));
+
+    expect(presentation).toEqual({
+      historyLines: [],
+      rows: [{ kind: "mixed", line: unfinished, interim: "설명하고 있습니다" }]
+    });
+    expect(html.match(/<p\b/g)).toHaveLength(1);
+    expect(html).toContain("오늘은 생성형 AI를");
+    expect(html).toContain("caption-live-interim");
+    expect(html).toContain("설명하고 있습니다");
+  });
+
+  it("preserves correction offsets and source events when composed", () => {
+    const prefix = transcriptLine("prefix", "오늘은");
+    const corrected: TranscriptLine = {
+      id: "corrected",
+      text: "RAG를 설명합니다.",
+      rawText: "레그를 설명합니다.",
+      termIds: ["rag"],
+      corrections: [{
+        originalText: "레그",
+        correctedText: "RAG",
+        termId: "rag",
+        displayStart: 0,
+        displayEnd: 3,
+        reason: "spokenAlias"
+      }]
+    };
+    const merged = mergeTranscriptLines(prefix, corrected);
+
+    expect(merged).toMatchObject({
+      id: "prefix",
+      text: "오늘은 RAG를 설명합니다.",
+      rawText: "오늘은 레그를 설명합니다.",
+      termIds: ["rag"]
+    });
+    expect(merged.corrections[0]).toMatchObject({ displayStart: 4, displayEnd: 7 });
+    expect(prefix.text).toBe("오늘은");
+    expect(corrected.corrections[0]).toMatchObject({ displayStart: 0, displayEnd: 3 });
+  });
 
   it.each([
     {
@@ -376,16 +573,16 @@ describe("live caption presentation", () => {
     };
     let state = createInitialLectureStreamState();
 
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim).rows.at(-1)?.kind).toBe("placeholder");
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim).rows.at(-1)?.kind).toBe("placeholder");
 
     state = lectureStreamReducer(state, { type: "interim", text: "레그를 설명합니다." });
-    const firstInterim = resolveLiveCaptionPresentation(state.lines, state.interim);
+    const firstInterim = resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim);
     expect(firstInterim).toEqual({
       historyLines: [], rows: [{ kind: "interim", text: "레그를 설명합니다." }]
     });
 
     state = lectureStreamReducer(state, { type: "interim", text: "레그를 자세히 설명합니다." });
-    const continuedInterim = resolveLiveCaptionPresentation(state.lines, state.interim);
+    const continuedInterim = resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim);
     expect(continuedInterim.rows).toHaveLength(firstInterim.rows.length);
     expect(continuedInterim.historyLines).toEqual(firstInterim.historyLines);
     expect(continuedInterim.rows.at(-1)).toEqual({ kind: "interim", text: "레그를 자세히 설명합니다." });
@@ -396,17 +593,17 @@ describe("live caption presentation", () => {
       occurrenceTermIds: ["rag"]
     });
     expect(state.interim).toBe("");
-    expect(state.lines[0]).toMatchObject({
+    expect(materializeTranscriptLines(state.transcript)[0]).toMatchObject({
       rawText: "레그를 설명합니다.",
       corrections: [correction]
     });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim)).toEqual({
       historyLines: [],
       rows: [{ kind: "final", line: correctedFirstFinal }]
     });
 
     state = lectureStreamReducer(state, { type: "interim", text: "두 번째 임시 자막" });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim)).toEqual({
       historyLines: [],
       rows: [
         { kind: "final", line: correctedFirstFinal },
@@ -414,7 +611,7 @@ describe("live caption presentation", () => {
       ]
     });
     state = lectureStreamReducer(state, { type: "final", line: secondFinal, occurrenceTermIds: [] });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim)).toEqual({
       historyLines: [],
       rows: [
         { kind: "final", line: correctedFirstFinal },
@@ -423,7 +620,7 @@ describe("live caption presentation", () => {
     });
 
     state = lectureStreamReducer(state, { type: "interim", text: "세 번째 임시 자막" });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim)).toEqual({
       historyLines: [],
       rows: [
         { kind: "final", line: correctedFirstFinal },
@@ -433,7 +630,7 @@ describe("live caption presentation", () => {
     });
 
     state = lectureStreamReducer(state, { type: "final", line: thirdFinal, occurrenceTermIds: [] });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim)).toEqual({
       historyLines: [],
       rows: [
         { kind: "final", line: correctedFirstFinal },
@@ -443,7 +640,7 @@ describe("live caption presentation", () => {
     });
 
     state = lectureStreamReducer(state, { type: "interim", text: "네 번째 임시 자막" });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim)).toEqual({
       historyLines: [correctedFirstFinal],
       rows: [
         { kind: "final", line: secondFinal },
@@ -453,7 +650,7 @@ describe("live caption presentation", () => {
     });
 
     state = lectureStreamReducer(state, { type: "final", line: fourthFinal, occurrenceTermIds: [] });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim)).toEqual({
       historyLines: [correctedFirstFinal],
       rows: [
         { kind: "final", line: secondFinal },
@@ -466,7 +663,7 @@ describe("live caption presentation", () => {
   it("renders a synthetic provider-response emission chain through the reducer and current DOM row", () => {
     const renderState = (state: ReturnType<typeof createInitialLectureStreamState>) =>
       renderToStaticMarkup(createElement(LiveCaptionRows, {
-        presentation: resolveLiveCaptionPresentation(state.lines, state.interim),
+        presentation: resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim),
         terms: [],
         sizeClass: LIVE_CAPTION_SIZE_CLASS.normal
       }));
@@ -516,13 +713,13 @@ describe("live caption presentation", () => {
     let state = createInitialLectureStreamState();
 
     state = lectureStreamReducer(state, { type: "final", line: firstFinal, occurrenceTermIds: [] });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim)).toEqual({
       historyLines: [],
       rows: [{ kind: "final", line: firstFinal }]
     });
 
     state = lectureStreamReducer(state, { type: "final", line: secondFinal, occurrenceTermIds: [] });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim)).toEqual({
       historyLines: [],
       rows: [
         { kind: "final", line: firstFinal },
@@ -531,7 +728,7 @@ describe("live caption presentation", () => {
     });
 
     state = lectureStreamReducer(state, { type: "final", line: thirdFinal, occurrenceTermIds: [] });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim)).toEqual({
       historyLines: [],
       rows: [
         { kind: "final", line: firstFinal },
@@ -541,7 +738,7 @@ describe("live caption presentation", () => {
     });
 
     state = lectureStreamReducer(state, { type: "final", line: fourthFinal, occurrenceTermIds: [] });
-    expect(resolveLiveCaptionPresentation(state.lines, state.interim)).toEqual({
+    expect(resolveLiveCaptionPresentation(materializeTranscriptLines(state.transcript), state.interim)).toEqual({
       historyLines: [firstFinal],
       rows: [
         { kind: "final", line: secondFinal },
@@ -601,7 +798,7 @@ describe("live caption presentation", () => {
     expect(html).not.toMatch(/line-clamp|truncate/);
   });
 
-  it("announces only the current bottom row as one atomic live-region update", () => {
+  it("keeps visual partial text silent and announces only confirmed text", () => {
     const html = renderToStaticMarkup(createElement(LiveCaptionRows, {
       presentation: resolveLiveCaptionPresentation([firstFinal, secondFinal], "다음 임시 자막"),
       terms: [],
@@ -618,8 +815,11 @@ describe("live caption presentation", () => {
     expect(rowTags).toHaveLength(3);
     expect(previousTags.every((tag) => !tag.includes("aria-live") && !tag.includes("aria-atomic"))).toBe(true);
     expect(currentTag).toContain('data-testid="live-caption-current"');
-    expect(currentTag).toContain('aria-live="polite"');
-    expect(currentTag).toContain('aria-atomic="true"');
+    expect(currentTag).not.toContain("aria-live");
+    expect(currentTag).not.toContain("aria-atomic");
+    expect(html).toContain('class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-caption-announcement-id="line-2"');
+    expect(html).toContain('>두 번째 확정 자막.</span>');
+    expect(html).not.toContain('aria-live="polite" aria-atomic="true">다음 임시 자막');
   });
 
   it("keeps one fixed current wrapper key across interim-to-final updates", () => {
@@ -791,6 +991,9 @@ describe("live caption presentation", () => {
 
     expect(liveLineRule).toBeDefined();
     expect(liveLineRule).toMatch(/min-height:\s*1\.32em/);
+    expect(liveLineRule).toMatch(/text-wrap:\s*wrap/);
+    expect(liveLineRule).toMatch(/overflow-wrap:\s*break-word/);
+    expect(liveLineRule).toMatch(/word-break:\s*normal/);
     expect(liveLineRule).not.toMatch(/\b(?:animation(?:-[\w-]+)?|opacity|transform)\s*:/);
     expect(stackRule).toMatch(/min-height:\s*calc\(3\.96em \+ 24px\)/);
     expect(stackRule).toMatch(/grid-auto-rows:\s*minmax\(1\.32em, auto\)/);
@@ -814,6 +1017,32 @@ describe("live caption presentation", () => {
     expect(highContrastInterimRule).toMatch(/color:\s*#e2e8f0/);
     expect(interimRule).not.toMatch(/font-size/);
     expect(highContrastInterimRule).not.toMatch(/font-size/);
+  });
+
+  it("keeps text-only captions readable on bright slides without enabling the opaque scrim", () => {
+    const stylesheet = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+    const scrimRule = stylesheet.match(/\.presentation-caption-overlay::before\s*\{([^}]*)\}/)?.[1];
+
+    expect(scrimRule).toMatch(/opacity:\s*0/);
+    expect(stylesheet).toContain("-webkit-text-stroke: .035em var(--color-stage-canvas)");
+    expect(stylesheet).toContain("paint-order: stroke fill");
+    expect(stylesheet).toContain("-1px -1px 1px var(--color-stage-canvas)");
+    expect(stylesheet).toContain("1px 1px 1px var(--color-stage-canvas)");
+    expect(stylesheet).toContain(".presentation-caption-overlay mark { -webkit-text-stroke: 0; text-shadow: none; }");
+  });
+
+  it("keeps presentation controls inside 667x375 landscape, 320x568, and 200% zoom viewports", () => {
+    const stylesheet = readFileSync(new URL("./styles.css", import.meta.url), "utf8");
+    const stageRule = stylesheet.match(/\.presentation-stage\s*\{([^}]*)\}/)?.[1];
+    const fullscreenRule = stylesheet.match(/\.presentation-stage:fullscreen\s*\{([^}]*)\}/)?.[1];
+
+    expect(stageRule).toMatch(/height:\s*100dvh/);
+    expect(stageRule).toMatch(/min-height:\s*0/);
+    expect(stageRule).not.toMatch(/min-height:\s*32rem/);
+    expect(fullscreenRule).toMatch(/min-height:\s*0/);
+    expect(stylesheet).toContain("@media (max-height: 31.99rem)");
+    expect(stylesheet).toContain("max-height: calc(100dvh - 16px)");
+    expect(stylesheet).toContain("overflow-y: auto");
   });
 });
 
@@ -892,7 +1121,7 @@ describe("lecture route isolation", () => {
 
   it("renders the requested experiment panel on refresh and lecture for an invalid hash", () => {
     const experimentHtml = renderToStaticMarkup(createElement(TestableApp, { initialHash: "#/experiment/results" }));
-    expect(experimentHtml).toContain('data-testid="experiment-task-results"');
+    expect(experimentHtml).toContain("STT 실험실 불러오는 중");
     expect(experimentHtml).not.toContain("PDF를 여기에 놓아주세요");
 
     const fallbackHtml = renderToStaticMarkup(createElement(TestableApp, { initialHash: "#/invalid" }));
@@ -915,8 +1144,52 @@ describe("app glossary state guards", () => {
   });
 
   it("refreshes only for this glossary store or a browser-wide storage clear", () => {
-    expect(shouldSyncGlossaryStorageEvent("lecture-context-ai.glossaries")).toBe(true);
+    expect(shouldSyncGlossaryStorageEvent(GLOSSARY_STORAGE_KEY)).toBe(true);
+    expect(shouldSyncGlossaryStorageEvent(GLOSSARY_STORAGE_RECOVERY_KEY)).toBe(true);
     expect(shouldSyncGlossaryStorageEvent(null)).toBe(true);
     expect(shouldSyncGlossaryStorageEvent("another-app.key")).toBe(false);
+  });
+});
+
+describe("session result preservation", () => {
+  it("offers complete exports and explains the loss boundary before navigation", () => {
+    const state = lectureStreamReducer(createInitialLectureStreamState(), {
+      type: "final",
+      line: transcriptLine("line-1", "확정 자막입니다."),
+      occurrenceTermIds: []
+    });
+    const analysis: AnalysisResult = {
+      title: "결과 보존 강연",
+      pages: [{ pageNumber: 1, text: "확정 자막입니다." }],
+      terms: [{
+        id: "term-1",
+        term: "자막",
+        english: "caption",
+        spokenAliases: [],
+        easyExplanation: "말을 화면에 표시한 글",
+        pageNumber: 1,
+        occurrences: 1,
+        source: "demo"
+      }],
+      phraseSet: ["자막"],
+      mode: "demo"
+    };
+
+    const html = renderToStaticMarkup(createElement(ResultsScreen, {
+      analysis,
+      transcript: state.transcript,
+      outcome: { status: "completed", reason: "server-ended", message: "완료" },
+      lastMode: "live",
+      exportState: { status: "not-exported", busy: false, error: "" },
+      exportActions: { json: () => undefined, text: () => undefined, confirm: () => undefined },
+      onRestart: () => undefined,
+      onReady: () => undefined,
+      onHome: () => undefined
+    }));
+
+    expect(html).toContain("결과 JSON 저장");
+    expect(html).toContain("자막 TXT 저장");
+    expect(html).toContain("파일 생성을 확인하지 않고 나가면 확인 창");
+    expect(html).toContain("AWS 자막 스트림이 끝났고 마지막 확정 자막까지 수신했습니다.");
   });
 });

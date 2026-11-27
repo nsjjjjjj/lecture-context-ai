@@ -12,18 +12,21 @@ const rag: GlossaryTerm = {
   occurrences: 1,
   source: "demo"
 };
+const segment = { segmentId: "segment-1", revision: 1 };
 
 describe("transparent final caption correction", () => {
   it("never rewrites or annotates interim captions", () => {
-    expect(createTranscriptEvent("레그를 설명합니다", false, [rag])).toEqual({
-      type: "interim",
+    expect(createTranscriptEvent("레그를 설명합니다", false, [rag], segment)).toEqual({
+      type: "partial",
+      ...segment,
       text: "레그를 설명합니다"
     });
   });
 
   it("corrects repeated aliases left-to-right while preserving raw text and occurrence order", () => {
-    expect(createTranscriptEvent("레그와 래그를 비교합니다.", true, [rag])).toEqual({
+    expect(createTranscriptEvent("레그와 래그를 비교합니다.", true, [rag], segment)).toEqual({
       type: "final",
+      ...segment,
       text: "RAG와 RAG를 비교합니다.",
       rawText: "레그와 래그를 비교합니다.",
       detectedTerms: ["rag", "rag"],
@@ -36,7 +39,7 @@ describe("transparent final caption correction", () => {
   });
 
   it("connects canonical and English forms without labeling them as corrections", () => {
-    const event = createTranscriptEvent("RAG와 Retrieval-Augmented Generation", true, [rag]);
+    const event = createTranscriptEvent("RAG와 Retrieval-Augmented Generation", true, [rag], segment);
 
     expect(event.text).toBe("RAG와 Retrieval-Augmented Generation");
     expect(event.detectedTerms).toEqual(["rag", "rag"]);
@@ -57,7 +60,7 @@ describe("transparent final caption correction", () => {
       spokenAliases: ["버트"]
     };
 
-    expect(createTranscriptEvent("버트를 사용합니다.", true, [bert])).toMatchObject({
+    expect(createTranscriptEvent("버트를 사용합니다.", true, [bert], segment)).toMatchObject({
       text: "BERT를 사용합니다.",
       rawText: "버트를 사용합니다.",
       detectedTerms: ["bert"],
@@ -74,8 +77,9 @@ describe("transparent final caption correction", () => {
       spokenAliases: ["사과"]
     };
 
-    expect(createTranscriptEvent("사과를 먹습니다.", true, [api])).toEqual({
+    expect(createTranscriptEvent("사과를 먹습니다.", true, [api], segment)).toEqual({
       type: "final",
+      ...segment,
       text: "사과를 먹습니다.",
       rawText: "사과를 먹습니다.",
       detectedTerms: [],
@@ -85,21 +89,22 @@ describe("transparent final caption correction", () => {
   });
 
   it("does not correct ambiguous 레그 before a separate Korean word", () => {
-    expect(createTranscriptEvent("레그 프레스를 합니다.", true, [rag])).toEqual({
+    expect(createTranscriptEvent("레그 프레스를 합니다.", true, [rag], segment)).toEqual({
       type: "final",
+      ...segment,
       text: "레그 프레스를 합니다.",
       rawText: "레그 프레스를 합니다.",
       detectedTerms: [],
       relatedPage: undefined,
       corrections: []
     });
-    expect(createTranscriptEvent("레그는 기술입니다.", true, [rag]).text).toBe("RAG는 기술입니다.");
+    expect(createTranscriptEvent("레그는 기술입니다.", true, [rag], segment).text).toBe("RAG는 기술입니다.");
   });
 
   it("chooses the longest candidate and never creates overlapping replacements", () => {
     const short = { ...rag, id: "short", term: "생성형", english: "", spokenAliases: [] };
     const long = { ...rag, id: "long", term: "생성형 AI", english: "", spokenAliases: [] };
-    const event = createTranscriptEvent("생성형 AI를 적용합니다", true, [short, long]);
+    const event = createTranscriptEvent("생성형 AI를 적용합니다", true, [short, long], segment);
 
     expect(event.text).toBe("생성형 AI를 적용합니다");
     expect(event.detectedTerms).toEqual(["long"]);
@@ -109,7 +114,7 @@ describe("transparent final caption correction", () => {
   it("does not duplicate one source glyph when NFKC expands it into multiple matches", () => {
     const kilo = { ...rag, id: "kilo", term: "キロ", english: "", spokenAliases: [] };
     const meter = { ...rag, id: "meter", term: "メートル", english: "", spokenAliases: [] };
-    const event = createTranscriptEvent("㌖", true, [kilo, meter]);
+    const event = createTranscriptEvent("㌖", true, [kilo, meter], segment);
 
     expect(event.text).toBe("㌖");
     expect(event.rawText).toBe("㌖");

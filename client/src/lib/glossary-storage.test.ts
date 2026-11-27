@@ -3,12 +3,18 @@ import { loadStoredGlossaryReadyState } from "../app-state";
 import { createLectureStartMessage } from "../hooks/lecture-stream-state";
 import type { AnalysisResult, GlossaryTerm } from "../types";
 import {
+  clearGlossaryStorageBackups,
   clearStoredGlossaries,
   deleteStoredGlossary,
+  exportGlossaryStorageRecoveryBundle,
   GLOSSARY_STORAGE_KEY,
+  GLOSSARY_STORAGE_RECOVERY_KEY,
   glossaryStorageErrorMessage,
+  listGlossaryStorageBackups,
   listStoredGlossaries,
+  recoverStoredGlossaryData,
   renameStoredGlossary,
+  restoreGlossaryStorageBackup,
   saveAnalyzedGlossary,
   type GlossaryStorageAdapter
 } from "./glossary-storage";
@@ -44,7 +50,7 @@ function term(overrides: Partial<GlossaryTerm> = {}): GlossaryTerm {
 }
 
 function analysis(overrides: Partial<AnalysisResult> = {}): AnalysisResult {
-  return {
+  const result: AnalysisResult & { pdfUrl: string } = {
     title: "생성형 AI 강연",
     pages: [{ pageNumber: 3, text: "민감한 PDF 추출 페이지 텍스트" }],
     terms: [term()],
@@ -54,6 +60,7 @@ function analysis(overrides: Partial<AnalysisResult> = {}): AnalysisResult {
     pdfUrl: "blob:https://example.test/private-pdf",
     ...overrides
   };
+  return result;
 }
 
 afterEach(() => {
@@ -166,6 +173,137 @@ describe("browser glossary storage v3", () => {
     expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "invalid" }));
   });
 
+  it("isolates one malformed glossary, keeps valid glossaries loadable, and preserves the exact source", () => {
+    const storage = new MemoryStorage();
+    const saved = saveAnalyzedGlossary(storage, analysis(), "정상 용어집", {
+      id: "valid-glossary",
+      now: "2026-08-08T01:00:00.000Z"
+    });
+    const source = JSON.stringify({
+      version: 3,
+      glossaries: [
+        saved,
+        {
+          ...saved,
+          id: "broken-glossary",
+          name: "손상된 용어집",
+          terms: [{ ...saved.terms[0], pageNumber: 0 }]
+        }
+      ]
+    });
+    storage.setItem(GLOSSARY_STORAGE_KEY, source);
+
+    expect(listStoredGlossaries(storage)).toEqual([saved]);
+    expect(JSON.parse(storage.getItem(GLOSSARY_STORAGE_KEY) || "{}")).toEqual({
+      version: 3,
+      glossaries: [saved]
+    });
+
+    const backups = listGlossaryStorageBackups(storage);
+    expect(backups).toHaveLength(1);
+    expect(backups[0]).toMatchObject({ reason: "entry-salvage", sourceVersion: 3, raw: source });
+    expect(JSON.parse(backups[0]!.raw).glossaries[1].id).toBe("broken-glossary");
+
+    const bundle = JSON.parse(exportGlossaryStorageRecoveryBundle(
+      storage,
+      "2026-08-08T01:05:00.000Z"
+    ));
+    expect(bundle).toMatchObject({
+      version: 1,
+      exportedAt: "2026-08-08T01:05:00.000Z",
+      backups: [{ raw: source }]
+    });
+  });
+
+  it("does not rewrite a malformed envelope until explicit lossless recovery", () => {
+    const storage = new MemoryStorage();
+    const saved = saveAnalyzedGlossary(storage, analysis(), "정상 용어집", {
+      id: "valid-in-envelope",
+      now: "2026-08-08T01:00:00.000Z"
+    });
+    const source = JSON.stringify({ version: 3, glossaries: [saved], unexpected: "preserve me" });
+    storage.setItem(GLOSSARY_STORAGE_KEY, source);
+
+    expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "invalid" }));
+    expect(storage.getItem(GLOSSARY_STORAGE_KEY)).toBe(source);
+    expect(listGlossaryStorageBackups(storage)).toEqual([]);
+
+    const recovered = recoverStoredGlossaryData(storage, "2026-08-08T01:10:00.000Z");
+    expect(recovered).toMatchObject({ glossaries: [saved], rejectedCount: 0 });
+    expect(recovered.backup).toMatchObject({ reason: "manual-recovery", raw: source });
+    expect(listStoredGlossaries(storage)).toEqual([saved]);
+    expect(listGlossaryStorageBackups(storage)[0]?.raw).toBe(source);
+  });
+
+  it("backs up malformed JSON and unsupported versions exactly before starting a clean store", () => {
+    const malformedStorage = new MemoryStorage();
+    malformedStorage.setItem(GLOSSARY_STORAGE_KEY, "{not-json");
+
+    const malformedRecovery = recoverStoredGlossaryData(
+      malformedStorage,
+      "2026-08-08T01:20:00.000Z"
+    );
+    expect(malformedRecovery).toMatchObject({ glossaries: [], rejectedCount: 1 });
+    expect(malformedRecovery.backup?.raw).toBe("{not-json");
+    expect(listStoredGlossaries(malformedStorage)).toEqual([]);
+
+    const futureStorage = new MemoryStorage();
+    const futureSource = JSON.stringify({ version: 99, glossaries: [{ future: true }] });
+    futureStorage.setItem(GLOSSARY_STORAGE_KEY, futureSource);
+
+    expect(() => listStoredGlossaries(futureStorage)).toThrowError(expect.objectContaining({ code: "version" }));
+    const futureRecovery = recoverStoredGlossaryData(
+      futureStorage,
+      "2026-08-08T01:21:00.000Z"
+    );
+    expect(futureRecovery).toMatchObject({ glossaries: [], rejectedCount: 1 });
+    expect(futureRecovery.backup).toMatchObject({ sourceVersion: 99, raw: futureSource });
+    expect(listStoredGlossaries(futureStorage)).toEqual([]);
+  });
+
+  it("restores an exact backup without deleting the active store or the backup history", () => {
+    const storage = new MemoryStorage();
+    const unsupportedSource = JSON.stringify({ version: 99, glossaries: [{ future: true }] });
+    storage.setItem(GLOSSARY_STORAGE_KEY, unsupportedSource);
+    const recovery = recoverStoredGlossaryData(storage, "2026-08-08T01:30:00.000Z");
+    const cleanSource = storage.getItem(GLOSSARY_STORAGE_KEY);
+
+    restoreGlossaryStorageBackup(storage, recovery.backup!.id);
+
+    expect(storage.getItem(GLOSSARY_STORAGE_KEY)).toBe(unsupportedSource);
+    expect(listGlossaryStorageBackups(storage).map((candidate) => candidate.raw)).toEqual(
+      expect.arrayContaining([unsupportedSource, cleanSource])
+    );
+    expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "version" }));
+
+    clearGlossaryStorageBackups(storage);
+    expect(storage.getItem(GLOSSARY_STORAGE_RECOVERY_KEY)).toBeNull();
+    expect(storage.getItem(GLOSSARY_STORAGE_KEY)).toBe(unsupportedSource);
+  });
+
+  it("exports the exact recovery-store source even when its envelope is malformed", () => {
+    const storage = new MemoryStorage();
+    const activeSource = JSON.stringify({ version: 3, glossaries: [] });
+    const malformedRecoverySource = "{not-valid-recovery-json";
+    storage.setItem(GLOSSARY_STORAGE_KEY, activeSource);
+    storage.setItem(GLOSSARY_STORAGE_RECOVERY_KEY, malformedRecoverySource);
+
+    const bundle = JSON.parse(exportGlossaryStorageRecoveryBundle(
+      storage,
+      "2026-08-08T01:45:00.000Z"
+    ));
+
+    expect(bundle).toMatchObject({
+      version: 1,
+      exportedAt: "2026-08-08T01:45:00.000Z",
+      activeStoreRaw: activeSource,
+      recoveryStoreRaw: malformedRecoverySource,
+      backups: null,
+      recoveryStoreIssue: { code: "invalid" }
+    });
+    expect(storage.getItem(GLOSSARY_STORAGE_RECOVERY_KEY)).toBe(malformedRecoverySource);
+  });
+
   it("rejects an unsupported schema version without rewriting it", () => {
     const storage = new MemoryStorage();
     const raw = JSON.stringify({ version: 4, glossaries: [] });
@@ -201,7 +339,7 @@ describe("browser glossary storage v3", () => {
     const storage = new MemoryStorage();
     const legacyTerm = { ...term() } as Record<string, unknown>;
     delete legacyTerm.spokenAliases;
-    storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify({
+    const source = JSON.stringify({
       version: 1,
       glossaries: [{
         id: "legacy-glossary",
@@ -211,7 +349,8 @@ describe("browser glossary storage v3", () => {
         terms: [legacyTerm],
         phraseSet: ["RAG", "Retrieval-Augmented Generation"]
       }]
-    }));
+    });
+    storage.setItem(GLOSSARY_STORAGE_KEY, source);
 
     const migrated = listStoredGlossaries(storage);
 
@@ -223,6 +362,11 @@ describe("browser glossary storage v3", () => {
     expect(JSON.parse(storage.getItem(GLOSSARY_STORAGE_KEY) || "{}")).toMatchObject({
       version: 3,
       glossaries: [{ id: "legacy-glossary", terms: [{ spokenAliases: [] }] }]
+    });
+    expect(listGlossaryStorageBackups(storage)[0]).toMatchObject({
+      reason: "schema-migration",
+      sourceVersion: 1,
+      raw: source
     });
   });
 
@@ -289,6 +433,20 @@ describe("browser glossary storage v3", () => {
     expect(saved.phraseSet).toEqual(["RAG", "Retrieval-Augmented Generation", "Transformer"]);
   });
 
+  it("canonicalizes term IDs before deduplication so the client and server keep the same terms", () => {
+    const storage = new MemoryStorage();
+    const saved = saveAnalyzedGlossary(storage, analysis({
+      terms: [
+        term({ id: "same", term: "RAG" }),
+        term({ id: " same ", term: "Transformer", english: "Transformer", spokenAliases: ["트랜스포머"] })
+      ],
+      phraseSet: ["RAG", "Retrieval-Augmented Generation"]
+    }), "ID 정규화");
+
+    expect(saved.terms).toHaveLength(1);
+    expect(saved.terms[0]?.id).toBe("same");
+  });
+
   it("deduplicates identical content regardless of term and PhraseSet order", () => {
     const storage = new MemoryStorage();
     const transformer = term({
@@ -313,6 +471,24 @@ describe("browser glossary storage v3", () => {
     expect(listStoredGlossaries(storage)).toEqual([second]);
   });
 
+  it("never moves updatedAt backwards when the device clock rolls back", () => {
+    const storage = new MemoryStorage();
+    const original = saveAnalyzedGlossary(storage, analysis(), "강연", {
+      id: "clock-safe",
+      now: "2026-08-08T10:00:00.000Z"
+    });
+    const renamed = renameStoredGlossary(storage, original.id, "바뀐 이름", "2026-08-08T12:00:00.000Z");
+    const savedAgain = saveAnalyzedGlossary(storage, analysis(), "바뀐 이름", {
+      id: original.id,
+      now: "2026-08-08T11:00:00.000Z"
+    });
+    const renamedWithOlderClock = renameStoredGlossary(storage, original.id, "다시 바뀐 이름", "2026-08-08T09:00:00.000Z");
+
+    expect(renamed.updatedAt).toBe("2026-08-08T12:00:00.000Z");
+    expect(savedAgain.updatedAt).toBe("2026-08-08T12:00:00.000Z");
+    expect(renamedWithOlderClock.updatedAt).toBe("2026-08-08T12:00:00.000Z");
+  });
+
   it("reports the 50-item limit without discarding existing glossaries", () => {
     const storage = new MemoryStorage();
     for (let index = 0; index < 50; index += 1) {
@@ -326,6 +502,34 @@ describe("browser glossary storage v3", () => {
       id: "glossary-50",
       now: "2026-08-08T02:31:00.000Z"
     })).toThrowError(expect.objectContaining({ code: "limit" }));
+    expect(listStoredGlossaries(storage)).toHaveLength(50);
+  });
+
+  it("preserves an over-limit source and explicitly recovers the 50 newest glossaries", () => {
+    const storage = new MemoryStorage();
+    const base = saveAnalyzedGlossary(storage, analysis(), "기준", {
+      id: "base",
+      now: "2026-08-08T00:00:00.000Z"
+    });
+    const glossaries = Array.from({ length: 51 }, (_, index) => ({
+      ...base,
+      id: `over-limit-${index}`,
+      name: `용어집 ${index}`,
+      createdAt: new Date(Date.UTC(2026, 7, 8, 0, 0, index)).toISOString(),
+      updatedAt: new Date(Date.UTC(2026, 7, 8, 0, 0, index)).toISOString()
+    }));
+    const source = JSON.stringify({ version: 3, glossaries });
+    storage.setItem(GLOSSARY_STORAGE_KEY, source);
+
+    expect(() => listStoredGlossaries(storage)).toThrowError(expect.objectContaining({ code: "limit" }));
+    expect(storage.getItem(GLOSSARY_STORAGE_KEY)).toBe(source);
+
+    const recovered = recoverStoredGlossaryData(storage, "2026-08-08T02:40:00.000Z");
+    expect(recovered.glossaries).toHaveLength(50);
+    expect(recovered.rejectedCount).toBe(1);
+    expect(recovered.glossaries[0]?.id).toBe("over-limit-50");
+    expect(recovered.glossaries.at(-1)?.id).toBe("over-limit-1");
+    expect(recovered.backup?.raw).toBe(source);
     expect(listStoredGlossaries(storage)).toHaveLength(50);
   });
 
@@ -368,6 +572,33 @@ describe("browser glossary storage v3", () => {
     }
     expect(caught).toMatchObject({ code: "quota" });
     expect(glossaryStorageErrorMessage(caught)).toContain("저장 공간이 부족");
+  });
+
+  it("keeps a mixed source readable but blocks mutation when a lossless backup cannot fit", () => {
+    class RecoveryQuotaStorage extends MemoryStorage {
+      override setItem(key: string, value: string): void {
+        if (key === GLOSSARY_STORAGE_RECOVERY_KEY) throw { name: "QuotaExceededError" };
+        super.setItem(key, value);
+      }
+    }
+
+    const storage = new RecoveryQuotaStorage();
+    const seed = new MemoryStorage();
+    const saved = saveAnalyzedGlossary(seed, analysis(), "정상 용어집", {
+      id: "quota-valid",
+      now: "2026-08-08T05:10:00.000Z"
+    });
+    const source = JSON.stringify({
+      version: 3,
+      glossaries: [saved, { ...saved, id: "quota-invalid", terms: [] }]
+    });
+    storage.setItem(GLOSSARY_STORAGE_KEY, source);
+
+    expect(listStoredGlossaries(storage)).toEqual([saved]);
+    expect(storage.getItem(GLOSSARY_STORAGE_KEY)).toBe(source);
+    expect(() => renameStoredGlossary(storage, saved.id, "덮어쓰면 안 됨"))
+      .toThrowError(expect.objectContaining({ code: "quota" }));
+    expect(storage.getItem(GLOSSARY_STORAGE_KEY)).toBe(source);
   });
 });
 

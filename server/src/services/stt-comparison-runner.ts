@@ -229,7 +229,7 @@ export async function executeSttComparisonRun(
           playbackStarted = true;
           readyAfterMs = Date.now() - startedAtMs;
           void replay().catch((error: unknown) => finish("error", errorMessage(error)));
-        } else if (event.type === "interim") {
+        } else if (event.type === "partial") {
           interimCount += 1;
         } else if (event.type === "final" && event.text) {
           finalTranscripts.push(comparisonFinalTranscriptSchema.parse({

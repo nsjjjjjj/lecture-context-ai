@@ -1,5 +1,6 @@
 import {
   GLOSSARY_STORAGE_KEY,
+  GLOSSARY_STORAGE_RECOVERY_KEY,
   loadStoredGlossaryForLecture,
   type GlossaryStorageAdapter
 } from "./lib/glossary-storage";
@@ -30,5 +31,5 @@ export function requireNonEmptyGlossary(analysis: AnalysisResult): AnalysisResul
 }
 
 export function shouldSyncGlossaryStorageEvent(key: string | null): boolean {
-  return key === null || key === GLOSSARY_STORAGE_KEY;
+  return key === null || key === GLOSSARY_STORAGE_KEY || key === GLOSSARY_STORAGE_RECOVERY_KEY;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BarChart3, FileSliders, FlaskConical, LoaderCircle, Mic2, Play } from "lucide-react";
 import {
   getAudioFixtures,
@@ -13,6 +13,71 @@ import { ExperimentSetup } from "./ExperimentSetup";
 import { SttComparisonResults } from "./SttComparisonResults";
 
 export type ExperimentPanel = "setup" | "record" | "run" | "results";
+
+type AsyncResource<T> = {
+  data: T;
+  loading: boolean;
+  error: string;
+};
+
+export type ExperimentWorkspaceResources = {
+  fixtures: AsyncResource<AudioFixtureCatalog | null>;
+  studies: AsyncResource<ExperimentStudy[]>;
+};
+
+export type ExperimentWorkspaceActions = {
+  changePanel: (panel: ExperimentPanel) => void;
+  recordingSaved: (recording: AudioFixtureRecording) => void;
+  resultReady: (fileName: string) => void;
+  studiesChanged: () => Promise<void>;
+};
+
+type LatestResourceLoader<T> = {
+  load: () => Promise<boolean>;
+  invalidate: () => void;
+};
+
+/**
+ * Owns one resource's request generation. A late response can never replace a
+ * newer response, and each resource publishes as soon as its own request ends.
+ */
+export function createLatestResourceLoader<T>({
+  request,
+  onStart,
+  onSuccess,
+  onError,
+  onSettled
+}: {
+  request: () => Promise<T>;
+  onStart: () => void;
+  onSuccess: (value: T) => void;
+  onError: (error: unknown) => void;
+  onSettled: () => void;
+}): LatestResourceLoader<T> {
+  let generation = 0;
+
+  return {
+    async load() {
+      const requestGeneration = ++generation;
+      onStart();
+      try {
+        const value = await request();
+        if (requestGeneration !== generation) return false;
+        onSuccess(value);
+        return true;
+      } catch (error) {
+        if (requestGeneration !== generation) return false;
+        onError(error);
+        return false;
+      } finally {
+        if (requestGeneration === generation) onSettled();
+      }
+    },
+    invalidate() {
+      generation += 1;
+    }
+  };
+}
 
 const PANEL_DETAILS: Record<ExperimentPanel, {
   number: number;
@@ -63,37 +128,25 @@ export function appendRecordingToCatalog(
 
 export function ExperimentWorkspaceView({
   panel,
-  catalog,
-  catalogLoading,
-  catalogError,
   glossaries = [],
-  studies = [],
-  studiesLoading = false,
-  studiesError = "",
+  resources,
+  actions,
   focusRequest = 0,
-  onPanelChange,
-  onRecordingSaved,
-  onResultReady,
-  onCatalogChanged = async () => undefined
 }: {
   panel: ExperimentPanel;
-  catalog: AudioFixtureCatalog | null;
-  catalogLoading: boolean;
-  catalogError: string;
   glossaries?: StoredGlossary[];
-  studies?: ExperimentStudy[];
-  studiesLoading?: boolean;
-  studiesError?: string;
+  resources: ExperimentWorkspaceResources;
+  actions: ExperimentWorkspaceActions;
   focusRequest?: number;
-  onPanelChange: (panel: ExperimentPanel) => void;
-  onRecordingSaved: (recording: AudioFixtureRecording) => void;
-  onResultReady: (fileName: string) => void;
-  onCatalogChanged?: () => Promise<void>;
 }) {
   const headingRef = useRef<HTMLHeadingElement | null>(null);
   const previousPanelRef = useRef(panel);
   const details = PANEL_DETAILS[panel];
   const PanelIcon = details.icon;
+  const activeResource = panel === "record" || panel === "run" ? resources.fixtures : resources.studies;
+  const activeResourceLabel = panel === "record" || panel === "run"
+    ? `로컬 녹음 ${resources.fixtures.data?.recordings.length ?? 0}개 준비됨`
+    : `실험 세트 ${resources.studies.data.length}개 준비됨`;
 
   useEffect(() => {
     const panelChanged = previousPanelRef.current !== panel;
@@ -102,7 +155,7 @@ export function ExperimentWorkspaceView({
   }, [focusRequest, panel]);
 
   return (
-    <main className="mx-auto max-w-[1240px] px-5 py-10 sm:px-8 sm:py-14">
+    <main id="app-main-content" className="mx-auto max-w-[1240px] px-5 py-10 sm:px-8 sm:py-14" tabIndex={-1}>
       <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
         <div className="max-w-[720px]">
           <div className="eyebrow border-amber-300/20 bg-amber-300/[0.07] text-amber-200">
@@ -126,17 +179,17 @@ export function ExperimentWorkspaceView({
         </div>
 
         <div className="shrink-0">
-          {catalogLoading ? (
+          {activeResource.loading ? (
             <div role="status" className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-xs font-bold text-slate-400">
-              <LoaderCircle className="size-4 animate-spin" /> 실험 카탈로그 불러오는 중
+              <LoaderCircle className="size-4 animate-spin" /> {panel === "record" || panel === "run" ? "녹음 목록 불러오는 중" : "실험 세트 불러오는 중"}
             </div>
-          ) : catalogError ? (
+          ) : activeResource.error ? (
             <div role="alert" className="max-w-[420px] rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-xs leading-5 text-rose-100">
-              실험 카탈로그를 불러오지 못했습니다: {catalogError}
+              필요한 데이터를 불러오지 못했습니다: {activeResource.error}
             </div>
           ) : (
             <div role="status" className="inline-flex items-center gap-2 rounded-full border border-emerald-300/15 bg-emerald-300/[0.06] px-3 py-2 text-xs font-bold text-emerald-100">
-              로컬 녹음 {catalog?.recordings.length ?? 0}개 준비됨
+              {activeResourceLabel}
             </div>
           )}
         </div>
@@ -154,7 +207,7 @@ export function ExperimentWorkspaceView({
                   aria-current={active ? "page" : undefined}
                   onClick={(event) => {
                     event.preventDefault();
-                    onPanelChange(item);
+                    actions.changePanel(item);
                   }}
                   className={`flex min-h-14 items-center gap-3 rounded-2xl px-4 outline-none ring-cyan-300 transition focus-visible:ring-2 ${active ? "bg-white text-slate-950 shadow-lg shadow-black/15" : "text-slate-400 hover:bg-white/[0.045] hover:text-white"}`}
                 >
@@ -176,25 +229,25 @@ export function ExperimentWorkspaceView({
         {panel === "setup" ? (
           <ExperimentSetup
             glossaries={glossaries}
-            studies={studies}
-            loading={studiesLoading}
-            error={studiesError}
-            onChanged={onCatalogChanged}
-            onContinue={() => onPanelChange("record")}
+            studies={resources.studies.data}
+            loading={resources.studies.loading}
+            error={resources.studies.error}
+            onChanged={actions.studiesChanged}
+            onContinue={() => actions.changePanel("record")}
           />
         ) : panel === "record" ? (
           <AudioFixtureRecorder
-            catalog={catalog}
-            catalogLoading={catalogLoading}
-            catalogError={catalogError}
-            onRecordingSaved={onRecordingSaved}
+            catalog={resources.fixtures.data}
+            catalogLoading={resources.fixtures.loading}
+            catalogError={resources.fixtures.error}
+            onRecordingSaved={actions.recordingSaved}
           />
         ) : (
           <SttComparisonResults
-            recordings={catalog?.recordings ?? []}
-            studies={studies}
+            recordings={resources.fixtures.data?.recordings ?? []}
+            studies={resources.studies.data}
             view={panel}
-            onResultReady={onResultReady}
+            onResultReady={actions.resultReady}
           />
         )}
       </section>
@@ -218,44 +271,65 @@ export function ExperimentWorkspace({
   const [catalog, setCatalog] = useState<AudioFixtureCatalog | null>(null);
   const [studies, setStudies] = useState<ExperimentStudy[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
+  const [studiesLoading, setStudiesLoading] = useState(true);
   const [catalogError, setCatalogError] = useState("");
   const [studiesError, setStudiesError] = useState("");
 
-  const loadCatalogs = async (): Promise<void> => {
-    setCatalogLoading(true);
-    const [fixtureResult, studyResult] = await Promise.allSettled([getAudioFixtures(), getExperimentStudies()]);
-    if (fixtureResult.status === "fulfilled") {
-      setCatalog(fixtureResult.value);
-      setCatalogError("");
-    } else {
-      setCatalogError(fixtureResult.reason instanceof Error ? fixtureResult.reason.message : "개발용 녹음 설정을 불러오지 못했습니다.");
-    }
-    if (studyResult.status === "fulfilled") {
-      setStudies(studyResult.value.studies);
-      setStudiesError("");
-    } else {
-      setStudiesError(studyResult.reason instanceof Error ? studyResult.reason.message : "실험 세트를 불러오지 못했습니다.");
-    }
-    setCatalogLoading(false);
-  };
+  const fixtureLoaderRef = useRef<LatestResourceLoader<AudioFixtureCatalog> | null>(null);
+  if (!fixtureLoaderRef.current) {
+    fixtureLoaderRef.current = createLatestResourceLoader({
+      request: getAudioFixtures,
+      onStart: () => {
+        setCatalogLoading(true);
+        setCatalogError("");
+      },
+      onSuccess: setCatalog,
+      onError: (error) => setCatalogError(error instanceof Error ? error.message : "개발용 녹음 설정을 불러오지 못했습니다."),
+      onSettled: () => setCatalogLoading(false)
+    });
+  }
 
-  useEffect(() => { void loadCatalogs(); }, []);
+  const studyLoaderRef = useRef<LatestResourceLoader<{ studies: ExperimentStudy[] }> | null>(null);
+  if (!studyLoaderRef.current) {
+    studyLoaderRef.current = createLatestResourceLoader({
+      request: getExperimentStudies,
+      onStart: () => {
+        setStudiesLoading(true);
+        setStudiesError("");
+      },
+      onSuccess: (value) => setStudies(value.studies),
+      onError: (error) => setStudiesError(error instanceof Error ? error.message : "실험 세트를 불러오지 못했습니다."),
+      onSettled: () => setStudiesLoading(false)
+    });
+  }
+
+  const loadFixtures = useCallback(() => fixtureLoaderRef.current!.load().then(() => undefined), []);
+  const loadStudies = useCallback(() => studyLoaderRef.current!.load().then(() => undefined), []);
+
+  useEffect(() => {
+    void loadFixtures();
+    void loadStudies();
+    return () => {
+      fixtureLoaderRef.current?.invalidate();
+      studyLoaderRef.current?.invalidate();
+    };
+  }, [loadFixtures, loadStudies]);
 
   return (
     <ExperimentWorkspaceView
       panel={panel}
-      catalog={catalog}
-      catalogLoading={catalogLoading}
-      catalogError={catalogError}
       glossaries={glossaries}
-      studies={studies}
-      studiesLoading={catalogLoading}
-      studiesError={studiesError}
+      resources={{
+        fixtures: { data: catalog, loading: catalogLoading, error: catalogError },
+        studies: { data: studies, loading: studiesLoading, error: studiesError }
+      }}
+      actions={{
+        changePanel: onPanelChange,
+        recordingSaved: (recording) => setCatalog((current) => appendRecordingToCatalog(current, recording)),
+        resultReady: onResultReady,
+        studiesChanged: loadStudies
+      }}
       focusRequest={focusRequest}
-      onPanelChange={onPanelChange}
-      onRecordingSaved={(recording) => setCatalog((current) => appendRecordingToCatalog(current, recording))}
-      onResultReady={onResultReady}
-      onCatalogChanged={loadCatalogs}
     />
   );
 }

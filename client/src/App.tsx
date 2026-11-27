@@ -1,35 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import {
-  Accessibility,
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Database,
-  FileText,
-  Gauge,
-  Highlighter,
-  LoaderCircle,
-  Maximize2,
-  Mic,
-  MonitorUp,
-  Pause,
-  Pencil,
-  Play,
-  RotateCcw,
-  ScanText,
-  ShieldCheck,
-  Sparkles,
-  Trash2,
-  Upload,
-  Volume2,
-  WandSparkles,
-  Wifi,
-  WifiOff,
-  X
-} from "lucide-react";
-import { analyzePdf, getDemo, getHealth } from "./lib/api";
-import { ExperimentWorkspace, type ExperimentPanel } from "./components/ExperimentWorkspace";
-import { TransparentCaption } from "./components/TransparentCaption";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LoaderCircle } from "lucide-react";
+import { analyzePdf, getDemo, getHealth, prepareAwsVocabulary } from "./lib/api";
 import {
   loadStoredGlossaryReadyState,
   requireNonEmptyGlossary,
@@ -37,1180 +8,101 @@ import {
   type AppStage as Stage
 } from "./app-state";
 import {
-  clearStoredGlossaries,
+  clearGlossaryStorageBackups,
   deleteStoredGlossary,
+  exportGlossaryStorageRecoveryBundle,
   glossaryStorageIssue,
+  listGlossaryStorageBackups,
   listStoredGlossaries,
+  recoverStoredGlossaryData,
   renameStoredGlossary,
   saveAnalyzedGlossary,
+  type GlossaryStorageBackup,
   type GlossaryStorageIssue,
   type StoredGlossary
 } from "./lib/glossary-storage";
+import { withGlossaryStorageLock } from "./lib/glossary-storage-lock";
 import { useLectureStream } from "./hooks/useLectureStream";
+import { useExclusiveActionGate } from "./hooks/useExclusiveActionGate";
 import { shouldTransitionToResults } from "./hooks/lecture-stream-state";
-import type { AnalysisResult, GlossaryTerm, ServiceStatus, TranscriptLine } from "./types";
+import { materializeTranscriptLines } from "./hooks/transcript-store";
+import { extractPdfPages } from "./lib/pdf";
+import { isAbortError, throwIfAborted } from "./lib/abort";
+import {
+  createAnalysisStepState,
+  type AnalysisStepState
+} from "./features/analysis/analysis-workflow";
+import {
+  runAnalysisEntryWorkflow,
+  type AnalysisEntrySource
+} from "./features/analysis/analysis-entry-workflow";
+import {
+  createPresentationAsset,
+  disposePresentationAsset,
+  type PresentationAsset
+} from "./lib/presentation";
+import type {
+  AnalysisResult,
+  GlossaryTerm,
+  ServiceConfigurationStatus,
+  ServiceStatus
+} from "./types";
+import { appRouteHash, LECTURE_ROUTE, resolveAppRoute, type AppRoute } from "./app-route";
+import type { FontScale } from "./features/captions/live-caption-model";
+import { presentationUploadFailureMessage } from "./features/upload/upload-card-model";
+import {
+  safeSessionExportBaseName,
+  serializeLectureSessionJson,
+  serializeLectureTranscriptText,
+  shouldConfirmSessionDiscard,
+  type SessionExportStatus
+} from "./features/results/session-export";
+import { requestTextDownload, saveTextFile } from "./features/results/file-export";
+import { AnalyzingScreen } from "./features/lecture/lecture-analyzing-screen";
+import { Header } from "./features/lecture/lecture-header";
+import {
+  ReadyScreen,
+  type LectureStartState
+} from "./features/lecture/lecture-ready-screen";
+import { UploadScreen } from "./features/lecture/lecture-upload-screen";
+import { LiveScreen } from "./features/lecture/lecture-live-screen";
+import { ResultsScreen } from "./features/lecture/lecture-results-screen";
+import { APP_MAIN_CONTENT_ID } from "./features/lecture/lecture-screen-contract";
 
-export type FontScale = "normal" | "large" | "xlarge";
+export {
+  AnalyzingScreen
+} from "./features/lecture/lecture-analyzing-screen";
+export { Header } from "./features/lecture/lecture-header";
+export {
+  PresentationUploadCard,
+  ReadyScreen
+} from "./features/lecture/lecture-ready-screen";
+export type {
+  LectureStartState,
+  ReadyScreenActions,
+  ReadyScreenState
+} from "./features/lecture/lecture-ready-screen";
+export {
+  LiveCaptionRows,
+  LiveCaptionSlot,
+  LiveScreen
+} from "./features/lecture/lecture-live-screen";
+export type { FinalCaptionAnnouncement } from "./features/lecture/lecture-live-screen";
+export { ResultsScreen } from "./features/lecture/lecture-results-screen";
 
-export const ANALYSIS_STEP_ORDER = ["extract", "analyze", "store"] as const;
-export type AnalysisStep = typeof ANALYSIS_STEP_ORDER[number];
-export type AnalysisStepStatus = "pending" | "active" | "complete" | "failed";
-export type AnalysisStepState = Record<AnalysisStep, AnalysisStepStatus>;
+const LazyExperimentWorkspace = import.meta.env.DEV
+  ? lazy(async () => {
+      const module = await import("./components/ExperimentWorkspace");
+      return { default: module.ExperimentWorkspace };
+    })
+  : null;
 
-export const ANALYSIS_STEP_MIN_VISIBLE_MS = 500;
-
-export function createAnalysisStepState(activeStep: AnalysisStep = "extract"): AnalysisStepState {
-  const activeIndex = ANALYSIS_STEP_ORDER.indexOf(activeStep);
-  return Object.fromEntries(ANALYSIS_STEP_ORDER.map((step, index) => [
-    step,
-    index < activeIndex ? "complete" : index === activeIndex ? "active" : "pending"
-  ])) as AnalysisStepState;
-}
-
-export function completedAnalysisStepCount(state: AnalysisStepState): number {
-  return ANALYSIS_STEP_ORDER.filter((step) => state[step] === "complete").length;
-}
-
-export function analysisProgressPercent(state: AnalysisStepState): number {
-  return Math.round((completedAnalysisStepCount(state) / ANALYSIS_STEP_ORDER.length) * 100);
-}
-
-type AnalysisStorageOutcome<TReady> = {
-  readyValue: TReady;
-  completed: boolean;
+const EMPTY_GLOSSARY_TERMS: GlossaryTerm[] = [];
+const EMPTY_PHRASE_SET: string[] = [];
+const UNCONFIGURED_SERVICE_STATUS: ServiceConfigurationStatus = {
+  configured: false,
+  verification: "unverified"
 };
-
-type RunPdfAnalysisStepsOptions<TPages, TAnalysis, TReady> = {
-  extract: () => Promise<TPages>;
-  analyze: (pages: TPages) => Promise<TAnalysis>;
-  store: (analysis: TAnalysis) => Promise<AnalysisStorageOutcome<TReady>> | AnalysisStorageOutcome<TReady>;
-  onStateChange: (state: AnalysisStepState) => void;
-  waitForPresentation?: () => Promise<void>;
-};
-
-export function waitForAnalysisStepPresentation(): Promise<void> {
-  return new Promise((resolve) => {
-    const wait = () => setTimeout(resolve, ANALYSIS_STEP_MIN_VISIBLE_MS);
-    if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
-      window.requestAnimationFrame(wait);
-      return;
-    }
-    wait();
-  });
-}
-
-export async function runPdfAnalysisSteps<TPages, TAnalysis, TReady>({
-  extract,
-  analyze,
-  store,
-  onStateChange,
-  waitForPresentation = waitForAnalysisStepPresentation
-}: RunPdfAnalysisStepsOptions<TPages, TAnalysis, TReady>): Promise<TReady> {
-  let state = createAnalysisStepState();
-  const publish = (nextState: AnalysisStepState) => {
-    state = nextState;
-    onStateChange({ ...state });
-  };
-  const fail = (step: AnalysisStep) => publish({ ...state, [step]: "failed" });
-
-  publish(state);
-
-  let pages: TPages;
-  try {
-    pages = await extract();
-  } catch (caught) {
-    fail("extract");
-    await waitForPresentation();
-    throw caught;
-  }
-  publish({ extract: "complete", analyze: "active", store: "pending" });
-  await waitForPresentation();
-
-  let analysis: TAnalysis;
-  try {
-    analysis = await analyze(pages);
-  } catch (caught) {
-    fail("analyze");
-    await waitForPresentation();
-    throw caught;
-  }
-  publish({ extract: "complete", analyze: "complete", store: "active" });
-  await waitForPresentation();
-
-  let storageOutcome: AnalysisStorageOutcome<TReady>;
-  try {
-    storageOutcome = await store(analysis);
-  } catch (caught) {
-    fail("store");
-    await waitForPresentation();
-    throw caught;
-  }
-  publish({
-    extract: "complete",
-    analyze: "complete",
-    store: storageOutcome.completed ? "complete" : "failed"
-  });
-  await waitForPresentation();
-  return storageOutcome.readyValue;
-}
-
-export type LiveCaptionSlotState =
-  | { kind: "interim"; text: string }
-  | { kind: "final"; line: TranscriptLine }
-  | { kind: "placeholder"; text: string };
-
-export type LiveCaptionPresentation = {
-  historyLines: TranscriptLine[];
-  rows: LiveCaptionSlotState[];
-};
-
-export type LiveCaptionMotionSnapshot = {
-  currentKind: LiveCaptionSlotState["kind"];
-  currentFinalId: string | null;
-  finalIds: string[];
-};
-
-type CaptionAnimationLike = {
-  cancel: () => void;
-  onfinish: Animation["onfinish"];
-  oncancel: Animation["oncancel"];
-};
-
-type CaptionAnimatable = {
-  animate: (keyframes: Keyframe[], options: KeyframeAnimationOptions) => CaptionAnimationLike;
-};
-
-type CaptionRect = { top: number };
-
-export const LIVE_CAPTION_PROMOTION_DURATION_MS = 240;
-export const LIVE_CAPTION_CURRENT_KEY = "live-caption-current";
-
-export const LIVE_CAPTION_SIZE_CLASS: Record<FontScale, string> = {
-  normal: "caption-normal text-xl sm:text-2xl",
-  large: "caption-large text-2xl sm:text-[1.9rem]",
-  xlarge: "caption-xlarge text-[1.8rem] sm:text-[2.3rem]"
-};
-
-const LIVE_CAPTION_PLACEHOLDER = "마이크에 대고 강연을 시작해 주세요.";
-
-export function resolveLiveCaptionPresentation(
-  lines: TranscriptLine[],
-  interim: string
-): LiveCaptionPresentation {
-  const hasInterim = Boolean(interim.trim());
-  const visibleFinalLimit = hasInterim ? 2 : 3;
-  const visibleFinals = lines.slice(-visibleFinalLimit);
-  const rows: LiveCaptionSlotState[] = visibleFinals.map((line) => ({ kind: "final", line }));
-
-  if (hasInterim) {
-    rows.push({ kind: "interim", text: interim });
-  } else if (rows.length === 0) {
-    rows.push({ kind: "placeholder", text: LIVE_CAPTION_PLACEHOLDER });
-  }
-
-  return {
-    historyLines: lines.slice(0, Math.max(0, lines.length - visibleFinalLimit)),
-    rows
-  };
-}
-
-export function createLiveCaptionMotionSnapshot(
-  presentation: LiveCaptionPresentation
-): LiveCaptionMotionSnapshot {
-  const current = presentation.rows.at(-1)!;
-  return {
-    currentKind: current.kind,
-    currentFinalId: current.kind === "final" ? current.line.id : null,
-    finalIds: presentation.rows.flatMap((row) => row.kind === "final" ? [row.line.id] : [])
-  };
-}
-
-export function resolveRetainedFinalPromotions(
-  previous: LiveCaptionMotionSnapshot | null,
-  next: LiveCaptionMotionSnapshot
-): string[] {
-  if (!previous || previous.currentKind !== "final") return [];
-
-  const startsNewUtterance = next.currentKind === "interim"
-    || (next.currentKind === "final" && next.currentFinalId !== previous.currentFinalId);
-  if (!startsNewUtterance) return [];
-
-  const nextFinalIds = new Set(next.finalIds);
-  return previous.finalIds.filter((id) => nextFinalIds.has(id));
-}
-
-export function calculateCaptionFlipDelta(previousTop: number, nextTop: number): number {
-  return previousTop - nextTop;
-}
-
-export function cancelCaptionAnimations(activeAnimations: Map<string, CaptionAnimationLike>): void {
-  const animations = [...activeAnimations.values()];
-  activeAnimations.clear();
-  for (const animation of animations) animation.cancel();
-}
-
-export function resolveLiveCaptionRowKey(slot: LiveCaptionSlotState, current = false): string {
-  if (current) return LIVE_CAPTION_CURRENT_KEY;
-  return slot.kind === "final" ? slot.line.id : slot.kind;
-}
-
-export function runCaptionPromotionAnimations({
-  retainedFinalIds,
-  previousRects,
-  nextRects,
-  elements,
-  reducedMotion,
-  activeAnimations
-}: {
-  retainedFinalIds: string[];
-  previousRects: ReadonlyMap<string, CaptionRect>;
-  nextRects: ReadonlyMap<string, CaptionRect>;
-  elements: ReadonlyMap<string, CaptionAnimatable>;
-  reducedMotion: boolean;
-  activeAnimations: Map<string, CaptionAnimationLike>;
-}): string[] {
-  cancelCaptionAnimations(activeAnimations);
-  if (reducedMotion) return [];
-
-  const animatedIds: string[] = [];
-  for (const id of retainedFinalIds) {
-    const element = elements.get(id);
-    const previousRect = previousRects.get(id);
-    const nextRect = nextRects.get(id);
-    if (!element || !previousRect || !nextRect) continue;
-
-    const delta = calculateCaptionFlipDelta(previousRect.top, nextRect.top);
-    if (Math.abs(delta) < 0.5) continue;
-
-    const animation = element.animate(
-      [
-        { transform: `translate3d(0, ${delta}px, 0)` },
-        { transform: "translate3d(0, 0, 0)" }
-      ],
-      {
-        duration: LIVE_CAPTION_PROMOTION_DURATION_MS,
-        easing: "cubic-bezier(.22, 1, .36, 1)"
-      }
-    );
-    const release = () => {
-      if (activeAnimations.get(id) === animation) activeAnimations.delete(id);
-    };
-    animation.onfinish = release;
-    animation.oncancel = release;
-    activeAnimations.set(id, animation);
-    animatedIds.push(id);
-  }
-
-  return animatedIds;
-}
-
-export function calculateHistoryRowScrollTop(
-  currentScrollTop: number,
-  containerBottom: number,
-  rowBottom: number
-): number {
-  return Math.max(0, currentScrollTop, currentScrollTop + rowBottom - containerBottom);
-}
-
-export type AppRoute =
-  | { page: "lecture" }
-  | { page: "experiment"; panel: ExperimentPanel };
-
-const LECTURE_ROUTE: AppRoute = { page: "lecture" };
-
-export function parseAppHash(hash: string): AppRoute {
-  switch (hash) {
-    case "#/experiment/setup":
-      return { page: "experiment", panel: "setup" };
-    case "#/experiment/record":
-      return { page: "experiment", panel: "record" };
-    case "#/experiment/run":
-      return { page: "experiment", panel: "run" };
-    case "#/experiment/results":
-      return { page: "experiment", panel: "results" };
-    case "#/lecture":
-    default:
-      return LECTURE_ROUTE;
-  }
-}
-
-export function appRouteHash(route: AppRoute): string {
-  return route.page === "lecture" ? "#/lecture" : `#/experiment/${route.panel}`;
-}
-
-export function resolveAppRoute(hash: string, development: boolean): AppRoute {
-  const route = parseAppHash(hash);
-  return development || route.page === "lecture" ? route : LECTURE_ROUTE;
-}
-
-export const UPLOAD_CARD_GLOW_PROPS = {
-  "aria-hidden": true,
-  className: "pointer-events-none absolute -inset-3 rounded-[2.4rem] bg-gradient-to-br from-cyan-300/15 via-transparent to-blue-500/10 blur-2xl"
-} as const;
-
-function Logo() {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="grid size-10 place-items-center rounded-2xl bg-cyan-300 text-slate-950 shadow-[0_10px_30px_rgba(103,232,249,.18)]">
-        <Volume2 className="size-5" strokeWidth={2.4} />
-      </div>
-      <div>
-        <div className="text-[15px] font-extrabold tracking-[-0.03em] text-white">강연 용어 AI</div>
-        <div className="text-[11px] font-medium tracking-[0.12em] text-slate-500">전문용어 자막·설명</div>
-      </div>
-    </div>
-  );
-}
-
-export function Header({
-  stage,
-  route,
-  development,
-  experimentNavigationBlocked,
-  onHome,
-  onNavigate
-}: {
-  stage: Stage;
-  route: AppRoute;
-  development: boolean;
-  experimentNavigationBlocked: boolean;
-  onHome: () => void;
-  onNavigate: (route: AppRoute) => void;
-}) {
-  const compact = stage === "live";
-  const lectureActive = route.page === "lecture";
-  const experimentActive = route.page === "experiment";
-  const experimentRoute: AppRoute = experimentActive ? route : { page: "experiment", panel: "setup" };
-  const primaryLinkClass = "inline-flex min-h-10 items-center justify-center rounded-xl px-4 text-xs font-extrabold outline-none ring-cyan-300 transition focus-visible:ring-2";
-
-  return (
-    <header className="relative z-20 border-b border-white/[0.06] bg-[#07111f]/85 backdrop-blur-xl">
-      <div className={`mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-x-4 px-5 py-3 sm:px-8 ${compact ? "min-h-16" : "min-h-20"}`}>
-        <button onClick={onHome} aria-label="처음 화면으로 이동" className="rounded-2xl text-left outline-none ring-cyan-300 focus-visible:ring-2">
-          <Logo />
-        </button>
-        <nav aria-label="주요 메뉴" className="order-3 mt-3 w-full sm:order-none sm:mt-0 sm:w-auto">
-          <ul className="flex items-center gap-1 rounded-2xl border border-white/[0.07] bg-white/[0.035] p-1">
-            <li className="min-w-0 flex-1 sm:flex-none">
-              <a
-                href="#/lecture"
-                aria-current={lectureActive ? "page" : undefined}
-                onClick={(event) => {
-                  event.preventDefault();
-                  onNavigate(LECTURE_ROUTE);
-                }}
-                className={`${primaryLinkClass} w-full ${lectureActive ? "bg-white text-slate-950" : "text-slate-400 hover:bg-white/[0.06] hover:text-white"}`}
-              >
-                강연
-              </a>
-            </li>
-            {development && !experimentNavigationBlocked ? (
-              <li className="min-w-0 flex-1 sm:flex-none">
-                <a
-                  href={appRouteHash(experimentRoute)}
-                  aria-current={experimentActive ? "page" : undefined}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    onNavigate(experimentRoute);
-                  }}
-                  className={`${primaryLinkClass} w-full ${experimentActive ? "bg-amber-200 text-slate-950" : "text-slate-400 hover:bg-amber-200/10 hover:text-amber-100"}`}
-                >
-                  STT 실험실
-                </a>
-              </li>
-            ) : null}
-          </ul>
-        </nav>
-        {lectureActive ? <div className="hidden items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] p-1 xl:flex">
-          {["자료 분석", "전문용어 자막", "결과 확인"].map((label, index) => {
-            const activeIndex = stage === "upload" || stage === "analyzing" || stage === "ready" ? 0 : stage === "live" ? 1 : 2;
-            return (
-              <div
-                key={label}
-                className={`rounded-full px-4 py-2 text-xs font-bold transition ${index === activeIndex ? "bg-white text-slate-950" : "text-slate-500"}`}
-              >
-                {index + 1}. {label}
-              </div>
-            );
-          })}
-        </div> : null}
-        <div className="hidden items-center gap-2 text-xs font-semibold text-slate-400 lg:flex">
-          <ShieldCheck className="size-4 text-emerald-300" />
-          실시간 강연 음성 미저장
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function ServicePill({ status }: { status: ServiceStatus | null }) {
-  const live = Boolean(status?.services.speech);
-  return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-bold text-slate-300">
-      <span className={`size-2 rounded-full ${live ? "bg-emerald-300 shadow-[0_0_12px_#6ee7b7]" : "bg-amber-300"}`} />
-      {live ? "Google STT 연결 가능" : "데모 모드 사용 가능"}
-    </div>
-  );
-}
-
-function StoredGlossaryLibrary({
-  glossaries,
-  issue,
-  onLoad,
-  onRename,
-  onDelete,
-  onReset
-}: {
-  glossaries: StoredGlossary[];
-  issue: GlossaryStorageIssue | null;
-  onLoad: (id: string) => void;
-  onRename: (id: string, name: string) => void;
-  onDelete: (id: string) => void;
-  onReset: () => void;
-}) {
-  const canReset = issue?.code === "invalid" || issue?.code === "version";
-  return (
-    <section className="mt-4 rounded-[1.6rem] border border-white/[0.08] bg-[#0b1727]/95 p-5 shadow-xl shadow-black/20 sm:p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm font-extrabold text-white"><Database className="size-4 text-cyan-300" /> 이 브라우저의 용어집</div>
-          <p className="mt-1 text-xs leading-5 text-slate-500">분석 결과만 이 브라우저에 저장됩니다. PDF와 실시간 강연 음성은 저장하지 않습니다.</p>
-        </div>
-        <span className="shrink-0 rounded-full bg-white/[0.06] px-2.5 py-1 text-[10px] font-black text-slate-400">{glossaries.length}개</span>
-      </div>
-
-      {issue && (
-        <div role="alert" className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-4 text-xs leading-5 text-rose-100">
-          <div className="flex items-start gap-3"><X className="mt-0.5 size-4 shrink-0" /> {issue.message}</div>
-          {canReset && (
-            <button
-              type="button"
-              onClick={() => {
-                if (window.confirm("호환되지 않거나 손상된 저장 데이터를 이 브라우저에서 초기화할까요? 저장된 용어집이 모두 삭제됩니다.")) onReset();
-              }}
-              className="danger-button mt-3"
-            >
-              <RotateCcw className="size-3.5" /> 저장 데이터 초기화
-            </button>
-          )}
-        </div>
-      )}
-
-      <div className="mt-4 max-h-[260px] space-y-2 overflow-y-auto pr-1">
-        {glossaries.length ? glossaries.map((glossary) => (
-          <div key={glossary.id} className="flex items-center gap-2 rounded-2xl border border-white/[0.065] bg-[#07111f]/65 p-2 transition hover:border-cyan-300/20">
-            <button type="button" onClick={() => onLoad(glossary.id)} className="min-w-0 flex-1 rounded-xl px-2 py-2 text-left outline-none ring-cyan-300 focus-visible:ring-2">
-              <div className="truncate text-sm font-extrabold text-white">{glossary.name}</div>
-              <div className="mt-1 text-[11px] font-semibold text-slate-500">전문용어 {glossary.terms.length}개 · {new Intl.DateTimeFormat("ko-KR", { dateStyle: "medium" }).format(new Date(glossary.updatedAt))}</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const name = window.prompt("새 용어집 이름을 입력해 주세요.", glossary.name);
-                if (name !== null) onRename(glossary.id, name);
-              }}
-              className="control-button !size-9 !min-h-0 !min-w-0 shrink-0"
-              aria-label={`${glossary.name} 이름 바꾸기`}
-              title="이름 바꾸기"
-            >
-              <Pencil className="size-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (window.confirm(`“${glossary.name}” 용어집을 이 브라우저에서 삭제할까요?`)) onDelete(glossary.id);
-              }}
-              className="danger-button !size-9 !min-h-0 !p-0 shrink-0"
-              aria-label={`${glossary.name} 삭제`}
-              title="삭제"
-            >
-              <Trash2 className="size-3.5" />
-            </button>
-          </div>
-        )) : (
-          <div className="rounded-2xl border border-dashed border-white/[0.08] px-4 py-6 text-center text-xs leading-5 text-slate-600">
-            PDF 분석을 마치면 용어집이 여기에 자동 저장됩니다.
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function UploadScreen({
-  onFile,
-  onDemo,
-  busy,
-  error,
-  serviceStatus,
-  storedGlossaries,
-  storageIssue,
-  onLoadGlossary,
-  onRenameGlossary,
-  onDeleteGlossary,
-  onResetGlossaries
-}: {
-  onFile: (file: File) => void;
-  onDemo: () => void;
-  busy: boolean;
-  error: string;
-  serviceStatus: ServiceStatus | null;
-  storedGlossaries: StoredGlossary[];
-  storageIssue: GlossaryStorageIssue | null;
-  onLoadGlossary: (id: string) => void;
-  onRenameGlossary: (id: string, name: string) => void;
-  onDeleteGlossary: (id: string) => void;
-  onResetGlossaries: () => void;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragging, setDragging] = useState(false);
-
-  const acceptFile = (file?: File) => {
-    if (file) onFile(file);
-  };
-
-  return (
-    <main className="relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-x-0 top-[-280px] mx-auto h-[660px] max-w-[1000px] rounded-full bg-cyan-400/[0.07] blur-[130px]" />
-      <section className="relative mx-auto grid min-h-[calc(100vh-80px)] max-w-[1440px] items-center gap-16 px-5 py-16 sm:px-8 lg:grid-cols-[1.03fr_.97fr] lg:py-20">
-        <div className="max-w-[700px]">
-          <div className="mb-7 flex flex-wrap items-center gap-3">
-            <span className="eyebrow"><Sparkles className="size-3.5" /> 2026 한신 ABC 해커톤</span>
-            <ServicePill status={serviceStatus} />
-          </div>
-          <h1 className="text-balance text-[clamp(3.4rem,7vw,7rem)] font-black leading-[0.94] tracking-[-0.075em] text-white">
-            자막 속 어려운
-            <br />
-            <span className="text-cyan-300">전문용어</span>까지.
-          </h1>
-          <p className="mt-8 max-w-[590px] text-pretty text-lg font-medium leading-8 text-slate-400 sm:text-xl">
-            강연 PDF에서 전문용어를 자동으로 찾아 Google STT에 전달하고, 용어가 등장할 때마다 쉬운 설명을 최신순으로 보여줍니다.
-          </p>
-          <div className="mt-9 grid max-w-[610px] gap-3 sm:grid-cols-3">
-            {[
-              [ScanText, "PDF 자동 분석", "페이지별 용어 추출"],
-              [Mic, "강연 자료 기반 자막", "Chirp 3 + PhraseSet"],
-              [Accessibility, "쉬운 용어 설명", "쉬운 풀이와 큰 글씨"]
-            ].map(([Icon, title, body]) => {
-              const ItemIcon = Icon as typeof ScanText;
-              return (
-                <div key={String(title)} className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4">
-                  <ItemIcon className="mb-5 size-5 text-cyan-300" />
-                  <div className="text-sm font-extrabold text-white">{String(title)}</div>
-                  <div className="mt-1 text-xs leading-5 text-slate-500">{String(body)}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="relative mx-auto w-full max-w-[590px]">
-          <div {...UPLOAD_CARD_GLOW_PROPS} />
-          <div className="relative rounded-[2rem] border border-white/10 bg-[#0b1727]/95 p-5 shadow-2xl shadow-black/30 sm:p-7">
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-extrabold text-white">강연 자료 준비</div>
-                <div className="mt-1 text-xs text-slate-500">텍스트가 포함된 PDF · 최대 10MB</div>
-              </div>
-              <FileText className="size-6 text-slate-600" />
-            </div>
-
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setDragging(true);
-              }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(event) => {
-                event.preventDefault();
-                setDragging(false);
-                acceptFile(event.dataTransfer.files[0]);
-              }}
-              className={`group grid min-h-[265px] w-full place-items-center rounded-[1.4rem] border border-dashed p-8 text-center outline-none transition focus-visible:ring-2 focus-visible:ring-cyan-300 ${dragging ? "border-cyan-300 bg-cyan-300/10" : "border-slate-600 bg-[#07111f]/70 hover:border-cyan-300/70 hover:bg-cyan-300/[0.045]"}`}
-            >
-              <div>
-                <div className="mx-auto grid size-16 place-items-center rounded-3xl border border-white/10 bg-white/[0.06] text-cyan-300 transition group-hover:-translate-y-1 group-hover:bg-cyan-300 group-hover:text-slate-950">
-                  {busy ? <LoaderCircle className="size-7 animate-spin" /> : <Upload className="size-7" />}
-                </div>
-                <div className="mt-6 text-lg font-extrabold text-white">PDF를 여기에 놓아주세요</div>
-                <div className="mt-2 text-sm text-slate-500">또는 클릭해서 파일 선택</div>
-              </div>
-            </button>
-            <input ref={inputRef} hidden type="file" accept="application/pdf,.pdf" onChange={(event) => acceptFile(event.target.files?.[0])} />
-
-            {error && (
-              <div role="alert" className="mt-4 flex items-start gap-3 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-4 text-sm text-rose-100">
-                <X className="mt-0.5 size-4 shrink-0" /> {error}
-              </div>
-            )}
-
-            <div className="my-5 flex items-center gap-3 text-[11px] font-bold tracking-[0.15em] text-slate-600">
-              <div className="h-px flex-1 bg-white/[0.07]" /> OR <div className="h-px flex-1 bg-white/[0.07]" />
-            </div>
-            <button onClick={onDemo} disabled={busy} className="secondary-button w-full">
-              <Play className="size-4 fill-current" /> 샘플 강연 바로 체험하기
-            </button>
-          </div>
-          <StoredGlossaryLibrary
-            glossaries={storedGlossaries}
-            issue={storageIssue}
-            onLoad={onLoadGlossary}
-            onRename={onRenameGlossary}
-            onDelete={onDeleteGlossary}
-            onReset={onResetGlossaries}
-          />
-        </div>
-      </section>
-    </main>
-  );
-}
-
-export function AnalyzingScreen({ fileName, stepState }: { fileName: string; stepState: AnalysisStepState }) {
-  const steps: Array<{ step: AnalysisStep; label: string }> = [
-    { step: "extract", label: "PDF 텍스트 추출" },
-    { step: "analyze", label: "전문용어 자동 선별" },
-    { step: "store", label: "브라우저 용어집 검증·저장" }
-  ];
-  const completedCount = completedAnalysisStepCount(stepState);
-  const progress = analysisProgressPercent(stepState);
-  const activeStep = steps.find(({ step }) => stepState[step] === "active");
-  const failedStep = steps.find(({ step }) => stepState[step] === "failed");
-  const liveMessage = failedStep
-    ? `${failedStep.label} 단계에 실패했습니다. ${completedCount}단계 완료.`
-    : activeStep
-      ? `${completedCount}단계 완료. ${activeStep.label} 진행 중.`
-      : `${completedCount}단계 모두 완료.`;
-  return (
-    <main className="mx-auto grid min-h-[calc(100vh-80px)] max-w-[900px] place-items-center px-5 py-16">
-      <div className="w-full rounded-[2rem] border border-white/[0.08] bg-white/[0.035] p-8 text-center sm:p-12">
-        <div className="relative mx-auto size-28">
-          <div className="absolute inset-0 animate-pulse rounded-full bg-cyan-300/20 blur-2xl motion-reduce:animate-none" />
-          <div className="relative grid size-28 place-items-center rounded-full border border-cyan-300/20 bg-[#0b1727]">
-            <WandSparkles className="size-10 text-cyan-300" />
-          </div>
-        </div>
-        <div className="mt-8 text-xs font-extrabold tracking-[0.2em] text-cyan-300">PDF ANALYSIS</div>
-        <h2 className="mt-3 text-3xl font-black tracking-[-0.045em] text-white sm:text-4xl">강연 자료에서 전문용어를 찾고 있어요</h2>
-        <p className="mx-auto mt-3 max-w-[560px] truncate text-sm text-slate-500">{fileName}</p>
-        <div
-          className="mx-auto mt-10 h-2 max-w-[580px] overflow-hidden rounded-full bg-white/[0.06]"
-          role="progressbar"
-          aria-label="PDF 분석 진행률"
-          aria-valuemin={0}
-          aria-valuemax={ANALYSIS_STEP_ORDER.length}
-          aria-valuenow={completedCount}
-          aria-valuetext={`${ANALYSIS_STEP_ORDER.length}단계 중 ${completedCount}단계 완료`}
-        >
-          <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-blue-400 transition-all duration-300 motion-reduce:transition-none" style={{ width: `${progress}%` }} />
-        </div>
-        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{liveMessage}</p>
-        <div className="mx-auto mt-8 grid max-w-[650px] gap-3 text-left sm:grid-cols-3" aria-label="PDF 분석 단계">
-          {steps.map(({ step, label }, index) => {
-            const status = stepState[step];
-            const complete = status === "complete";
-            const active = status === "active";
-            const failed = status === "failed";
-            const statusLabel = complete ? "완료" : active ? "진행 중" : failed ? "실패" : "대기";
-            return (
-            <div
-              key={step}
-              data-analysis-step={step}
-              data-analysis-step-status={status}
-              className={`flex items-center gap-3 rounded-2xl border p-4 transition motion-reduce:transition-none ${complete ? "border-emerald-300/20 bg-emerald-300/[0.06]" : failed ? "border-rose-400/20 bg-rose-400/[0.07]" : active ? "border-cyan-300/20 bg-cyan-300/[0.05]" : "border-white/[0.06] bg-white/[0.025]"}`}
-            >
-              <div className={`grid size-7 shrink-0 place-items-center rounded-full text-xs font-black ${complete ? "bg-emerald-300 text-slate-950" : failed ? "bg-rose-300 text-slate-950" : active ? "bg-cyan-300 text-slate-950" : "bg-white/[0.07] text-slate-500"}`}>
-                {complete ? <Check className="size-4" aria-hidden="true" /> : failed ? <X className="size-4" aria-hidden="true" /> : active ? <LoaderCircle className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : index + 1}
-              </div>
-              <span className={`text-xs font-bold ${complete ? "text-emerald-100" : failed ? "text-rose-100" : active ? "text-cyan-100" : "text-slate-500"}`}>
-                {label}<span className="sr-only"> — {statusLabel}</span>
-              </span>
-            </div>
-          );})}
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function ReadyScreen({
-  analysis,
-  speechReady,
-  analysisSaved,
-  storageIssue,
-  storedGlossaries,
-  onStart,
-  onBack,
-  onRetryStorage,
-  onDeleteGlossary,
-  onResetGlossaries
-}: {
-  analysis: AnalysisResult;
-  speechReady: boolean;
-  analysisSaved: boolean;
-  storageIssue: GlossaryStorageIssue | null;
-  storedGlossaries: StoredGlossary[];
-  onStart: (mode: "live" | "demo") => void;
-  onBack: () => void;
-  onRetryStorage: () => void;
-  onDeleteGlossary: (id: string) => void;
-  onResetGlossaries: () => void;
-}) {
-  const visibleTerms = analysis.terms.slice(0, 12);
-  const glossaryOnly = analysis.mode === "saved";
-  const modeLabel = analysis.mode === "gemini" ? "GEMINI" : analysis.mode === "saved" ? "저장됨" : analysis.mode.toUpperCase();
-  const canReset = storageIssue?.code === "invalid" || storageIssue?.code === "version";
-  const needsSpace = storageIssue?.code === "quota" || storageIssue?.code === "limit";
-  return (
-    <main className="mx-auto max-w-[1240px] px-5 py-12 sm:px-8 sm:py-16">
-      <button onClick={onBack} className="text-button"><ArrowLeft className="size-4" /> 처음 화면으로</button>
-      <div className="mt-8 grid gap-8 lg:grid-cols-[.82fr_1.18fr]">
-        <section>
-          <div className="eyebrow"><Check className="size-3.5" /> {glossaryOnly ? "저장된 용어집 불러옴" : analysisSaved ? "자동 분석·저장 완료" : "자동 분석 완료 · 저장 필요"}</div>
-          <h2 className="mt-5 text-4xl font-black leading-tight tracking-[-0.055em] text-white sm:text-5xl">강연을 시작할<br />준비가 됐어요.</h2>
-          <p className="mt-5 max-w-[460px] text-base leading-7 text-slate-400">
-            {glossaryOnly
-              ? `저장된 전문용어와 ${analysis.phraseSet.length}개의 PhraseSet을 바로 Google STT에 전달합니다.`
-              : `PDF에 실제로 존재하는 표기만 검증해 ${analysis.phraseSet.length}개의 Google STT 힌트를 만들었습니다.`}
-          </p>
-
-          <div className="mt-8 grid grid-cols-3 gap-3">
-            {[
-              [analysis.pages.length || "—", glossaryOnly ? "PDF 미저장" : "PDF 페이지"],
-              [analysis.terms.length, "전문용어"],
-              [analysis.phraseSet.length, "PhraseSet"]
-            ].map(([value, label]) => (
-              <div key={label} className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4">
-                <div className="text-2xl font-black text-white">{value}</div>
-                <div className="mt-1 text-[11px] font-bold text-slate-500">{label}</div>
-              </div>
-            ))}
-          </div>
-
-          {analysis.warning && <div className="mt-5 rounded-2xl border border-amber-300/20 bg-amber-300/[0.07] p-4 text-xs leading-5 text-amber-100">{analysis.warning}</div>}
-          {!analysisSaved ? (
-            <div role="alert" className="mt-5 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-4 text-xs leading-5 text-rose-100">
-              <div className="flex items-start gap-3"><X className="mt-0.5 size-4 shrink-0" /> {storageIssue?.message || "이 분석 결과는 아직 브라우저에 저장되지 않았습니다."}</div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {canReset ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm("호환되지 않거나 손상된 저장 데이터를 초기화하고 현재 분석 결과를 다시 저장할까요? 기존 저장 용어집이 모두 삭제됩니다.")) onResetGlossaries();
-                    }}
-                    className="danger-button"
-                  >
-                    <RotateCcw className="size-3.5" /> 초기화 후 현재 분석 저장
-                  </button>
-                ) : (
-                  <button type="button" onClick={onRetryStorage} className="secondary-button !min-h-10 !px-3 !py-2 text-xs">
-                    <RotateCcw className="size-3.5" /> 저장 다시 시도
-                  </button>
-                )}
-              </div>
-              {needsSpace && storedGlossaries.length > 0 && (
-                <div className="mt-4 border-t border-rose-200/10 pt-3">
-                  <p className="mb-2 text-rose-100/75">기존 용어집을 삭제한 뒤 현재 분석을 다시 저장할 수 있습니다.</p>
-                  <div className="max-h-36 space-y-1.5 overflow-y-auto pr-1">
-                    {storedGlossaries.map((glossary) => (
-                      <div key={glossary.id} className="flex items-center justify-between gap-3 rounded-xl bg-black/15 px-3 py-2">
-                        <span className="min-w-0 truncate text-slate-200">{glossary.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm(`“${glossary.name}” 용어집을 삭제할까요? 삭제 후 위의 저장 다시 시도를 눌러 주세요.`)) onDeleteGlossary(glossary.id);
-                          }}
-                          className="danger-button !min-h-8 shrink-0 !px-2 !py-1"
-                        >
-                          <Trash2 className="size-3" /> 삭제
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="mt-5 flex items-start gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.055] p-4 text-xs leading-5 text-slate-300">
-              <Database className="mt-0.5 size-4 shrink-0 text-cyan-300" />
-              <span>{glossaryOnly ? "이 브라우저에 저장된 용어집입니다." : "용어집을 이 브라우저에 자동 저장했습니다."} PDF, 추출한 페이지 텍스트, 실시간 강연 음성은 저장하지 않습니다.</span>
-            </div>
-          )}
-
-          <div className="mt-8 space-y-3">
-            <button disabled={!speechReady} onClick={() => onStart("live")} className="primary-button w-full disabled:cursor-not-allowed disabled:opacity-40">
-              <Mic className="size-5" /> 실시간 강연 시작 <ArrowRight className="ml-auto size-5" />
-            </button>
-            <button onClick={() => onStart("demo")} className="secondary-button w-full">
-              <Play className="size-4 fill-current" /> 데모 자막으로 미리보기
-            </button>
-            {!speechReady && <p className="text-center text-xs text-slate-600">Google STT 자격증명 연결 전에는 데모 모드를 사용할 수 있습니다.</p>}
-          </div>
-        </section>
-
-        <section className="rounded-[2rem] border border-white/[0.08] bg-white/[0.035] p-5 sm:p-7">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-extrabold text-white">자동 추출된 전문용어</div>
-              <div className="mt-1 text-xs text-slate-500">검수 없이 PDF 원문과 자동 대조된 항목</div>
-            </div>
-            <div className="rounded-full bg-cyan-300/10 px-3 py-1.5 text-xs font-extrabold text-cyan-300">{modeLabel}</div>
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {visibleTerms.map((term) => (
-              <div key={term.id} className="group rounded-2xl border border-white/[0.065] bg-[#07111f]/60 p-4 transition hover:border-cyan-300/25 hover:bg-cyan-300/[0.035]">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-extrabold text-white">{term.term}</div>
-                    <div className="mt-1 line-clamp-1 text-xs text-cyan-300/70">{term.english || "PDF 전문용어"}</div>
-                  </div>
-                  <div className="shrink-0 rounded-lg bg-white/[0.06] px-2 py-1 text-[10px] font-bold text-slate-400">p.{term.pageNumber}</div>
-                </div>
-                <p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-500">{term.easyExplanation}</p>
-                {term.spokenAliases.length > 0 && (
-                  <p className="mt-2 line-clamp-1 text-[11px] font-semibold text-amber-200/70">인식 발음: {term.spokenAliases.join(" · ")}</p>
-                )}
-              </div>
-            ))}
-          </div>
-          {analysis.terms.length > visibleTerms.length && <div className="mt-5 text-center text-xs font-bold text-slate-600">외 {analysis.terms.length - visibleTerms.length}개 용어</div>}
-        </section>
-      </div>
-    </main>
-  );
-}
-
-export function LiveCaptionSlot({
-  slot,
-  terms,
-  sizeClass
-}: {
-  slot: LiveCaptionSlotState;
-  terms: GlossaryTerm[];
-  sizeClass: string;
-}) {
-  const className = `caption-live-line ${sizeClass}`;
-
-  if (slot.kind === "final") {
-    return <TransparentCaption line={slot.line} terms={terms} className={className} />;
-  }
-
-  return (
-    <p
-      lang="ko"
-      className={`caption-text ${className}${slot.kind === "interim" ? " caption-live-interim" : ""}${slot.kind === "placeholder" ? " text-slate-600" : ""}`}
-    >
-      {slot.text}
-    </p>
-  );
-}
-
-export function LiveCaptionRows({
-  presentation,
-  terms,
-  sizeClass
-}: {
-  presentation: LiveCaptionPresentation;
-  terms: GlossaryTerm[];
-  sizeClass: string;
-}) {
-  const stackRef = useRef<HTMLDivElement>(null);
-  const previousSnapshotRef = useRef<LiveCaptionMotionSnapshot | null>(null);
-  const previousRectsRef = useRef<Map<string, CaptionRect>>(new Map());
-  const activeAnimationsRef = useRef<Map<string, CaptionAnimationLike>>(new Map());
-  const previousRows = presentation.rows.slice(0, -1);
-  const currentRow = presentation.rows.at(-1)!;
-  const motionSnapshot = createLiveCaptionMotionSnapshot(presentation);
-  const motionSignature = `${sizeClass}|${presentation.rows.map((row) => {
-    if (row.kind === "final") return `final:${row.line.id}:${row.line.text}`;
-    return `${row.kind}:${row.text}`;
-  }).join("\u0000")}`;
-
-  useLayoutEffect(() => {
-    const stack = stackRef.current;
-    if (!stack) return;
-
-    const elements = new Map<string, CaptionAnimatable>();
-    const nextRects = new Map<string, CaptionRect>();
-    for (const row of stack.querySelectorAll<HTMLElement>("[data-caption-final-id]")) {
-      const id = row.dataset.captionFinalId;
-      if (!id) continue;
-      nextRects.set(id, row.getBoundingClientRect());
-      if (typeof row.animate === "function") elements.set(id, row);
-    }
-
-    runCaptionPromotionAnimations({
-      retainedFinalIds: resolveRetainedFinalPromotions(previousSnapshotRef.current, motionSnapshot),
-      previousRects: previousRectsRef.current,
-      nextRects,
-      elements,
-      reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-      activeAnimations: activeAnimationsRef.current
-    });
-    previousSnapshotRef.current = motionSnapshot;
-    previousRectsRef.current = nextRects;
-  }, [motionSignature]);
-
-  useEffect(() => {
-    const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const cancelOwnedAnimations = () => {
-      if (!motionPreference.matches) return;
-      cancelCaptionAnimations(activeAnimationsRef.current);
-    };
-    motionPreference.addEventListener("change", cancelOwnedAnimations);
-    return () => {
-      motionPreference.removeEventListener("change", cancelOwnedAnimations);
-      cancelCaptionAnimations(activeAnimationsRef.current);
-    };
-  }, []);
-
-  return (
-    <div ref={stackRef} className={`caption-live-stack ${sizeClass}`} data-testid="live-caption-rows">
-      {previousRows.map((slot) => (
-        <div
-          key={resolveLiveCaptionRowKey(slot)}
-          className="caption-live-row"
-          data-testid="live-caption-previous"
-          data-caption-kind={slot.kind}
-          data-caption-final-id={slot.kind === "final" ? slot.line.id : undefined}
-        >
-          <LiveCaptionSlot slot={slot} terms={terms} sizeClass={sizeClass} />
-        </div>
-      ))}
-      <div
-        key={resolveLiveCaptionRowKey(currentRow, true)}
-        className="caption-live-row caption-live-current"
-        data-testid="live-caption-current"
-        data-caption-kind={currentRow.kind}
-        data-caption-final-id={currentRow.kind === "final" ? currentRow.line.id : undefined}
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <LiveCaptionSlot slot={currentRow} terms={terms} sizeClass={sizeClass} />
-      </div>
-    </div>
-  );
-}
-
-function LiveScreen({
-  analysis,
-  stream,
-  fontScale,
-  onFontScale,
-  highContrast,
-  onHighContrast,
-  onFinish
-}: {
-  analysis: AnalysisResult;
-  stream: ReturnType<typeof useLectureStream>;
-  fontScale: FontScale;
-  onFontScale: () => void;
-  highContrast: boolean;
-  onHighContrast: () => void;
-  onFinish: () => void;
-}) {
-  const termById = useMemo(() => new Map(analysis.terms.map((term) => [term.id, term])), [analysis.terms]);
-  const captionPresentation = resolveLiveCaptionPresentation(stream.lines, stream.interim);
-  const { historyLines } = captionPresentation;
-  const historyLogRef = useRef<HTMLDivElement>(null);
-  const sizeClass = LIVE_CAPTION_SIZE_CLASS[fontScale];
-  const fontScaleLabel = fontScale === "xlarge" ? "매우 크게" : fontScale === "large" ? "크게" : "보통";
-
-  useEffect(() => {
-    if (historyLines.length === 0) return;
-    const historyLog = historyLogRef.current;
-    if (!historyLog) return;
-    const latestHistoryRow = historyLog.lastElementChild;
-    if (!latestHistoryRow) return;
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const historyLogRect = historyLog.getBoundingClientRect();
-    const latestRowRect = latestHistoryRow.getBoundingClientRect();
-    historyLog.scrollTo({
-      top: calculateHistoryRowScrollTop(historyLog.scrollTop, historyLogRect.bottom, latestRowRect.bottom),
-      behavior: reduceMotion ? "auto" : "smooth"
-    });
-  }, [historyLines.length]);
-
-  return (
-    <main className={`min-h-[calc(100dvh-65px)] lg:h-[calc(100dvh-65px)] lg:overflow-hidden ${highContrast ? "bg-black" : ""}`}>
-      <div className="h-full w-full px-3 py-3 sm:px-5 lg:flex lg:flex-col lg:px-6 xl:px-8">
-        <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
-            <div className={`flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold ${stream.status === "ready" ? "border-emerald-300/20 bg-emerald-300/10 text-emerald-200" : stream.status === "error" ? "border-rose-300/20 bg-rose-300/10 text-rose-100" : "border-white/10 bg-white/[0.04] text-slate-400"}`}>
-              {stream.status === "ready" ? <Wifi className="size-4" /> : stream.status === "error" ? <WifiOff className="size-4" /> : <LoaderCircle className="size-4 animate-spin" />}
-              {stream.statusMessage}
-            </div>
-            <div className="hidden text-xs text-slate-600 sm:block">{analysis.title}</div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onFontScale}
-              className="control-button"
-              aria-label={`자막 글자 크기 변경, 현재 ${fontScaleLabel}`}
-              title={`자막 크기: ${fontScaleLabel}`}
-            >
-              <span className="text-xs font-black">가</span><span className="text-base font-black">가</span>
-            </button>
-            <button
-              onClick={onHighContrast}
-              className={`control-button ${highContrast ? "!border-cyan-300 !text-cyan-300" : ""}`}
-              aria-label="고대비 화면 전환"
-              aria-pressed={highContrast}
-            >
-              <Highlighter className="size-4" />
-            </button>
-            <button onClick={() => document.documentElement.requestFullscreen?.()} className="control-button" aria-label="전체 화면"><Maximize2 className="size-4" /></button>
-            <button onClick={onFinish} className="danger-button"><Pause className="size-4 fill-current" /> 종료</button>
-          </div>
-        </div>
-
-        <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,7fr)_minmax(320px,3fr)] lg:grid-rows-[minmax(0,1fr)_auto]">
-          <section className={`flex min-h-[320px] min-w-0 flex-col overflow-hidden rounded-[1.6rem] border lg:min-h-0 ${highContrast ? "border-white bg-black" : "border-white/[0.08] bg-[#0a1625]"}`}>
-            <div className="flex shrink-0 items-center justify-between border-b border-white/[0.07] px-5 py-4 sm:px-6">
-              <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-slate-500"><FileText className="size-4 text-cyan-300" /> 자막 기록</div>
-              <div className="rounded-full bg-white/[0.05] px-3 py-1.5 text-[11px] font-bold text-slate-500">{historyLines.length}개 문장</div>
-            </div>
-            <div
-              ref={historyLogRef}
-              role="log"
-              aria-label="확정 자막 기록"
-              tabIndex={0}
-              className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain px-5 py-4 outline-none ring-inset ring-cyan-300 focus-visible:ring-2 sm:px-6"
-            >
-              {historyLines.length > 0 ? historyLines.map((line) => (
-                <TransparentCaption
-                  key={line.id}
-                  line={line}
-                  terms={analysis.terms}
-                  emphasizeTerms={false}
-                  className="caption-history-entry border-b border-white/[0.055] pb-3 text-sm font-semibold leading-6 text-slate-400 last:border-0 sm:text-base"
-                />
-              )) : (
-                <div className="flex h-full min-h-[190px] items-center justify-center text-center text-sm font-semibold text-slate-600">확정된 자막이 이곳에 쌓입니다.</div>
-              )}
-            </div>
-          </section>
-
-          <aside className="min-w-0 lg:min-h-0" aria-label="실시간 용어 설명">
-            <section className={`flex h-[min(58dvh,500px)] min-h-[320px] min-w-0 flex-col overflow-hidden rounded-[1.6rem] border lg:h-full lg:min-h-0 ${highContrast ? "border-white bg-black" : "border-cyan-300/15 bg-gradient-to-br from-cyan-300/[0.09] to-blue-400/[0.03]"}`}>
-              <div className="shrink-0 border-b border-white/[0.07] px-5 py-4 sm:px-6">
-                <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-cyan-300"><Sparkles className="size-4" /> 용어 설명</div>
-              </div>
-
-              <div
-                role="log"
-                aria-label="확정 자막에서 언급된 용어 기록"
-                aria-relevant="additions"
-                tabIndex={0}
-                className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3 outline-none ring-inset ring-cyan-300 focus-visible:ring-2 sm:p-4"
-              >
-                {stream.termOccurrences.length > 0 ? stream.termOccurrences.map((occurrence, index) => {
-                  const term = termById.get(occurrence.termId);
-                  if (!term) return null;
-                  return (
-                    <div key={occurrence.id} className="term-card-push">
-                      <article
-                        data-term-occurrence-id={occurrence.id}
-                        className={`term-explanation-card min-w-0 rounded-2xl border p-4 sm:p-5 ${index === 0 ? "border-cyan-300/25 bg-cyan-300/[0.09]" : "border-white/[0.075] bg-[#07111f]/60"}`}
-                      >
-                        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-                          <h2 className="min-w-0 break-words text-xl font-black leading-tight tracking-[-0.04em] text-white [overflow-wrap:anywhere] sm:text-2xl">{term.term}</h2>
-                          {term.english && <p className="min-w-0 break-words text-left text-xs font-bold leading-5 text-cyan-300/80 [overflow-wrap:anywhere]">{term.english}</p>}
-                        </div>
-                        <p className="mt-3 break-words text-sm font-medium leading-6 text-slate-200 [overflow-wrap:anywhere]">{term.easyExplanation}</p>
-                      </article>
-                    </div>
-                  );
-                }) : (
-                  <div className="flex min-h-[210px] flex-col items-center justify-center px-5 text-center">
-                    <div className="grid size-12 place-items-center rounded-2xl border border-white/[0.08] bg-white/[0.045] text-cyan-300"><Sparkles className="size-5" /></div>
-                    <div className="mt-4 text-sm font-extrabold text-slate-300">아직 언급된 용어가 없습니다</div>
-                    <p className="mt-2 max-w-[280px] text-xs leading-5 text-slate-600">확정 자막에 전문용어가 등장하면 쉬운 설명이 이곳에 차례로 쌓입니다.</p>
-                  </div>
-                )}
-              </div>
-            </section>
-          </aside>
-
-          <section className={`caption-live-panel min-w-0 overflow-hidden rounded-[1.6rem] border p-5 sm:p-6 lg:col-span-2 ${highContrast ? "caption-live-panel-contrast border-white bg-black" : "border-white/[0.08] bg-[#0a1625]"}`} aria-label="현재 라이브 자막">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-xs font-extrabold tracking-[0.15em] text-slate-500"><Volume2 className="size-4 text-cyan-300" /> LIVE CAPTION</div>
-              <div className="flex items-center gap-2 text-[11px] text-slate-600 sm:text-xs"><Mic className="size-4 text-rose-300" /> 실시간 음성은 저장하지 않습니다</div>
-            </div>
-            <div className="mt-3 border-t border-white/[0.07] pt-4 sm:mt-4 sm:pt-5">
-              <LiveCaptionRows presentation={captionPresentation} terms={analysis.terms} sizeClass={sizeClass} />
-            </div>
-          </section>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function ResultsScreen({ analysis, lines, onRestart, onHome }: { analysis: AnalysisResult; lines: TranscriptLine[]; onRestart: () => void; onHome: () => void }) {
-  const detectedIds = new Set(lines.flatMap((line) => line.termIds));
-  const detectedTerms = analysis.terms.filter((term) => detectedIds.has(term.id));
-  const contextRate = analysis.terms.length ? Math.round((detectedTerms.length / analysis.terms.length) * 100) : 0;
-
-  return (
-    <main className="mx-auto max-w-[1180px] px-5 py-12 sm:px-8 sm:py-16">
-      <div className="eyebrow"><Gauge className="size-3.5" /> SESSION REPORT</div>
-      <div className="mt-5 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-        <div>
-          <h2 className="text-4xl font-black tracking-[-0.055em] text-white sm:text-5xl">강연 자막 결과</h2>
-          <p className="mt-3 text-sm text-slate-500">실제 정확도 비교는 기준 자막이 있는 평가 음원을 사용해 측정합니다.</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={onHome} className="secondary-button"><ArrowLeft className="size-4" /> 처음으로</button>
-          <button onClick={onRestart} className="primary-button"><RotateCcw className="size-4" /> 다시 시연</button>
-        </div>
-      </div>
-
-      <div className="mt-10 grid gap-4 sm:grid-cols-3">
-        {[
-          [lines.length, "확정 자막", "문장"],
-          [detectedTerms.length, "등장한 전문용어", `전체 ${analysis.terms.length}개`],
-          [analysis.phraseSet.length, "준비된 PhraseSet 힌트", "분석 단계 생성"]
-        ].map(([value, label, unit]) => (
-          <div key={String(label)} className="rounded-[1.6rem] border border-white/[0.08] bg-white/[0.035] p-6">
-            <div className="text-4xl font-black tracking-[-0.04em] text-white">{value}</div>
-            <div className="mt-5 text-sm font-extrabold text-slate-300">{label}</div>
-            <div className="mt-1 text-xs text-slate-600">{unit}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-[.65fr_1.35fr]">
-        <section className="rounded-[1.6rem] border border-cyan-300/15 bg-cyan-300/[0.055] p-6">
-          <div className="text-xs font-extrabold tracking-[0.15em] text-cyan-300">용어집 등장률</div>
-          <div className="mt-6 flex items-end gap-2"><span className="text-6xl font-black tracking-[-0.07em] text-white">{Math.min(contextRate, 100)}</span><span className="pb-2 text-xl font-black text-slate-500">%</span></div>
-          <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.07]"><div className="h-full rounded-full bg-cyan-300" style={{ width: `${Math.min(contextRate, 100)}%` }} /></div>
-          <p className="mt-5 text-xs leading-5 text-slate-500">분석된 전체 전문용어 가운데 이번 자막에 등장한 용어의 비율입니다.</p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            {detectedTerms.map((term) => <span key={term.id} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-bold text-slate-300">{term.term}</span>)}
-          </div>
-        </section>
-
-        <section className="rounded-[1.6rem] border border-white/[0.08] bg-white/[0.035] p-6">
-          <div className="flex items-center justify-between"><div className="text-sm font-extrabold text-white">확정 자막 목록</div><div className="text-xs text-slate-600">실시간 강연 음성은 저장하지 않음</div></div>
-          <div className="mt-5 max-h-[330px] space-y-3 overflow-y-auto pr-2">
-            {lines.length ? lines.map((line, index) => (
-              <div key={line.id} className="flex gap-4 rounded-2xl border border-white/[0.055] bg-[#07111f]/55 p-4">
-                <div className="grid size-7 shrink-0 place-items-center rounded-full bg-white/[0.06] text-[10px] font-black text-slate-500">{index + 1}</div>
-                <div>
-                  <TransparentCaption line={line} terms={analysis.terms} className="text-sm font-semibold leading-6 text-slate-300" />
-                  {line.termIds.length > 0 && <div className="mt-2 text-[11px] font-bold text-cyan-300">{line.termIds.map((id) => analysis.terms.find((term) => term.id === id)?.term).filter(Boolean).join(" · ")}</div>}
-                </div>
-              </div>
-            )) : <div className="py-16 text-center text-sm text-slate-600">확정된 자막이 없습니다.</div>}
-          </div>
-        </section>
-      </div>
-    </main>
-  );
-}
-
 export function App({ initialHash }: { initialHash?: string } = {}) {
   const development = import.meta.env.DEV;
   const [route, setRoute] = useState<AppRoute>(() => resolveAppRoute(
@@ -1220,23 +112,95 @@ export function App({ initialHash }: { initialHash?: string } = {}) {
   const [routeFocusRequest, setRouteFocusRequest] = useState(0);
   const [stage, setStage] = useState<Stage>("upload");
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [sessionAnalysis, setSessionAnalysis] = useState<AnalysisResult | null>(null);
+  const [excludedTermIds, setExcludedTermIds] = useState<string[]>([]);
+  const [analysisSourceFile, setAnalysisSourceFile] = useState<File | null>(null);
+  const [presentation, setPresentation] = useState<PresentationAsset | null>(null);
+  const [presentationBusy, setPresentationBusy] = useState(false);
+  const [presentationError, setPresentationError] = useState("");
   const [serviceStatus, setServiceStatus] = useState<ServiceStatus | null>(null);
+  const [serviceCheckState, setServiceCheckState] = useState<"checking" | "ready" | "error">("checking");
   const [error, setError] = useState("");
   const [analysisStepState, setAnalysisStepState] = useState<AnalysisStepState>(() => createAnalysisStepState());
+  const [analysisWorkflowSource, setAnalysisWorkflowSource] = useState<"pdf" | "demo">("pdf");
   const [fileName, setFileName] = useState("");
   const [storedGlossaries, setStoredGlossaries] = useState<StoredGlossary[]>([]);
-  const [storageIssue, setStorageIssue] = useState<GlossaryStorageIssue | null>(null);
+  const [activeGlossaryId, setActiveGlossaryId] = useState<string | null>(null);
+  const [libraryIssue, setLibraryIssue] = useState<GlossaryStorageIssue | null>(null);
+  const [analysisStorageIssue, setAnalysisStorageIssue] = useState<GlossaryStorageIssue | null>(null);
+  const [storageRecoveryBackups, setStorageRecoveryBackups] = useState<GlossaryStorageBackup[]>([]);
+  const [storageRecoveryIssue, setStorageRecoveryIssue] = useState<GlossaryStorageIssue | null>(null);
+  const [storageRecoveryNotice, setStorageRecoveryNotice] = useState("");
   const [analysisSaved, setAnalysisSaved] = useState(false);
+  const [loadingGlossaryId, setLoadingGlossaryId] = useState<string | null>(null);
+  const [lectureStartState, setLectureStartState] = useState<LectureStartState>({ status: "idle" });
+  const [lastLectureConfig, setLastLectureConfig] = useState<{ mode: "live" | "demo"; withoutVocabulary: boolean }>({
+    mode: "demo",
+    withoutVocabulary: false
+  });
   const [fontScale, setFontScale] = useState<FontScale>("normal");
   const [highContrast, setHighContrast] = useState(false);
-  const stream = useLectureStream(analysis?.terms || [], analysis?.phraseSet || []);
+  const [resultExportStatus, setResultExportStatus] = useState<SessionExportStatus>("not-exported");
+  const [resultExportError, setResultExportError] = useState("");
+  const storageMutation = useExclusiveActionGate();
+  const resultExport = useExclusiveActionGate();
+  const effectiveAnalysis = useMemo(() => {
+    if (!analysis) return null;
+    const excluded = new Set(excludedTermIds);
+    const terms = analysis.terms.filter((term) => !excluded.has(term.id));
+    const allowedForms = new Set(terms.flatMap((term) => [term.term, term.english, ...term.spokenAliases])
+      .map((form) => form.normalize("NFKC").replace(/\s+/gu, " ").trim().toLocaleLowerCase("ko-KR"))
+      .filter(Boolean));
+    return {
+      ...analysis,
+      terms,
+      phraseSet: analysis.phraseSet.filter((phrase) => allowedForms.has(
+        phrase.normalize("NFKC").replace(/\s+/gu, " ").trim().toLocaleLowerCase("ko-KR")
+      ))
+    };
+  }, [analysis, excludedTermIds]);
+  const stream = useLectureStream(
+    effectiveAnalysis?.terms ?? EMPTY_GLOSSARY_TERMS,
+    effectiveAnalysis?.phraseSet ?? EMPTY_PHRASE_SET
+  );
+  const resultDiscardConfirmationRequired = shouldConfirmSessionDiscard(
+    stage,
+    stream.transcript.lineCount,
+    resultExportStatus
+  );
   const previousStreamStatusRef = useRef(stream.status);
-  const experimentNavigationBlocked = stage === "analyzing" || stage === "live";
+  const previousFocusSignatureRef = useRef(`${route.page}:${stage}`);
+  const analysisOperationRef = useRef<AbortController | null>(null);
+  const lectureStartOperationRef = useRef<AbortController | null>(null);
+  const healthAbortRef = useRef<AbortController | null>(null);
+  const presentationRef = useRef<PresentationAsset | null>(null);
+  const presentationRequestRef = useRef(0);
+  const presentationAbortRef = useRef<AbortController | null>(null);
+  const experimentNavigationBlocked = stage === "analyzing" || stage === "live" || lectureStartState.status === "preparing";
   const experimentNavigationBlockedRef = useRef(experimentNavigationBlocked);
   experimentNavigationBlockedRef.current = experimentNavigationBlocked;
 
+  const refreshStorageRecovery = useCallback(() => {
+    try {
+      setStorageRecoveryBackups(listGlossaryStorageBackups(window.localStorage));
+      setStorageRecoveryIssue(null);
+    } catch (caught) {
+      setStorageRecoveryIssue(glossaryStorageIssue(caught));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!experimentNavigationBlocked && !resultDiscardConfirmationRequired) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [experimentNavigationBlocked, resultDiscardConfirmationRequired]);
+
   const navigateToRoute = useCallback((nextRoute: AppRoute) => {
-    if (nextRoute.page === "experiment" && experimentNavigationBlocked) return;
+    if (nextRoute.page === "experiment" && (experimentNavigationBlocked || lectureStartOperationRef.current)) return;
 
     const nextHash = appRouteHash(nextRoute);
     if (initialHash !== undefined || typeof window === "undefined") {
@@ -1261,7 +225,7 @@ export function App({ initialHash }: { initialHash?: string } = {}) {
 
     const syncRoute = () => {
       const nextRoute = resolveAppRoute(window.location.hash, development);
-      if (nextRoute.page === "experiment" && experimentNavigationBlockedRef.current) {
+      if (nextRoute.page === "experiment" && (experimentNavigationBlockedRef.current || lectureStartOperationRef.current)) {
         window.history.replaceState(null, "", "#/lecture");
         setRoute(LECTURE_ROUTE);
         return;
@@ -1277,182 +241,669 @@ export function App({ initialHash }: { initialHash?: string } = {}) {
     return () => window.removeEventListener("hashchange", syncRoute);
   }, [development, initialHash]);
 
-  useEffect(() => {
-    void getHealth().then(setServiceStatus).catch(() => setServiceStatus(null));
+  const checkServiceStatus = useCallback(() => {
+    healthAbortRef.current?.abort();
+    const controller = new AbortController();
+    healthAbortRef.current = controller;
+    setServiceCheckState("checking");
+    void getHealth(controller.signal).then((status) => {
+      if (healthAbortRef.current !== controller) return;
+      setServiceStatus(status);
+      setServiceCheckState("ready");
+    }).catch((caught) => {
+      if (healthAbortRef.current !== controller || isAbortError(caught)) return;
+      setServiceStatus(null);
+      setServiceCheckState("error");
+    });
   }, []);
 
   useEffect(() => {
-    try {
-      setStoredGlossaries(listStoredGlossaries(window.localStorage));
-    } catch (caught) {
-      setStorageIssue(glossaryStorageIssue(caught));
-    }
-  }, []);
+    checkServiceStatus();
+    return () => healthAbortRef.current?.abort();
+  }, [checkServiceStatus]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void withGlossaryStorageLock(() => listStoredGlossaries(window.localStorage))
+      .then((glossaries) => {
+        if (cancelled) return;
+        setStoredGlossaries(glossaries);
+        setLibraryIssue(null);
+        refreshStorageRecovery();
+      })
+      .catch((caught: unknown) => {
+        if (cancelled) return;
+        setLibraryIssue(glossaryStorageIssue(caught));
+        refreshStorageRecovery();
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshStorageRecovery]);
 
   useEffect(() => {
     const syncGlossaries = (event: StorageEvent) => {
       if (!shouldSyncGlossaryStorageEvent(event.key)) return;
-      try {
-        setStoredGlossaries(listStoredGlossaries(window.localStorage));
-        setStorageIssue(null);
-      } catch (caught) {
+      void withGlossaryStorageLock(() => listStoredGlossaries(window.localStorage)).then((glossaries) => {
+        setStoredGlossaries(glossaries);
+        setLibraryIssue(null);
+        refreshStorageRecovery();
+        if (activeGlossaryId) {
+          const activeGlossary = glossaries.find((glossary) => glossary.id === activeGlossaryId);
+          if (!activeGlossary) {
+            setAnalysisSaved(false);
+            setActiveGlossaryId(null);
+            setAnalysisStorageIssue({
+              code: "not-found",
+              message: "현재 용어집이 다른 탭에서 삭제되었습니다. 현재 분석은 화면에 남아 있지만 브라우저에는 저장되어 있지 않습니다."
+            });
+          } else {
+            setAnalysisSaved(true);
+            setAnalysisStorageIssue(null);
+            setAnalysis((current) => current ? {
+              ...current,
+              title: activeGlossary.name,
+              terms: activeGlossary.terms,
+              phraseSet: activeGlossary.phraseSet
+            } : current);
+            const activeTermIds = new Set(activeGlossary.terms.map((term) => term.id));
+            setExcludedTermIds((current) => current.filter((id) => activeTermIds.has(id)));
+            setStorageRecoveryNotice("다른 탭에서 변경한 현재 용어집을 이 화면에도 반영했습니다.");
+          }
+        }
+      }).catch((caught: unknown) => {
         setStoredGlossaries([]);
-        setStorageIssue(glossaryStorageIssue(caught));
-      }
+        const issue = glossaryStorageIssue(caught);
+        setLibraryIssue(issue);
+        refreshStorageRecovery();
+        if (activeGlossaryId) {
+          setAnalysisSaved(false);
+          setAnalysisStorageIssue(issue);
+        }
+      });
     };
     window.addEventListener("storage", syncGlossaries);
     return () => window.removeEventListener("storage", syncGlossaries);
-  }, []);
+  }, [activeGlossaryId, refreshStorageRecovery]);
 
   useEffect(() => {
     const previousStatus = previousStreamStatusRef.current;
     previousStreamStatusRef.current = stream.status;
-    if (shouldTransitionToResults(stage, previousStatus, stream.status)) setStage("results");
+    if (shouldTransitionToResults(stage, previousStatus, stream.status)) {
+      setResultExportStatus("not-exported");
+      setResultExportError("");
+      setStage("results");
+    }
   }, [stage, stream.status]);
 
+  useEffect(() => {
+    const signature = `${route.page}:${stage}`;
+    if (previousFocusSignatureRef.current === signature) return;
+    previousFocusSignatureRef.current = signature;
+    if (route.page !== "lecture") return;
+
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(`[data-app-stage="${stage}"]`)?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [route.page, stage]);
+
+  const clearPresentation = useCallback(() => {
+    presentationAbortRef.current?.abort();
+    presentationAbortRef.current = null;
+    presentationRequestRef.current += 1;
+    const current = presentationRef.current;
+    presentationRef.current = null;
+    disposePresentationAsset(current);
+    setPresentation(null);
+    setPresentationBusy(false);
+    setPresentationError("");
+  }, []);
+
+  const handlePresentationFile = useCallback(async (file: File) => {
+    presentationAbortRef.current?.abort();
+    const controller = new AbortController();
+    presentationAbortRef.current = controller;
+    const requestId = presentationRequestRef.current + 1;
+    presentationRequestRef.current = requestId;
+    setPresentationBusy(true);
+    setPresentationError("");
+    try {
+      const nextPresentation = await createPresentationAsset(file, {}, controller.signal);
+      if (requestId !== presentationRequestRef.current) {
+        disposePresentationAsset(nextPresentation);
+        return;
+      }
+      const previous = presentationRef.current;
+      presentationRef.current = nextPresentation;
+      setPresentation(nextPresentation);
+      disposePresentationAsset(previous);
+    } catch (caught) {
+      if (requestId !== presentationRequestRef.current) return;
+      if (isAbortError(caught)) return;
+      setPresentationError(presentationUploadFailureMessage(
+        caught,
+        file.name,
+        presentationRef.current?.name
+      ));
+    } finally {
+      if (requestId === presentationRequestRef.current) {
+        if (presentationAbortRef.current === controller) presentationAbortRef.current = null;
+        setPresentationBusy(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => () => {
+    presentationAbortRef.current?.abort();
+    presentationAbortRef.current = null;
+    presentationRequestRef.current += 1;
+    disposePresentationAsset(presentationRef.current);
+    presentationRef.current = null;
+  }, []);
+
+  const cancelAnalysisOperation = () => {
+    analysisOperationRef.current?.abort();
+    analysisOperationRef.current = null;
+    setLoadingGlossaryId(null);
+  };
+
+  const cancelLectureStartOperation = () => {
+    lectureStartOperationRef.current?.abort();
+    lectureStartOperationRef.current = null;
+  };
+
+  useEffect(() => () => {
+    analysisOperationRef.current?.abort();
+    lectureStartOperationRef.current?.abort();
+  }, []);
+
+  const confirmSessionDiscard = (): boolean => {
+    if (!resultDiscardConfirmationRequired) return true;
+    const confirmed = window.confirm("아직 파일로 저장하지 않은 자막 결과가 있습니다. 이 화면을 나가면 결과를 다시 복구할 수 없습니다. 그래도 계속할까요?");
+    return confirmed;
+  };
+
   const reset = () => {
-    if (analysis?.pdfUrl) URL.revokeObjectURL(analysis.pdfUrl);
-    void stream.stop();
+    if (!confirmSessionDiscard()) return;
+    cancelAnalysisOperation();
+    cancelLectureStartOperation();
+    clearPresentation();
+    stream.discardSession();
     setAnalysis(null);
+    setSessionAnalysis(null);
+    setExcludedTermIds([]);
+    setActiveGlossaryId(null);
+    setAnalysisSourceFile(null);
     setError("");
     setAnalysisStepState(createAnalysisStepState());
     setFileName("");
     setAnalysisSaved(false);
+    setLoadingGlossaryId(null);
+    setAnalysisStorageIssue(null);
+    setLectureStartState({ status: "idle" });
+    setResultExportStatus("not-exported");
+    setResultExportError("");
     setStage("upload");
     navigateToRoute(LECTURE_ROUTE);
   };
 
-  const persistAnalysis = (result: AnalysisResult, fallbackName: string): StoredGlossary | null => {
+  const persistAnalysis = async (
+    result: AnalysisResult,
+    fallbackName: string,
+    id: string | null,
+    signal?: AbortSignal
+  ): Promise<StoredGlossary | null> => {
     try {
-      const saved = saveAnalyzedGlossary(window.localStorage, result, result.title.trim() || fallbackName);
-      setStoredGlossaries(listStoredGlossaries(window.localStorage));
-      setStorageIssue(null);
+      throwIfAborted(signal);
+      const { saved, glossaries } = await withGlossaryStorageLock(() => {
+        throwIfAborted(signal);
+        const savedGlossary = saveAnalyzedGlossary(
+          window.localStorage,
+          result,
+          result.title.trim() || fallbackName,
+          id ? { id } : undefined
+        );
+        return {
+          saved: savedGlossary,
+          glossaries: listStoredGlossaries(window.localStorage)
+        };
+      });
+      throwIfAborted(signal);
+      setStoredGlossaries(glossaries);
+      refreshStorageRecovery();
+      setLibraryIssue(null);
+      setAnalysisStorageIssue(null);
       setAnalysisSaved(true);
+      setActiveGlossaryId(saved.id);
       return saved;
     } catch (caught) {
-      setStorageIssue(glossaryStorageIssue(caught));
+      if (isAbortError(caught)) throw caught;
+      setAnalysisStorageIssue(glossaryStorageIssue(caught));
       setAnalysisSaved(false);
       return null;
     }
   };
 
-  const handleFile = async (file: File) => {
+  const runAnalysisEntry = <Extracted,>(
+    source: AnalysisEntrySource<Extracted>,
+    failureMessage: string
+  ): void => {
+    cancelAnalysisOperation();
+    cancelLectureStartOperation();
+    const controller = new AbortController();
+    analysisOperationRef.current = controller;
+    setLoadingGlossaryId(null);
+    clearPresentation();
+    setAnalysisSourceFile(null);
+    setSessionAnalysis(null);
+    setExcludedTermIds([]);
+    setActiveGlossaryId(null);
+    setAnalysisStorageIssue(null);
     setError("");
-    setFileName(file.name);
+    setFileName(source.fileName);
+    setAnalysisWorkflowSource(source.kind);
+    setLectureStartState({ status: "idle" });
     setAnalysisStepState(createAnalysisStepState());
     setStage("analyzing");
-    try {
-      const readyAnalysis = await runPdfAnalysisSteps({
-        extract: async () => {
-          const { extractPdfPages } = await import("./lib/pdf");
-          return extractPdfPages(file);
-        },
-        analyze: async (pages) => requireNonEmptyGlossary(await analyzePdf(file.name.replace(/\.pdf$/i, ""), pages)),
-        store: (result) => {
-          const nextAnalysis = { ...result, pdfUrl: URL.createObjectURL(file) };
-          const saved = persistAnalysis(nextAnalysis, "강연 용어집");
-          return {
-            readyValue: saved ? { ...nextAnalysis, terms: saved.terms, phraseSet: saved.phraseSet } : nextAnalysis,
-            completed: saved !== null
-          };
-        },
-        onStateChange: setAnalysisStepState
-      });
-      setAnalysis(readyAnalysis);
-      setStage("ready");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "PDF를 분석하지 못했습니다.");
-      setStage("upload");
-    }
+    void (async () => {
+      try {
+        const readyAnalysis = await runAnalysisEntryWorkflow({
+          source,
+          store: async (result, fallbackName, signal) => {
+            const saved = await persistAnalysis(result, fallbackName, null, signal);
+            return {
+              readyValue: saved ? { ...result, terms: saved.terms, phraseSet: saved.phraseSet } : result,
+              completed: saved !== null
+            };
+          },
+          onStateChange: setAnalysisStepState,
+          signal: controller.signal
+        });
+        throwIfAborted(controller.signal);
+        setAnalysisSourceFile(source.sourceFile);
+        setAnalysis(readyAnalysis);
+        setStage("ready");
+      } catch (caught) {
+        if (isAbortError(caught) || controller.signal.aborted) return;
+        setError(caught instanceof Error ? caught.message : failureMessage);
+        setStage("upload");
+      } finally {
+        if (analysisOperationRef.current === controller) analysisOperationRef.current = null;
+      }
+    })();
   };
 
-  const handleDemo = async () => {
-    setError("");
-    setFileName("생성형_AI_입문_샘플.pdf");
-    setStage("analyzing");
-    setAnalysisStepState(createAnalysisStepState());
-    try {
-      const readyAnalysis = await runPdfAnalysisSteps({
-        extract: async () => undefined,
-        analyze: async () => requireNonEmptyGlossary(await getDemo()),
-        store: (result) => {
-          const saved = persistAnalysis(result, "샘플 강연 용어집");
-          return {
-            readyValue: saved ? { ...result, terms: saved.terms, phraseSet: saved.phraseSet } : result,
-            completed: saved !== null
-          };
-        },
-        onStateChange: setAnalysisStepState
-      });
-      setAnalysis(readyAnalysis);
-      setStage("ready");
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "데모를 불러오지 못했습니다.");
-      setStage("upload");
-    }
+  const handleFile = (file: File): void => {
+    runAnalysisEntry({
+      kind: "pdf",
+      fileName: file.name,
+      sourceFile: file,
+      fallbackGlossaryName: "강연 용어집",
+      extract: (signal) => extractPdfPages(file, undefined, signal),
+      analyze: async (pages, signal) => requireNonEmptyGlossary(
+        await analyzePdf(file.name.replace(/\.pdf$/i, ""), pages, signal)
+      )
+    }, "PDF를 분석하지 못했습니다.");
   };
 
-  const handleLoadGlossary = async (id: string) => {
+  const handleDemo = (): void => {
+    runAnalysisEntry({
+      kind: "demo",
+      fileName: "생성형_AI_입문_샘플.pdf",
+      sourceFile: null,
+      fallbackGlossaryName: "샘플 강연 용어집",
+      extract: (signal) => getDemo(signal),
+      analyze: async (result) => requireNonEmptyGlossary(result)
+    }, "데모를 불러오지 못했습니다.");
+  };
+
+  const handleLoadGlossary = (id: string): void => {
+    void storageMutation.run(async () => {
+    cancelAnalysisOperation();
+    cancelLectureStartOperation();
+    const controller = new AbortController();
+    analysisOperationRef.current = controller;
+    setLoadingGlossaryId(id);
     setError("");
     try {
-      const readyState = loadStoredGlossaryReadyState(window.localStorage, id);
-      if (analysis?.pdfUrl) URL.revokeObjectURL(analysis.pdfUrl);
       await stream.stop();
+      throwIfAborted(controller.signal);
+      const readyState = await withGlossaryStorageLock(() => {
+        throwIfAborted(controller.signal);
+        return loadStoredGlossaryReadyState(window.localStorage, id);
+      });
+      throwIfAborted(controller.signal);
+      clearPresentation();
+      setAnalysisSourceFile(null);
+      setSessionAnalysis(null);
+      setExcludedTermIds([]);
       setAnalysis(readyState.analysis);
+      setActiveGlossaryId(id);
       setFileName(readyState.fileName);
-      setStorageIssue(null);
+      setLibraryIssue(null);
+      setAnalysisStorageIssue(null);
       setAnalysisSaved(true);
+      setLectureStartState({ status: "idle" });
       setStage(readyState.stage);
     } catch (caught) {
-      setStorageIssue(glossaryStorageIssue(caught));
+      if (isAbortError(caught) || controller.signal.aborted) return;
+      setLibraryIssue(glossaryStorageIssue(caught));
+    } finally {
+      if (analysisOperationRef.current === controller) {
+        analysisOperationRef.current = null;
+        setLoadingGlossaryId(null);
+      }
     }
+    });
   };
 
-  const handleRenameGlossary = (id: string, name: string) => {
+  const handleRenameGlossary = (id: string, name: string): void => {
+    void storageMutation.run(async () => {
     try {
-      renameStoredGlossary(window.localStorage, id, name);
-      setStoredGlossaries(listStoredGlossaries(window.localStorage));
-      setStorageIssue(null);
+      const { renamed, glossaries } = await withGlossaryStorageLock(() => {
+        const renamedGlossary = renameStoredGlossary(window.localStorage, id, name);
+        return {
+          renamed: renamedGlossary,
+          glossaries: listStoredGlossaries(window.localStorage)
+        };
+      });
+      setStoredGlossaries(glossaries);
+      refreshStorageRecovery();
+      setLibraryIssue(null);
+      if (activeGlossaryId === id) {
+        setAnalysis((current) => current ? { ...current, title: renamed.name } : current);
+      }
     } catch (caught) {
-      setStorageIssue(glossaryStorageIssue(caught));
+      setLibraryIssue(glossaryStorageIssue(caught));
     }
+    });
   };
 
-  const handleDeleteGlossary = (id: string) => {
+  const handleDeleteGlossary = (id: string): void => {
+    void storageMutation.run(async () => {
     try {
-      deleteStoredGlossary(window.localStorage, id);
-      setStoredGlossaries(listStoredGlossaries(window.localStorage));
-      setStorageIssue(null);
+      const glossaries = await withGlossaryStorageLock(() => {
+        deleteStoredGlossary(window.localStorage, id);
+        return listStoredGlossaries(window.localStorage);
+      });
+      setStoredGlossaries(glossaries);
+      refreshStorageRecovery();
+      setLibraryIssue(null);
+      if (activeGlossaryId === id) {
+        setActiveGlossaryId(null);
+        setAnalysisSaved(false);
+        setAnalysisStorageIssue({
+          code: "not-found",
+          message: "현재 용어집을 브라우저에서 삭제했습니다. 화면의 분석은 유지되지만 다시 사용하려면 저장해야 합니다."
+        });
+      }
     } catch (caught) {
-      setStorageIssue(glossaryStorageIssue(caught));
+      setLibraryIssue(glossaryStorageIssue(caught));
     }
+    });
   };
 
-  const retryAnalysisStorage = () => {
-    if (!analysis) return;
-    const saved = persistAnalysis(analysis, "강연 용어집");
-    if (saved) setAnalysis({ ...analysis, terms: saved.terms, phraseSet: saved.phraseSet });
+  const retryAnalysisStorage = (): void => {
+    void storageMutation.run(async () => {
+      if (!analysis) return;
+      const saved = await persistAnalysis(analysis, "강연 용어집", activeGlossaryId);
+      if (saved) setAnalysis({ ...analysis, terms: saved.terms, phraseSet: saved.phraseSet });
+    });
   };
 
-  const handleResetGlossaries = () => {
+  const handleRecoverGlossaries = (): void => {
+    void storageMutation.run(async () => {
     try {
-      clearStoredGlossaries(window.localStorage);
-      setStoredGlossaries([]);
-      setStorageIssue(null);
-      if (analysis && stage === "ready" && !analysisSaved) retryAnalysisStorage();
+      const recoveryOutcome = await withGlossaryStorageLock(() => {
+        const recovered = recoverStoredGlossaryData(window.localStorage);
+        const retainedActiveId = activeGlossaryId && recovered.glossaries.some((glossary) => glossary.id === activeGlossaryId)
+          ? activeGlossaryId
+          : null;
+        let saved: StoredGlossary | null = null;
+        let saveIssue: GlossaryStorageIssue | null = null;
+        if (analysis && stage === "ready") {
+          try {
+            saved = saveAnalyzedGlossary(
+              window.localStorage,
+              analysis,
+              analysis.title.trim() || "강연 용어집",
+              retainedActiveId ? { id: retainedActiveId } : undefined
+            );
+          } catch (caught) {
+            saveIssue = glossaryStorageIssue(caught);
+          }
+        }
+        return {
+          recovered,
+          retainedActiveId,
+          saved,
+          saveIssue,
+          glossaries: listStoredGlossaries(window.localStorage)
+        };
+      });
+      const { recovered, retainedActiveId, saved, saveIssue, glossaries } = recoveryOutcome;
+      setStoredGlossaries(glossaries);
+      setLibraryIssue(null);
+      setStorageRecoveryIssue(null);
+      refreshStorageRecovery();
+      setActiveGlossaryId(saved?.id ?? retainedActiveId);
+
+      if (analysis && stage === "ready") {
+        if (saved) {
+          setAnalysis({ ...analysis, terms: saved.terms, phraseSet: saved.phraseSet });
+          setAnalysisStorageIssue(null);
+          setAnalysisSaved(true);
+        } else {
+          setAnalysisStorageIssue(saveIssue ?? {
+            code: "unavailable",
+            message: "복구는 완료했지만 현재 분석을 다시 저장하지 못했습니다."
+          });
+          setAnalysisSaved(false);
+        }
+      } else {
+        setAnalysisStorageIssue(null);
+        setAnalysisSaved(Boolean(retainedActiveId));
+      }
+
+      const rejectedMessage = recovered.rejectedCount > 0
+        ? `읽을 수 없거나 한도를 넘은 항목 ${recovered.rejectedCount}개는 원본에만 남겼습니다.`
+        : "읽을 수 있는 항목을 모두 복구했습니다.";
+      const currentAnalysisMessage = analysis && stage === "ready"
+        ? saved
+          ? " 현재 분석도 다시 저장했습니다."
+          : " 현재 분석 저장은 아직 완료되지 않았습니다."
+        : "";
+      setStorageRecoveryNotice(`원본 전체를 복구 데이터로 보존했습니다. ${recovered.glossaries.length}개 용어집을 복구했습니다. ${rejectedMessage}${currentAnalysisMessage}`);
     } catch (caught) {
-      setStorageIssue(glossaryStorageIssue(caught));
+      const issue = glossaryStorageIssue(caught);
+      setLibraryIssue(issue);
+      if (analysis && stage === "ready") setAnalysisStorageIssue(issue);
     }
+    });
   };
 
-  const beginLecture = async (mode: "live" | "demo") => {
-    setStage("live");
-    await stream.start(mode);
+  const handleExportGlossaryRecovery = (): void => {
+    void storageMutation.run(async () => {
+    try {
+      const bundle = await withGlossaryStorageLock(() =>
+        exportGlossaryStorageRecoveryBundle(window.localStorage)
+      );
+      const timestamp = new Date().toISOString().replace(/[:.]/gu, "-");
+      requestTextDownload(bundle, `lecture-context-glossary-recovery-${timestamp}.json`);
+      setStorageRecoveryIssue(null);
+      setStorageRecoveryNotice("JSON 다운로드를 요청했습니다. 브라우저 다운로드 목록에서 파일이 생성됐는지 확인해 주세요.");
+      refreshStorageRecovery();
+    } catch (caught) {
+      setStorageRecoveryIssue(glossaryStorageIssue(caught));
+    }
+    });
+  };
+
+  const handleClearGlossaryRecovery = (): void => {
+    void storageMutation.run(async () => {
+    try {
+      await withGlossaryStorageLock(() => clearGlossaryStorageBackups(window.localStorage));
+      setStorageRecoveryBackups([]);
+      setStorageRecoveryIssue(null);
+      setStorageRecoveryNotice("브라우저에 보관한 원본 복구 데이터를 정리했습니다. 다운로드 목록에서 확인한 JSON 파일은 영향을 받지 않습니다.");
+    } catch (caught) {
+      setStorageRecoveryIssue(glossaryStorageIssue(caught));
+    }
+    });
+  };
+
+  const handleToggleTerm = (id: string) => {
+    setExcludedTermIds((current) => current.includes(id)
+      ? current.filter((candidate) => candidate !== id)
+      : [...current, id]);
+    setSessionAnalysis(null);
+    setLectureStartState({ status: "idle" });
+  };
+
+  const persistReviewedGlossary = (): void => {
+    void storageMutation.run(async () => {
+      if (
+        stage !== "ready" ||
+        lectureStartOperationRef.current ||
+        !analysis ||
+        !effectiveAnalysis ||
+        excludedTermIds.length === 0 ||
+        effectiveAnalysis.terms.length === 0
+      ) return;
+
+      const saved = await persistAnalysis(effectiveAnalysis, "강연 용어집", activeGlossaryId);
+      if (!saved) return;
+
+      setAnalysis({
+        ...analysis,
+        terms: saved.terms,
+        phraseSet: saved.phraseSet
+      });
+      setExcludedTermIds([]);
+      setSessionAnalysis(null);
+      setLectureStartState({ status: "idle" });
+    });
+  };
+
+  const beginLecture = async (mode: "live" | "demo", options: { withoutVocabulary?: boolean } = {}) => {
+    if (!effectiveAnalysis || effectiveAnalysis.terms.length === 0 || lectureStartOperationRef.current) {
+      if (effectiveAnalysis?.terms.length === 0) {
+        setLectureStartState({
+          status: "error",
+          message: "강연에 사용할 전문용어를 하나 이상 포함해 주세요.",
+          canStartWithoutVocabulary: false
+        });
+      }
+      return;
+    }
+    const lectureAnalysis = effectiveAnalysis;
+    setResultExportStatus("not-exported");
+    setResultExportError("");
+    const controller = new AbortController();
+    lectureStartOperationRef.current = controller;
+    let vocabularyName: string | undefined;
+    let preparingVocabulary = false;
+    try {
+      setLectureStartState({
+        status: "preparing",
+        message: mode === "demo" ? "데모 자막을 준비하고 있습니다." : "AWS 자막 연결을 준비하고 있습니다."
+      });
+      if (mode === "live" && !options.withoutVocabulary) {
+        preparingVocabulary = true;
+        setLectureStartState({
+          status: "preparing",
+          message: "검증된 전문용어를 AWS 사용자 지정 용어집으로 준비하고 있습니다."
+        });
+        const prepared = await prepareAwsVocabulary(lectureAnalysis.terms, controller.signal);
+        throwIfAborted(controller.signal);
+        if (!/^lecture-ko-[a-f0-9]{16}$/u.test(prepared.vocabularyName)) {
+          throw new Error("서버가 올바르지 않은 AWS 용어집 식별자를 반환했습니다.");
+        }
+        vocabularyName = prepared.vocabularyName;
+        preparingVocabulary = false;
+      }
+
+      throwIfAborted(controller.signal);
+      const sessionSnapshot = { ...lectureAnalysis };
+      delete sessionSnapshot.vocabularyName;
+      setSessionAnalysis(vocabularyName ? { ...sessionSnapshot, vocabularyName } : sessionSnapshot);
+      setLectureStartState({
+        status: "preparing",
+        message: mode === "demo" ? "데모 자막 화면을 여는 중입니다." : "마이크와 AWS 자막 연결을 여는 중입니다."
+      });
+      const startOutcome = await stream.start(mode, vocabularyName);
+      throwIfAborted(controller.signal);
+      if (startOutcome.status === "cancelled") return;
+      if (startOutcome.status === "failed") throw new Error(startOutcome.outcome.message);
+      setLastLectureConfig({ mode, withoutVocabulary: Boolean(options.withoutVocabulary) });
+      setLectureStartState({ status: "idle" });
+      setStage("live");
+    } catch (caught) {
+      if (isAbortError(caught) || controller.signal.aborted) return;
+      if (preparingVocabulary) {
+        setLectureStartState({
+          status: "error",
+          message: `${caught instanceof Error ? caught.message : "AWS 사용자 지정 용어집을 준비하지 못했습니다."} 용어 카드는 유지한 채 기본 AWS 자막으로 계속할 수 있습니다.`,
+          canStartWithoutVocabulary: true
+        });
+        setStage("ready");
+        return;
+      }
+      setLectureStartState({
+        status: "error",
+        message: caught instanceof Error ? caught.message : "강연 자막 연결을 시작하지 못했습니다.",
+        canStartWithoutVocabulary: false
+      });
+      setSessionAnalysis(null);
+      setStage("ready");
+    } finally {
+      if (lectureStartOperationRef.current === controller) lectureStartOperationRef.current = null;
+    }
   };
 
   const finishLecture = async () => {
-    await stream.stop();
+    const outcome = await stream.stop();
+    if (
+      outcome.status === "cancelled" ||
+      outcome.status === "cancelled-before-streaming" ||
+      outcome.status === "no-active-session"
+    ) return;
+    setResultExportStatus("not-exported");
+    setResultExportError("");
     setStage("results");
+  };
+
+  const exportLectureResult = (format: "json" | "text"): void => {
+    void resultExport.run(async () => {
+      const resultAnalysis = sessionAnalysis ?? effectiveAnalysis;
+      if (!resultAnalysis) return;
+      setResultExportError("");
+      try {
+        const exportedAt = new Date().toISOString();
+        const lines = materializeTranscriptLines(stream.transcript);
+        const input = {
+          title: resultAnalysis.title,
+          exportedAt,
+          mode: lastLectureConfig.mode,
+          outcome: stream.sessionOutcome,
+          lines,
+          glossaryTerms: resultAnalysis.terms
+        } as const;
+        const baseName = `${safeSessionExportBaseName(resultAnalysis.title)}-${exportedAt.replace(/[:.]/gu, "-")}`;
+        const saveOutcome = format === "json"
+          ? await saveTextFile(serializeLectureSessionJson(input), `${baseName}.json`)
+          : await saveTextFile(
+              serializeLectureTranscriptText(input),
+              `${baseName}.txt`,
+              "text/plain;charset=utf-8"
+            );
+        if (saveOutcome === "confirmed") setResultExportStatus("confirmed");
+        if (saveOutcome === "download-requested") setResultExportStatus("download-requested");
+      } catch (caught) {
+        setResultExportError(caught instanceof Error ? caught.message : "결과 파일을 준비하지 못했습니다.");
+      }
+    });
   };
 
   const cycleFontScale = () => {
@@ -1464,55 +915,158 @@ export function App({ initialHash }: { initialHash?: string } = {}) {
   }, [navigateToRoute]);
 
   return (
-    <div className={`min-h-screen bg-[#07111f] text-slate-100 ${highContrast ? "contrast-more" : ""}`}>
-      <Header
-        stage={stage}
-        route={route}
-        development={development}
-        experimentNavigationBlocked={experimentNavigationBlocked}
-        onHome={reset}
-        onNavigate={navigateToRoute}
-      />
+    <div className="min-h-screen bg-[#09090D] text-slate-100">
+      <a
+        href={appRouteHash(route)}
+        onClick={(event) => {
+          event.preventDefault();
+          const main = document.getElementById(APP_MAIN_CONTENT_ID);
+          main?.scrollIntoView?.({ block: "start" });
+          main?.focus({ preventScroll: true });
+        }}
+        className="fixed left-4 top-4 z-[100] -translate-y-24 rounded-xl bg-cyan-300 px-4 py-3 text-sm font-extrabold text-slate-950 shadow-xl transition-transform focus:translate-y-0 motion-reduce:transition-none"
+      >
+        본문으로 건너뛰기
+      </a>
+      {route.page !== "lecture" || stage !== "live" ? (
+        <Header
+          stage={stage}
+          route={route}
+          development={development}
+          experimentNavigationBlocked={experimentNavigationBlocked}
+          onHome={reset}
+          onNavigate={navigateToRoute}
+        />
+      ) : null}
       {route.page === "lecture" && stage === "upload" && (
         <UploadScreen
           onFile={handleFile}
           onDemo={handleDemo}
-          busy={false}
+          busy={loadingGlossaryId !== null || storageMutation.busy}
           error={error}
           serviceStatus={serviceStatus}
+          serviceCheckState={serviceCheckState}
+          onRetryService={checkServiceStatus}
           storedGlossaries={storedGlossaries}
-          storageIssue={storageIssue}
+          storageIssue={libraryIssue}
           onLoadGlossary={(id) => void handleLoadGlossary(id)}
           onRenameGlossary={handleRenameGlossary}
           onDeleteGlossary={handleDeleteGlossary}
-          onResetGlossaries={handleResetGlossaries}
+          storageRecoveryBackups={storageRecoveryBackups}
+          storageRecoveryIssue={storageRecoveryIssue}
+          storageRecoveryNotice={storageRecoveryNotice}
+          onRecoverGlossaries={handleRecoverGlossaries}
+          onExportGlossaryRecovery={handleExportGlossaryRecovery}
+          onClearGlossaryRecovery={handleClearGlossaryRecovery}
         />
       )}
-      {route.page === "lecture" && stage === "analyzing" && <AnalyzingScreen fileName={fileName} stepState={analysisStepState} />}
+      {route.page === "lecture" && stage === "analyzing" && <AnalyzingScreen fileName={fileName} stepState={analysisStepState} source={analysisWorkflowSource} />}
       {route.page === "lecture" && stage === "ready" && analysis && (
         <ReadyScreen
-          analysis={analysis}
-          speechReady={Boolean(serviceStatus?.services.speech)}
-          analysisSaved={analysisSaved}
-          storageIssue={storageIssue}
-          storedGlossaries={storedGlossaries}
-          onStart={beginLecture}
-          onBack={reset}
-          onRetryStorage={retryAnalysisStorage}
-          onDeleteGlossary={handleDeleteGlossary}
-          onResetGlossaries={handleResetGlossaries}
+          state={{
+            analysis,
+            presentation: {
+              asset: presentation,
+              status: presentationBusy ? "loading" : "idle",
+              error: presentationError,
+              analysisFileAvailable: Boolean(analysisSourceFile)
+            },
+            speech: {
+              transcription: serviceStatus?.sttProvider === "aws"
+                ? serviceStatus.services.speech
+                : UNCONFIGURED_SERVICE_STATUS,
+              customVocabulary: serviceStatus?.sttProvider === "aws"
+                ? serviceStatus.services.customVocabulary ?? UNCONFIGURED_SERVICE_STATUS
+                : UNCONFIGURED_SERVICE_STATUS,
+              checkState: serviceCheckState
+            },
+            storage: {
+              saved: analysisSaved,
+              busy: storageMutation.busy,
+              issue: analysisStorageIssue,
+              glossaries: storedGlossaries,
+              recoveryBackups: storageRecoveryBackups,
+              recoveryIssue: storageRecoveryIssue,
+              recoveryNotice: storageRecoveryNotice
+            },
+            review: {
+              excludedTermIds,
+              activePhraseCount: effectiveAnalysis?.phraseSet.length ?? 0
+            },
+            lectureStart: lectureStartState
+          }}
+          actions={{
+            navigation: { back: reset },
+            presentation: {
+              select: (file) => void handlePresentationFile(file),
+              useAnalysisFile: () => {
+                if (analysisSourceFile) void handlePresentationFile(analysisSourceFile);
+              },
+              clear: clearPresentation
+            },
+            speech: { retryCheck: checkServiceStatus },
+            storage: {
+              retry: retryAnalysisStorage,
+              deleteGlossary: handleDeleteGlossary,
+              recoverGlossaries: handleRecoverGlossaries,
+              exportRecovery: handleExportGlossaryRecovery,
+              clearRecovery: handleClearGlossaryRecovery
+            },
+            review: {
+              toggleTerm: handleToggleTerm,
+              includeAllTerms: () => {
+                setExcludedTermIds([]);
+                setSessionAnalysis(null);
+                setLectureStartState({ status: "idle" });
+              },
+              persistExclusions: persistReviewedGlossary
+            },
+            lecture: {
+              start: beginLecture,
+              startWithoutVocabulary: () => void beginLecture("live", { withoutVocabulary: true })
+            }
+          }}
         />
       )}
-      {route.page === "lecture" && stage === "live" && analysis && <LiveScreen analysis={analysis} stream={stream} fontScale={fontScale} onFontScale={cycleFontScale} highContrast={highContrast} onHighContrast={() => setHighContrast((value) => !value)} onFinish={finishLecture} />}
-      {route.page === "lecture" && stage === "results" && analysis && <ResultsScreen analysis={analysis} lines={stream.lines} onRestart={() => beginLecture("demo")} onHome={reset} />}
-      {route.page === "experiment" && development ? (
-        <ExperimentWorkspace
-          panel={route.panel}
-          glossaries={storedGlossaries}
-          focusRequest={routeFocusRequest}
-          onPanelChange={(panel) => navigateToRoute({ page: "experiment", panel })}
-          onResultReady={handleExperimentResultReady}
+      {route.page === "lecture" && stage === "live" && (sessionAnalysis ?? effectiveAnalysis) && <LiveScreen analysis={(sessionAnalysis ?? effectiveAnalysis)!} presentation={presentation} stream={stream} fontScale={fontScale} onFontScale={cycleFontScale} highContrast={highContrast} onHighContrast={() => setHighContrast((value) => !value)} onFinish={finishLecture} />}
+      {route.page === "lecture" && stage === "results" && (sessionAnalysis ?? effectiveAnalysis) && (
+        <ResultsScreen
+          analysis={(sessionAnalysis ?? effectiveAnalysis)!}
+          transcript={stream.transcript}
+          outcome={stream.sessionOutcome}
+          lastMode={lastLectureConfig.mode}
+          exportState={{ status: resultExportStatus, busy: resultExport.busy, error: resultExportError }}
+          exportActions={{
+            json: () => exportLectureResult("json"),
+            text: () => exportLectureResult("text"),
+            confirm: () => {
+              setResultExportStatus("confirmed");
+              setResultExportError("");
+            }
+          }}
+          onRestart={() => {
+            if (!confirmSessionDiscard()) return;
+            setStage("ready");
+            void beginLecture(lastLectureConfig.mode, { withoutVocabulary: lastLectureConfig.withoutVocabulary });
+          }}
+          onReady={() => {
+            if (!confirmSessionDiscard()) return;
+            setLectureStartState({ status: "idle" });
+            setStage("ready");
+          }}
+          onHome={reset}
         />
+      )}
+      {route.page === "experiment" && development && LazyExperimentWorkspace ? (
+        <Suspense fallback={<main id={APP_MAIN_CONTENT_ID} className="grid min-h-[calc(100vh-80px)] place-items-center" role="status" tabIndex={-1}><LoaderCircle className="size-7 animate-spin motion-reduce:animate-none" aria-hidden="true" /><span className="sr-only">STT 실험실 불러오는 중</span></main>}>
+          <LazyExperimentWorkspace
+            panel={route.panel}
+            glossaries={storedGlossaries}
+            focusRequest={routeFocusRequest}
+            onPanelChange={(panel) => navigateToRoute({ page: "experiment", panel })}
+            onResultReady={handleExperimentResultReady}
+          />
+        </Suspense>
       ) : null}
     </div>
   );

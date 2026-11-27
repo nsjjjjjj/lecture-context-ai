@@ -1,9 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { AudioFixtureCatalog, AudioFixtureRecording } from "../lib/api";
 import {
   ExperimentWorkspaceView,
   appendRecordingToCatalog,
+  createLatestResourceLoader,
+  type ExperimentWorkspaceResources,
   type ExperimentPanel
 } from "./ExperimentWorkspace";
 
@@ -37,35 +39,48 @@ const catalog: AudioFixtureCatalog = {
 
 function renderPanel(
   panel: ExperimentPanel,
-  state: Pick<Parameters<typeof ExperimentWorkspaceView>[0], "catalog" | "catalogLoading" | "catalogError"> = {
-    catalog,
-    catalogLoading: false,
-    catalogError: ""
-  }
+  fixtureState: ExperimentWorkspaceResources["fixtures"] = { data: catalog, loading: false, error: "" },
+  studyState: ExperimentWorkspaceResources["studies"] = { data: [], loading: false, error: "" }
 ): string {
   return renderToStaticMarkup(
     <ExperimentWorkspaceView
       panel={panel}
-      {...state}
-      onPanelChange={() => undefined}
-      onRecordingSaved={() => undefined}
-      onResultReady={() => undefined}
+      resources={{
+        fixtures: fixtureState,
+        studies: studyState
+      }}
+      actions={{
+        changePanel: () => undefined,
+        recordingSaved: () => undefined,
+        resultReady: () => undefined,
+        studiesChanged: async () => undefined
+      }}
     />
   );
 }
 
 describe("experiment catalog ownership", () => {
   it("renders loading, error, and loaded catalog status", () => {
-    const loadingHtml = renderPanel("record", { catalog: null, catalogLoading: true, catalogError: "" });
-    expect(loadingHtml).toContain("실험 카탈로그 불러오는 중");
+    const loadingHtml = renderPanel("record", { data: null, loading: true, error: "" });
+    expect(loadingHtml).toContain("녹음 목록 불러오는 중");
     expect(loadingHtml).toContain("개발용 녹음 설정을 불러오는 중입니다");
 
-    const errorHtml = renderPanel("record", { catalog: null, catalogLoading: false, catalogError: "fixture API 404" });
-    expect(errorHtml).toContain("실험 카탈로그를 불러오지 못했습니다: fixture API 404");
+    const errorHtml = renderPanel("record", { data: null, loading: false, error: "fixture API 404" });
+    expect(errorHtml).toContain("필요한 데이터를 불러오지 못했습니다: fixture API 404");
 
     const loadedHtml = renderPanel("record");
     expect(loadedHtml).toContain("로컬 녹음 1개 준비됨");
     expect(loadedHtml).toContain("fixture-a.wav");
+  });
+
+  it("shows the resource used by the active panel instead of coupling both loading states", () => {
+    const studiesLoading = { data: [], loading: true, error: "" };
+    const setupHtml = renderPanel("setup", { data: catalog, loading: false, error: "" }, studiesLoading);
+    const recordHtml = renderPanel("record", { data: catalog, loading: false, error: "" }, studiesLoading);
+
+    expect(setupHtml).toContain("실험 세트 불러오는 중");
+    expect(recordHtml).toContain("로컬 녹음 1개 준비됨");
+    expect(recordHtml).not.toContain("실험 세트 불러오는 중");
   });
 
   it("appends a newly saved recording once without duplicating the same id", () => {
@@ -74,6 +89,73 @@ describe("experiment catalog ownership", () => {
 
     expect(appended?.recordings.map((item) => item.id)).toEqual([recording.id, nextRecording.id]);
     expect(appendRecordingToCatalog(appended, nextRecording)).toBe(appended);
+  });
+
+  it("publishes fixtures without waiting for studies and refreshes only the changed resource", async () => {
+    let resolveFixtures!: (value: AudioFixtureCatalog) => void;
+    let resolveStudies!: (value: string[]) => void;
+    const fixtureRequest = vi.fn(() => new Promise<AudioFixtureCatalog>((resolve) => { resolveFixtures = resolve; }));
+    const studyRequest = vi.fn(() => new Promise<string[]>((resolve) => { resolveStudies = resolve; }));
+    const published: string[] = [];
+    const fixtureLoader = createLatestResourceLoader({
+      request: fixtureRequest,
+      onStart: () => published.push("fixtures:start"),
+      onSuccess: () => published.push("fixtures:success"),
+      onError: () => published.push("fixtures:error"),
+      onSettled: () => published.push("fixtures:settled")
+    });
+    const studyLoader = createLatestResourceLoader({
+      request: studyRequest,
+      onStart: () => published.push("studies:start"),
+      onSuccess: () => published.push("studies:success"),
+      onError: () => published.push("studies:error"),
+      onSettled: () => published.push("studies:settled")
+    });
+
+    const fixturePending = fixtureLoader.load();
+    const studyPending = studyLoader.load();
+    resolveFixtures(catalog);
+    await fixturePending;
+
+    expect(published).toEqual([
+      "fixtures:start",
+      "studies:start",
+      "fixtures:success",
+      "fixtures:settled"
+    ]);
+
+    resolveStudies([]);
+    await studyPending;
+    expect(fixtureRequest).toHaveBeenCalledOnce();
+    expect(studyRequest).toHaveBeenCalledOnce();
+
+    const refreshedStudies = studyLoader.load();
+    resolveStudies([]);
+    await refreshedStudies;
+    expect(fixtureRequest).toHaveBeenCalledOnce();
+    expect(studyRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it("ignores an older resource response that finishes after a refresh", async () => {
+    const resolvers: Array<(value: string) => void> = [];
+    const onSuccess = vi.fn();
+    const loader = createLatestResourceLoader({
+      request: () => new Promise<string>((resolve) => resolvers.push(resolve)),
+      onStart: () => undefined,
+      onSuccess,
+      onError: () => undefined,
+      onSettled: () => undefined
+    });
+
+    const older = loader.load();
+    const newer = loader.load();
+    resolvers[1]!("newer");
+    await expect(newer).resolves.toBe(true);
+    resolvers[0]!("older");
+    await expect(older).resolves.toBe(false);
+
+    expect(onSuccess).toHaveBeenCalledOnce();
+    expect(onSuccess).toHaveBeenCalledWith("newer");
   });
 });
 

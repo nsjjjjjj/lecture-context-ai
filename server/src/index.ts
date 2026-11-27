@@ -1,195 +1,113 @@
 import "dotenv/config";
-import { randomUUID } from "node:crypto";
 import http from "node:http";
-import { WebSocket, WebSocketServer } from "ws";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { WebSocketServer } from "ws";
 import { createApp, resolveListenHost } from "./app.js";
-import { type GlossaryTerm, type StartMessage, type TranscriptEvent } from "./types.js";
-import { createTranscriptEvent } from "./services/caption.js";
-import { demoTranscript } from "./services/demo.js";
 import {
-  createGoogleSpeechSession,
-  createDevelopmentSpeechDiagnosticReporter,
-  getGoogleSpeechConfigurationError,
-  type SpeechSession
-} from "./services/speech.js";
-import { createLiveAudioFlowController, type LiveAudioFlowController } from "./services/live-audio-flow.js";
-import { resolveStartContext } from "./services/ws-start.js";
+  attachLectureWebSocketRuntime,
+  DEFAULT_CAPTURE_PERMISSION_TIMEOUT_MS,
+  DEFAULT_FIRST_AUDIO_TIMEOUT_MS
+} from "./services/lecture-websocket.js";
 import {
-  clearPendingSpeechEnd,
-  closeSpeechSessionForSocket,
-  consumeSpeechEndMessage,
-  requestLectureStop,
-  type SpeechSessionSlot
-} from "./services/ws-lifecycle.js";
+  createFixedWindowRateLimiter,
+  isAllowedWebSocketOrigin,
+  positiveEnvironmentInteger
+} from "./services/ws-security.js";
+import { WS_MAX_PAYLOAD_BYTES } from "./services/ws-protocol.js";
 
 const app = createApp();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ noServer: true });
+const wss = new WebSocketServer({
+  noServer: true,
+  maxPayload: WS_MAX_PAYLOAD_BYTES,
+  perMessageDeflate: false
+});
 const port = Number(process.env.PORT || 8787);
 const host = resolveListenHost(process.env.NODE_ENV, process.env.HOST);
 
+function firstHeaderValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 server.on("upgrade", (request, socket, head) => {
-  const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
+  let url: URL;
+  try {
+    url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
+  } catch {
+    socket.write("HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
+    socket.destroy();
+    return;
+  }
   if (url.pathname !== "/ws") {
+    socket.destroy();
+    return;
+  }
+  if (
+    !isAllowedWebSocketOrigin({
+      nodeEnv: process.env.NODE_ENV,
+      host: request.headers.host,
+      origin: request.headers.origin,
+      remoteAddress: request.socket.remoteAddress,
+      allowedOrigins: process.env.APP_ALLOWED_ORIGINS,
+      forwardedProtocol: firstHeaderValue(request.headers["x-forwarded-proto"])
+    })
+  ) {
+    socket.write("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n");
     socket.destroy();
     return;
   }
   wss.handleUpgrade(request, socket, head, (websocket) => wss.emit("connection", websocket, request));
 });
 
-function send(websocket: WebSocket, event: TranscriptEvent): void {
-  if (websocket.readyState === WebSocket.OPEN) websocket.send(JSON.stringify(event));
-}
+wss.on("error", (error) => {
+  console.error("[websocket-server]", error.message);
+});
 
-function emitTranscript(websocket: WebSocket, text: string, isFinal: boolean, terms: GlossaryTerm[]): void {
-  send(websocket, createTranscriptEvent(text, isFinal, terms));
-}
+attachLectureWebSocketRuntime(wss, {
+  nodeEnv: process.env.NODE_ENV,
+  maxLiveSessions: positiveEnvironmentInteger(process.env.MAX_LIVE_STT_SESSIONS, 5),
+  maxLiveSessionMs: positiveEnvironmentInteger(
+    process.env.MAX_LIVE_STT_SESSION_MS,
+    4 * 60 * 60 * 1_000
+  ),
+  maxConnections: positiveEnvironmentInteger(process.env.MAX_WS_CONNECTIONS, 100),
+  startTimeoutMs: positiveEnvironmentInteger(process.env.WS_START_TIMEOUT_MS, 10_000),
+  capturePermissionTimeoutMs: positiveEnvironmentInteger(
+    process.env.WS_CAPTURE_PERMISSION_TIMEOUT_MS,
+    DEFAULT_CAPTURE_PERMISSION_TIMEOUT_MS
+  ),
+  firstAudioTimeoutMs: positiveEnvironmentInteger(
+    process.env.WS_FIRST_AUDIO_TIMEOUT_MS,
+    DEFAULT_FIRST_AUDIO_TIMEOUT_MS
+  ),
+  audioIdleTimeoutMs: positiveEnvironmentInteger(process.env.WS_AUDIO_IDLE_TIMEOUT_MS, 30_000),
+  trustProxy: process.env.TRUST_PROXY === "1",
+  startLimiter: createFixedWindowRateLimiter({
+    limit: positiveEnvironmentInteger(process.env.MAX_WS_STARTS_PER_MINUTE, 12),
+    windowMs: 60_000
+  })
+});
 
-function startDemo(websocket: WebSocket, terms: GlossaryTerm[], onEnd: () => void): Array<NodeJS.Timeout> {
-  const timers: Array<NodeJS.Timeout> = [];
-  send(websocket, { type: "ready", message: "데모 강연이 준비되었습니다." });
-  demoTranscript.forEach((line, index) => {
-    timers.push(
-      setTimeout(() => emitTranscript(websocket, line.interim, false, terms), 700 + index * 2_350),
-      setTimeout(() => emitTranscript(websocket, line.final, true, terms), 1_650 + index * 2_350)
-    );
+export { server, wss };
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  server.listen(port, host, () => {
+    console.log(`강연 용어 AI 서버가 http://${host}:${port} 에서 실행 중입니다.`);
   });
-  timers.push(setTimeout(onEnd, 1_650 + demoTranscript.length * 2_350));
-  return timers;
-}
 
-wss.on("connection", (websocket) => {
-  const speechSessionSlot: SpeechSessionSlot = { active: null, pendingEndMessage: null };
-  let terms: GlossaryTerm[] = [];
-  let started = false;
-  let ended = false;
-  let timers: Array<NodeJS.Timeout> = [];
-  let liveAudioFlow: LiveAudioFlowController | null = null;
-
-  const endOnce = (message: string): void => {
-    if (ended) return;
-    ended = true;
-    timers.forEach(clearTimeout);
-    liveAudioFlow?.dispose();
-    send(websocket, { type: "ended", message });
+  let shuttingDown = false;
+  const shutdown = (): void => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    for (const client of wss.clients) client.close(1001, "server shutdown");
+    server.close();
+    const forceTimer = setTimeout(() => {
+      for (const client of wss.clients) client.terminate();
+      server.closeAllConnections();
+    }, 10_000);
+    forceTimer.unref();
   };
-
-  websocket.on("message", async (data, isBinary) => {
-    if (isBinary) {
-      const session = speechSessionSlot.active;
-      if (session && liveAudioFlow) liveAudioFlow.writeOrQueue(Buffer.from(data as Buffer));
-      return;
-    }
-
-    try {
-      const message = JSON.parse(data.toString()) as StartMessage | { type?: string };
-      if (message.type === "stop") {
-        requestLectureStop(speechSessionSlot, endOnce);
-        return;
-      }
-      if (message.type !== "start" || started) return;
-
-      const start = message as StartMessage;
-      if (start.mode !== "live" && start.mode !== "demo") throw new Error("지원하지 않는 강연 모드입니다.");
-      const context = resolveStartContext(start.mode, start.terms, start.phraseSet);
-      terms = context.terms;
-      started = true;
-
-      if (start.mode === "demo") {
-        timers = startDemo(websocket, terms, () => endOnce("데모 강연이 끝났습니다."));
-        return;
-      }
-
-      const speechConfigurationError = getGoogleSpeechConfigurationError();
-      if (speechConfigurationError) {
-        send(websocket, { type: "error", message: `${speechConfigurationError} 데모 모드를 이용해 주세요.` });
-        return;
-      }
-
-      const diagnostic = createDevelopmentSpeechDiagnosticReporter(
-        process.env.NODE_ENV === "development",
-        randomUUID(),
-        (record) => console.debug("[live-stt-diagnostic]", record)
-      );
-      liveAudioFlow = createLiveAudioFlowController({
-        writeAudio: (audio) => speechSessionSlot.active?.writeAudio(audio) === true,
-        pauseInput: () => websocket.pause(),
-        resumeInput: () => websocket.resume(),
-        onTimeout: () => {
-          const timedOutSession = speechSessionSlot.active;
-          speechSessionSlot.active = null;
-          clearPendingSpeechEnd(speechSessionSlot);
-          timedOutSession?.close();
-          send(websocket, {
-            type: "error",
-            message: "음성 전송이 지연되어 오래된 오디오가 쌓이기 전에 연결을 종료했습니다. 다시 시작해 주세요."
-          });
-          websocket.close(1013, "speech backpressure timeout");
-        },
-        onOverflow: () => {
-          const overflowedSession = speechSessionSlot.active;
-          speechSessionSlot.active = null;
-          clearPendingSpeechEnd(speechSessionSlot);
-          overflowedSession?.close();
-          send(websocket, {
-            type: "error",
-            message: "음성 전송 적체가 안전 한도를 넘어 오래된 오디오를 버리지 않고 연결을 종료했습니다. 다시 시작해 주세요."
-          });
-          websocket.close(1013, "speech backpressure overflow");
-        }
-      });
-
-      let createdSession: SpeechSession | null = null;
-      let sessionTerminated = false;
-      try {
-        createdSession = await createGoogleSpeechSession(context.phraseSet, {
-          onTranscript: (text, isFinal) => emitTranscript(websocket, text, isFinal, terms),
-          onError: (error) => {
-            sessionTerminated = true;
-            if (speechSessionSlot.active === createdSession) speechSessionSlot.active = null;
-            clearPendingSpeechEnd(speechSessionSlot);
-            liveAudioFlow?.dispose();
-            createdSession?.close();
-            send(websocket, { type: "error", message: `음성인식 오류: ${error.message}` });
-          },
-          onEnd: () => {
-            sessionTerminated = true;
-            if (speechSessionSlot.active === createdSession) speechSessionSlot.active = null;
-            liveAudioFlow?.dispose();
-            endOnce(consumeSpeechEndMessage(speechSessionSlot, "Google STT 연결이 종료되었습니다."));
-          },
-          onDrain: () => liveAudioFlow?.resumeFromGrpc(),
-          onDiagnostic: diagnostic
-        });
-      } catch (error) {
-        liveAudioFlow.dispose();
-        if (!sessionTerminated) {
-          send(websocket, {
-            type: "error",
-            message: `음성인식 오류: ${error instanceof Error ? error.message : "Google STT를 준비하지 못했습니다."}`
-          });
-        }
-        return;
-      }
-      if (sessionTerminated || ended || websocket.readyState !== WebSocket.OPEN) {
-        createdSession.close();
-        return;
-      }
-      speechSessionSlot.active = createdSession;
-      send(websocket, { type: "ready", message: "Google STT 전송이 준비되었습니다." });
-    } catch (error) {
-      send(websocket, { type: "error", message: error instanceof Error ? error.message : "요청을 처리하지 못했습니다." });
-    }
-  });
-
-  websocket.on("close", () => {
-    ended = true;
-    liveAudioFlow?.dispose();
-    closeSpeechSessionForSocket(speechSessionSlot);
-    timers.forEach(clearTimeout);
-  });
-});
-
-server.listen(port, host, () => {
-  console.log(`강연 용어 AI 서버가 http://${host}:${port} 에서 실행 중입니다.`);
-});
+  process.once("SIGTERM", shutdown);
+  process.once("SIGINT", shutdown);
+}

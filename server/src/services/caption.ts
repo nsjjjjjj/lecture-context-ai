@@ -1,4 +1,9 @@
-import type { GlossaryTerm, TranscriptCorrection, TranscriptEvent } from "../types.js";
+import type {
+  GlossaryTerm,
+  TranscriptCorrection,
+  TranscriptSegmentEvent,
+  TranscriptSegmentMetadata
+} from "../types.js";
 import { isContextAmbiguousSpokenAlias, withSanitizedSpokenAliases } from "./spoken-aliases.js";
 
 type NormalizedText = {
@@ -139,8 +144,13 @@ export function findTranscriptTermMatches(text: string, terms: GlossaryTerm[]): 
   return matches;
 }
 
-export function createTranscriptEvent(text: string, isFinal: boolean, terms: GlossaryTerm[]): TranscriptEvent {
-  if (!isFinal) return { type: "interim", text };
+export function createTranscriptEvent(
+  text: string,
+  isFinal: boolean,
+  terms: GlossaryTerm[],
+  segment: TranscriptSegmentMetadata
+): TranscriptSegmentEvent {
+  if (!isFinal) return { type: "partial", text, ...segment };
 
   const matches = findTranscriptTermMatches(text, terms);
   const corrections: TranscriptCorrection[] = [];
@@ -169,6 +179,7 @@ export function createTranscriptEvent(text: string, isFinal: boolean, terms: Glo
 
   return {
     type: "final",
+    ...segment,
     text: displayText,
     rawText: text,
     detectedTerms: matches.map((match) => match.term.id),

@@ -2,6 +2,9 @@ import type { AnalysisResult, GlossaryTerm } from "../types";
 
 export const GLOSSARY_STORAGE_KEY = "lecture-context-ai.glossaries";
 export const GLOSSARY_STORAGE_VERSION = 3 as const;
+export const GLOSSARY_STORAGE_RECOVERY_KEY = "lecture-context-ai.glossaries.recovery";
+
+const GLOSSARY_STORAGE_RECOVERY_VERSION = 1 as const;
 
 const MAX_GLOSSARIES = 50;
 const MAX_TERMS = 50;
@@ -10,6 +13,7 @@ const MAX_SPOKEN_ALIASES = 6;
 const MAX_SPOKEN_ALIAS_LENGTH = 40;
 const MAX_PHRASES = MAX_TERMS * (2 + MAX_SPOKEN_ALIASES);
 const LEGACY_MAX_PHRASES = 50;
+const MAX_RECOVERY_BACKUPS = 20;
 const UNSAFE_ALIASES = new Set([
   "강연", "검색", "결과", "경우", "관련", "그래서", "기능", "다시", "다음", "데이터", "모델", "문서",
   "방식", "생성", "서비스", "사용자", "설명", "그리고", "이것", "입니다", "인식", "오늘", "외부", "이유",
@@ -28,6 +32,31 @@ export type StoredGlossary = {
 type GlossaryStoreV3 = {
   version: typeof GLOSSARY_STORAGE_VERSION;
   glossaries: StoredGlossary[];
+};
+
+export type GlossaryStorageBackupReason =
+  | "entry-salvage"
+  | "schema-migration"
+  | "manual-recovery"
+  | "pre-restore";
+
+export type GlossaryStorageBackup = {
+  id: string;
+  capturedAt: string;
+  reason: GlossaryStorageBackupReason;
+  sourceVersion: string | number | null;
+  raw: string;
+};
+
+type GlossaryRecoveryStoreV1 = {
+  version: typeof GLOSSARY_STORAGE_RECOVERY_VERSION;
+  backups: GlossaryStorageBackup[];
+};
+
+export type GlossaryStorageRecoveryResult = {
+  glossaries: StoredGlossary[];
+  backup: GlossaryStorageBackup | null;
+  rejectedCount: number;
 };
 
 export type GlossaryStorageAdapter = Pick<Storage, "getItem" | "setItem" | "removeItem">;
@@ -142,7 +171,7 @@ function validateTerm(value: unknown, version: StoredGlossaryVersion = GLOSSARY_
     fail("invalid", "저장된 전문용어 형식이 올바르지 않습니다.");
   }
 
-  if (typeof value.id !== "string" || value.id.trim().length === 0 || value.id.length > 160) {
+  if (typeof value.id !== "string" || value.id.trim().length === 0 || value.id.trim().length > 160) {
     fail("invalid", "저장된 전문용어 ID가 올바르지 않습니다.");
   }
   if (!Number.isInteger(value.pageNumber) || (value.pageNumber as number) <= 0) {
@@ -158,7 +187,7 @@ function validateTerm(value: unknown, version: StoredGlossaryVersion = GLOSSARY_
   const term = validatedString(value.term, "전문용어", 2, 80);
   const english = validatedString(value.english, "영문 표기", 0, 120);
   return {
-    id: value.id,
+    id: value.id.trim(),
     term,
     english,
     spokenAliases: version === 1
@@ -251,7 +280,7 @@ function validateStoredGlossary(
   if (!isRecord(value) || !hasExactKeys(value, ["id", "name", "createdAt", "updatedAt", "terms", "phraseSet"])) {
     fail("invalid", "저장된 용어집 형식이 올바르지 않습니다.");
   }
-  if (typeof value.id !== "string" || value.id.trim().length === 0 || value.id.length > 160) {
+  if (typeof value.id !== "string" || value.id.trim().length === 0 || value.id.trim().length > 160) {
     fail("invalid", "저장된 용어집 ID가 올바르지 않습니다.");
   }
 
@@ -268,7 +297,7 @@ function validateStoredGlossary(
     : validatedPhraseSet;
 
   return {
-    id: value.id,
+    id: value.id.trim(),
     name: validatedString(value.name, "용어집 이름", 1, 160),
     createdAt,
     updatedAt,
@@ -291,6 +320,50 @@ function collectGlossaries(
   return [...byId.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+type RecoveredGlossaryCollection = {
+  glossaries: StoredGlossary[];
+  rejectedCount: number;
+};
+
+/**
+ * Recovery deliberately validates candidates one by one. A rejected candidate is
+ * never treated as disposable: callers must preserve the complete source string
+ * in the recovery store before replacing the active store.
+ */
+function collectRecoverableGlossaries(
+  value: unknown[],
+  version: StoredGlossaryVersion
+): RecoveredGlossaryCollection {
+  const byId = new Map<string, StoredGlossary>();
+  let rejectedCount = 0;
+
+  for (const candidate of value) {
+    let glossary: StoredGlossary;
+    try {
+      glossary = validateStoredGlossary(candidate, version);
+    } catch (error) {
+      if (error instanceof GlossaryStorageError && error.code === "invalid") {
+        rejectedCount += 1;
+        continue;
+      }
+      throw error;
+    }
+
+    const existing = byId.get(glossary.id);
+    if (existing) {
+      rejectedCount += 1;
+      if (glossary.updatedAt > existing.updatedAt) byId.set(glossary.id, glossary);
+      continue;
+    }
+    byId.set(glossary.id, glossary);
+  }
+
+  return {
+    glossaries: [...byId.values()].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+    rejectedCount
+  };
+}
+
 function validateStore(value: unknown): GlossaryStoreV3 {
   if (!isRecord(value) || !hasExactKeys(value, ["version", "glossaries"])) {
     fail("invalid", "저장된 용어집 데이터가 손상되었습니다.");
@@ -308,39 +381,184 @@ function validateStore(value: unknown): GlossaryStoreV3 {
   };
 }
 
-function migrateStoreV1(value: unknown): GlossaryStoreV3 {
-  if (!isRecord(value) || !hasExactKeys(value, ["version", "glossaries"]) || value.version !== 1) {
-    fail("version", "저장된 용어집 버전이 현재 앱과 호환되지 않습니다.");
-  }
-  if (!Array.isArray(value.glossaries) || value.glossaries.length > MAX_RAW_ITEMS) {
-    fail("invalid", "저장된 용어집 목록이 올바르지 않습니다.");
-  }
-  return { version: GLOSSARY_STORAGE_VERSION, glossaries: collectGlossaries(value.glossaries, 1) };
-}
-
-function migrateStoreV2(value: unknown): GlossaryStoreV3 {
-  if (!isRecord(value) || !hasExactKeys(value, ["version", "glossaries"]) || value.version !== 2) {
-    fail("version", "저장된 용어집 버전이 현재 앱과 호환되지 않습니다.");
-  }
-  if (!Array.isArray(value.glossaries) || value.glossaries.length > MAX_RAW_ITEMS) {
-    fail("invalid", "저장된 용어집 목록이 올바르지 않습니다.");
-  }
-  return { version: GLOSSARY_STORAGE_VERSION, glossaries: collectGlossaries(value.glossaries, 2) };
-}
-
 function isQuotaError(error: unknown): boolean {
   if (!isRecord(error)) return false;
   return error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED" || error.code === 22 || error.code === 1014;
 }
 
-function readStore(storage: GlossaryStorageAdapter): GlossaryStoreV3 {
+function sourceVersionFromParsed(value: unknown): string | number | null {
+  if (!isRecord(value)) return null;
+  if (typeof value.version === "number" && Number.isFinite(value.version)) return value.version;
+  if (typeof value.version === "string" && value.version.length <= 80) return value.version;
+  return null;
+}
+
+function validateBackupReason(value: unknown): GlossaryStorageBackupReason {
+  if (
+    value !== "entry-salvage"
+    && value !== "schema-migration"
+    && value !== "manual-recovery"
+    && value !== "pre-restore"
+  ) {
+    fail("invalid", "용어집 복구 데이터의 사유가 올바르지 않습니다.");
+  }
+  return value;
+}
+
+function validateStorageBackup(value: unknown): GlossaryStorageBackup {
+  if (!isRecord(value) || !hasExactKeys(value, ["id", "capturedAt", "reason", "sourceVersion", "raw"])) {
+    fail("invalid", "용어집 복구 데이터 형식이 올바르지 않습니다.");
+  }
+  if (typeof value.id !== "string" || value.id.trim().length === 0 || value.id.trim().length > 160) {
+    fail("invalid", "용어집 복구 데이터 ID가 올바르지 않습니다.");
+  }
+  if (
+    value.sourceVersion !== null
+    && !(typeof value.sourceVersion === "number" && Number.isFinite(value.sourceVersion))
+    && !(typeof value.sourceVersion === "string" && value.sourceVersion.length <= 80)
+  ) {
+    fail("invalid", "용어집 복구 데이터의 원본 버전이 올바르지 않습니다.");
+  }
+  if (typeof value.raw !== "string") fail("invalid", "용어집 복구 원본이 올바르지 않습니다.");
+
+  return {
+    id: value.id.trim(),
+    capturedAt: validatedTimestamp(value.capturedAt, "복구 데이터 생성 시각"),
+    reason: validateBackupReason(value.reason),
+    sourceVersion: value.sourceVersion,
+    raw: value.raw
+  };
+}
+
+function readRecoveryStore(storage: GlossaryStorageAdapter): GlossaryRecoveryStoreV1 {
+  let raw: string | null;
+  try {
+    raw = storage.getItem(GLOSSARY_STORAGE_RECOVERY_KEY);
+  } catch {
+    fail("unavailable", "브라우저의 용어집 복구 저장소를 사용할 수 없습니다.");
+  }
+  if (raw === null) return { version: GLOSSARY_STORAGE_RECOVERY_VERSION, backups: [] };
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    fail("invalid", "저장된 용어집 복구 데이터가 손상되었습니다.");
+  }
+  if (
+    !isRecord(parsed)
+    || !hasExactKeys(parsed, ["version", "backups"])
+    || parsed.version !== GLOSSARY_STORAGE_RECOVERY_VERSION
+    || !Array.isArray(parsed.backups)
+    || parsed.backups.length > MAX_RECOVERY_BACKUPS
+  ) {
+    fail("invalid", "저장된 용어집 복구 데이터 형식이 올바르지 않습니다.");
+  }
+
+  return {
+    version: GLOSSARY_STORAGE_RECOVERY_VERSION,
+    backups: parsed.backups.map(validateStorageBackup)
+  };
+}
+
+function writeRecoveryStore(storage: GlossaryStorageAdapter, backups: GlossaryStorageBackup[]): void {
+  if (backups.length > MAX_RECOVERY_BACKUPS) {
+    fail("limit", "용어집 복구 데이터가 20개에 도달했습니다. 복구 데이터를 내보낸 뒤 정리해 주세요.");
+  }
+  try {
+    storage.setItem(GLOSSARY_STORAGE_RECOVERY_KEY, JSON.stringify({
+      version: GLOSSARY_STORAGE_RECOVERY_VERSION,
+      backups
+    } satisfies GlossaryRecoveryStoreV1));
+  } catch (error) {
+    if (isQuotaError(error)) {
+      fail("quota", "브라우저 저장 공간이 부족해 원본 용어집을 안전하게 백업하지 못했습니다.");
+    }
+    fail("unavailable", "브라우저에 용어집 복구 데이터를 저장할 수 없습니다.");
+  }
+}
+
+function appendRecoveryBackup(
+  storage: GlossaryStorageAdapter,
+  raw: string,
+  reason: GlossaryStorageBackupReason,
+  sourceVersion: string | number | null,
+  capturedAt = new Date().toISOString()
+): GlossaryStorageBackup {
+  const recovery = readRecoveryStore(storage);
+  const existing = recovery.backups.find((candidate) => candidate.raw === raw);
+  if (existing) return existing;
+  if (recovery.backups.length >= MAX_RECOVERY_BACKUPS) {
+    fail("limit", "용어집 복구 데이터가 20개에 도달했습니다. 복구 데이터를 내보낸 뒤 정리해 주세요.");
+  }
+
+  const backup = validateStorageBackup({
+    id: createGlossaryId(),
+    capturedAt,
+    reason,
+    sourceVersion,
+    raw
+  });
+  writeRecoveryStore(storage, [backup, ...recovery.backups]);
+  return backup;
+}
+
+type PendingStoreRecovery = {
+  raw: string;
+  reason: GlossaryStorageBackupReason;
+  sourceVersion: string | number | null;
+};
+
+type ReadStoreResult = {
+  store: GlossaryStoreV3;
+  pendingRecovery: PendingStoreRecovery | null;
+};
+
+function writePrimaryRaw(storage: GlossaryStorageAdapter, raw: string): void {
+  try {
+    storage.setItem(GLOSSARY_STORAGE_KEY, raw);
+  } catch (error) {
+    if (isQuotaError(error)) {
+      fail("quota", "브라우저 저장 공간이 부족합니다. 저장된 용어집을 삭제한 뒤 다시 시도해 주세요.");
+    }
+    fail("unavailable", "브라우저 저장소에 용어집을 저장할 수 없습니다. 사이트 저장소 설정을 확인해 주세요.");
+  }
+}
+
+function persistRecoveredStore(
+  storage: GlossaryStorageAdapter,
+  source: PendingStoreRecovery,
+  store: GlossaryStoreV3
+): boolean {
+  try {
+    appendRecoveryBackup(storage, source.raw, source.reason, source.sourceVersion);
+    writePrimaryRaw(storage, JSON.stringify(store));
+    return true;
+  } catch {
+    // Reads remain available from the validated in-memory result. Mutations call
+    // ensureRecoveryBackup first and cannot overwrite the source without a backup.
+    return false;
+  }
+}
+
+function ensureRecoveryBackup(storage: GlossaryStorageAdapter, pending: PendingStoreRecovery | null): void {
+  if (!pending) return;
+  appendRecoveryBackup(storage, pending.raw, pending.reason, pending.sourceVersion);
+}
+
+function readStore(storage: GlossaryStorageAdapter): ReadStoreResult {
   let raw: string | null;
   try {
     raw = storage.getItem(GLOSSARY_STORAGE_KEY);
   } catch {
     fail("unavailable", "브라우저 저장소를 사용할 수 없습니다. 사이트 저장소 설정을 확인해 주세요.");
   }
-  if (raw === null) return { version: GLOSSARY_STORAGE_VERSION, glossaries: [] };
+  if (raw === null) {
+    return {
+      store: { version: GLOSSARY_STORAGE_VERSION, glossaries: [] },
+      pendingRecovery: null
+    };
+  }
 
   let parsed: unknown;
   try {
@@ -348,16 +566,33 @@ function readStore(storage: GlossaryStorageAdapter): GlossaryStoreV3 {
   } catch {
     fail("invalid", "저장된 용어집 데이터가 손상되어 불러오지 못했습니다.");
   }
-  if (isRecord(parsed) && (parsed.version === 1 || parsed.version === 2)) {
-    const migrated = parsed.version === 1 ? migrateStoreV1(parsed) : migrateStoreV2(parsed);
-    try {
-      storage.setItem(GLOSSARY_STORAGE_KEY, JSON.stringify(migrated));
-    } catch {
-      // In-memory migration still keeps existing glossaries loadable when storage is read-only or full.
-    }
-    return migrated;
+  if (!isRecord(parsed) || !hasExactKeys(parsed, ["version", "glossaries"])) {
+    fail("invalid", "저장된 용어집 데이터가 손상되었습니다.");
   }
-  return validateStore(parsed);
+  if (parsed.version !== 1 && parsed.version !== 2 && parsed.version !== GLOSSARY_STORAGE_VERSION) {
+    fail("version", "저장된 용어집 버전이 현재 앱과 호환되지 않습니다.");
+  }
+  if (!Array.isArray(parsed.glossaries) || parsed.glossaries.length > MAX_RAW_ITEMS) {
+    fail("invalid", "저장된 용어집 목록이 올바르지 않습니다.");
+  }
+
+  const sourceVersion = parsed.version;
+  const recovered = collectRecoverableGlossaries(parsed.glossaries, sourceVersion);
+  if (recovered.glossaries.length > MAX_GLOSSARIES) {
+    fail("limit", "이 브라우저에는 용어집을 최대 50개까지 저장할 수 있습니다. 기존 용어집을 삭제한 뒤 다시 시도해 주세요.");
+  }
+  const store = { version: GLOSSARY_STORAGE_VERSION, glossaries: recovered.glossaries } satisfies GlossaryStoreV3;
+  const normalizedSourceChanged = JSON.stringify(recovered.glossaries) !== JSON.stringify(parsed.glossaries);
+  const reason: GlossaryStorageBackupReason | null = sourceVersion === GLOSSARY_STORAGE_VERSION
+    ? recovered.rejectedCount > 0 || normalizedSourceChanged ? "entry-salvage" : null
+    : "schema-migration";
+  if (!reason) return { store, pendingRecovery: null };
+
+  const pendingRecovery = { raw, reason, sourceVersion } satisfies PendingStoreRecovery;
+  return {
+    store,
+    pendingRecovery: persistRecoveredStore(storage, pendingRecovery, store) ? null : pendingRecovery
+  };
 }
 
 function writeStore(storage: GlossaryStorageAdapter, glossaries: StoredGlossary[]): void {
@@ -399,7 +634,7 @@ function hasSameGlossaryContent(left: StoredGlossary, right: StoredGlossary): bo
 }
 
 export function listStoredGlossaries(storage: GlossaryStorageAdapter): StoredGlossary[] {
-  return readStore(storage).glossaries;
+  return readStore(storage).store.glossaries;
 }
 
 export function saveAnalyzedGlossary(
@@ -417,7 +652,9 @@ export function saveAnalyzedGlossary(
     terms: analysis.terms,
     phraseSet: analysis.phraseSet
   });
-  const stored = readStore(storage).glossaries;
+  const read = readStore(storage);
+  ensureRecoveryBackup(storage, read.pendingRecovery);
+  const stored = read.store.glossaries;
   const previous = stored.find((candidate) => candidate.id === proposed.id)
     ?? (options.id === undefined ? stored.find((candidate) => hasSameGlossaryContent(candidate, proposed)) : undefined);
   const glossary = previous
@@ -425,7 +662,7 @@ export function saveAnalyzedGlossary(
         ...proposed,
         id: previous.id,
         createdAt: previous.createdAt,
-        updatedAt: now >= previous.createdAt ? now : previous.updatedAt
+        updatedAt: now >= previous.updatedAt ? now : previous.updatedAt
       })
     : proposed;
   const existing = stored.filter((candidate) => candidate.id !== glossary.id);
@@ -439,16 +676,24 @@ export function renameStoredGlossary(
   name: string,
   now = new Date().toISOString()
 ): StoredGlossary {
-  const glossaries = readStore(storage).glossaries;
+  const read = readStore(storage);
+  ensureRecoveryBackup(storage, read.pendingRecovery);
+  const glossaries = read.store.glossaries;
   const current = glossaries.find((candidate) => candidate.id === id);
   if (!current) fail("not-found", "선택한 용어집을 찾을 수 없습니다.");
-  const renamed = validateStoredGlossary({ ...current, name, updatedAt: now });
+  const renamed = validateStoredGlossary({
+    ...current,
+    name,
+    updatedAt: now >= current.updatedAt ? now : current.updatedAt
+  });
   writeStore(storage, glossaries.map((candidate) => (candidate.id === id ? renamed : candidate)));
   return renamed;
 }
 
 export function deleteStoredGlossary(storage: GlossaryStorageAdapter, id: string): void {
-  const glossaries = readStore(storage).glossaries;
+  const read = readStore(storage);
+  ensureRecoveryBackup(storage, read.pendingRecovery);
+  const glossaries = read.store.glossaries;
   writeStore(storage, glossaries.filter((candidate) => candidate.id !== id));
 }
 
@@ -461,7 +706,7 @@ export function clearStoredGlossaries(storage: GlossaryStorageAdapter): void {
 }
 
 export function loadStoredGlossaryForLecture(storage: GlossaryStorageAdapter, id: string): AnalysisResult {
-  const glossary = readStore(storage).glossaries.find((candidate) => candidate.id === id);
+  const glossary = readStore(storage).store.glossaries.find((candidate) => candidate.id === id);
   if (!glossary) fail("not-found", "선택한 용어집을 찾을 수 없습니다.");
   return {
     title: glossary.name,
@@ -470,6 +715,120 @@ export function loadStoredGlossaryForLecture(storage: GlossaryStorageAdapter, id
     phraseSet: glossary.phraseSet,
     mode: "saved"
   };
+}
+
+export function listGlossaryStorageBackups(storage: GlossaryStorageAdapter): GlossaryStorageBackup[] {
+  return readRecoveryStore(storage).backups;
+}
+
+/**
+ * Explicit recovery for a malformed envelope, unsupported version, or a store
+ * that exceeds current limits. The exact source string is backed up first. Only
+ * then are valid entries from a known schema copied into a clean v3 store.
+ */
+export function recoverStoredGlossaryData(
+  storage: GlossaryStorageAdapter,
+  capturedAt = new Date().toISOString()
+): GlossaryStorageRecoveryResult {
+  let raw: string | null;
+  try {
+    raw = storage.getItem(GLOSSARY_STORAGE_KEY);
+  } catch {
+    fail("unavailable", "브라우저 저장소를 사용할 수 없습니다. 사이트 저장소 설정을 확인해 주세요.");
+  }
+  if (raw === null) return { glossaries: [], backup: null, rejectedCount: 0 };
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = null;
+  }
+  const sourceVersion = sourceVersionFromParsed(parsed);
+  const backup = appendRecoveryBackup(storage, raw, "manual-recovery", sourceVersion, capturedAt);
+
+  let glossaries: StoredGlossary[] = [];
+  let rejectedCount = 1;
+  if (
+    isRecord(parsed)
+    && (parsed.version === 1 || parsed.version === 2 || parsed.version === GLOSSARY_STORAGE_VERSION)
+    && Array.isArray(parsed.glossaries)
+    && parsed.glossaries.length <= MAX_RAW_ITEMS
+  ) {
+    const recovered = collectRecoverableGlossaries(parsed.glossaries, parsed.version);
+    glossaries = recovered.glossaries.slice(0, MAX_GLOSSARIES);
+    rejectedCount = recovered.rejectedCount + Math.max(0, recovered.glossaries.length - MAX_GLOSSARIES);
+  }
+
+  writeStore(storage, glossaries);
+  return { glossaries, backup, rejectedCount };
+}
+
+/** Restore an exact source snapshot. The currently active source is backed up first. */
+export function restoreGlossaryStorageBackup(storage: GlossaryStorageAdapter, backupId: string): void {
+  const backup = readRecoveryStore(storage).backups.find((candidate) => candidate.id === backupId);
+  if (!backup) fail("not-found", "선택한 용어집 복구 데이터를 찾을 수 없습니다.");
+
+  let currentRaw: string | null;
+  try {
+    currentRaw = storage.getItem(GLOSSARY_STORAGE_KEY);
+  } catch {
+    fail("unavailable", "브라우저 저장소를 사용할 수 없습니다. 사이트 저장소 설정을 확인해 주세요.");
+  }
+  if (currentRaw === backup.raw) return;
+  if (currentRaw !== null) {
+    let currentParsed: unknown;
+    try {
+      currentParsed = JSON.parse(currentRaw);
+    } catch {
+      currentParsed = null;
+    }
+    appendRecoveryBackup(storage, currentRaw, "pre-restore", sourceVersionFromParsed(currentParsed));
+  }
+  writePrimaryRaw(storage, backup.raw);
+}
+
+export function exportGlossaryStorageRecoveryBundle(
+  storage: GlossaryStorageAdapter,
+  exportedAt = new Date().toISOString()
+): string {
+  let activeStoreRaw: string | null;
+  let recoveryStoreRaw: string | null;
+  try {
+    activeStoreRaw = storage.getItem(GLOSSARY_STORAGE_KEY);
+    recoveryStoreRaw = storage.getItem(GLOSSARY_STORAGE_RECOVERY_KEY);
+  } catch {
+    fail("unavailable", "브라우저 저장소를 사용할 수 없습니다. 사이트 저장소 설정을 확인해 주세요.");
+  }
+
+  let backups: GlossaryStorageBackup[] | null;
+  let recoveryStoreIssue: GlossaryStorageIssue | null = null;
+  try {
+    backups = readRecoveryStore(storage).backups;
+  } catch (error) {
+    // Export must remain the escape hatch when the recovery envelope itself is
+    // malformed. Keep the exact raw value and describe why it could not be
+    // decoded instead of preventing the user from taking a copy.
+    backups = null;
+    recoveryStoreIssue = glossaryStorageIssue(error);
+  }
+
+  return JSON.stringify({
+    version: GLOSSARY_STORAGE_RECOVERY_VERSION,
+    exportedAt: validatedTimestamp(exportedAt, "복구 데이터 내보내기 시각"),
+    activeStoreRaw,
+    recoveryStoreRaw,
+    backups,
+    recoveryStoreIssue
+  }, null, 2);
+}
+
+export function clearGlossaryStorageBackups(storage: GlossaryStorageAdapter): void {
+  try {
+    storage.removeItem(GLOSSARY_STORAGE_RECOVERY_KEY);
+  } catch {
+    fail("unavailable", "브라우저의 용어집 복구 데이터를 정리할 수 없습니다.");
+  }
 }
 
 export function glossaryStorageErrorMessage(error: unknown): string {

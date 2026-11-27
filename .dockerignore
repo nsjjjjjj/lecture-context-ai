@@ -1,14 +1,32 @@
+.git
+.github
+.cursor
+.omd
+.codex_tmp
+
 node_modules
 dist
-.git
-.env*
-*.log
 coverage
-test-fixtures/stt/audio/*.wav
-test-fixtures/stt/audio/.*.tmp-*
+.vite
+*.log
+.DS_Store
+
+# Never send local credentials to the Docker daemon or retain them in build layers.
+.env
+.env.*
+!.env.example
+
+# Product builds need source code, not local research inputs or generated artifacts.
+deliverables
+paper
+활용 데이터셋
+docs/*.docx
+docs/*.pdf
+
+# Local recordings, results, locks, and mutable experiment state are not image inputs.
+test-fixtures/stt/audio
+test-fixtures/stt/results
 test-fixtures/stt/manifest.local.json
-test-fixtures/stt/manifest.local.json.tmp-*
-test-fixtures/stt/.writer.lock
-test-fixtures/stt/.stt-comparison.lock
-test-fixtures/stt/results/*.json
-test-fixtures/stt/results/.*.tmp-*
+test-fixtures/stt/studies.local.json
+test-fixtures/stt/.*.lock
+test-fixtures/stt/*.tmp-*

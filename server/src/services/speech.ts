@@ -1,5 +1,20 @@
 import { protos, v2 } from "@google-cloud/speech";
+import {
+  resolveGoogleSpeechConfiguration,
+  type SpeechDiagnosticEvent,
+  type SpeechDiagnosticStage
+} from "./google-speech-config.js";
 import { MAX_PHRASE_SET_FORMS } from "./phrase-set-limits.js";
+import type { AudioEnqueueResult, SttSession } from "./stt-session.js";
+
+export {
+  createDevelopmentSpeechDiagnosticReporter,
+  getGoogleSpeechConfigurationError,
+  isGoogleSpeechConfigured,
+  type DevelopmentSpeechDiagnosticRecord,
+  type SpeechDiagnosticEvent,
+  type SpeechDiagnosticStage
+} from "./google-speech-config.js";
 
 type StreamingRecognizeRequest = protos.google.cloud.speech.v2.IStreamingRecognizeRequest;
 type StreamingRecognizeResponse = protos.google.cloud.speech.v2.IStreamingRecognizeResponse;
@@ -15,11 +30,6 @@ type SpeechCallbacks = {
   onEnd: () => void;
   onDrain?: () => void;
   onDiagnostic?: (event: SpeechDiagnosticEvent) => void;
-};
-
-export type SpeechSession = {
-  writeAudio: (audio: Buffer) => boolean;
-  close: () => void;
 };
 
 type SpeechWritablePort = {
@@ -45,43 +55,11 @@ type SpeechSessionDependencies = {
   readyTimeoutMs?: number;
 };
 
-const SUPPORTED_STT_LOCATION = "us";
-const SUPPORTED_STT_MODEL = "chirp_3";
 const SHORT_ENDPOINTING_SENSITIVITY =
   protos.google.cloud.speech.v2.StreamingRecognitionFeatures.EndpointingSensitivity
     .ENDPOINTING_SENSITIVITY_SHORT;
 const DEFAULT_DRAIN_TIMEOUT_MS = 5_000;
 const DEFAULT_READY_TIMEOUT_MS = 5_000;
-
-export type SpeechDiagnosticStage =
-  | "client-initialized"
-  | "config-written"
-  | "first-pcm"
-  | "grpc-backpressure"
-  | "grpc-drain"
-  | "vad-begin"
-  | "vad-end"
-  | "first-interim"
-  | "first-final"
-  | "session-close";
-
-export type SpeechDiagnosticEvent = {
-  stage: SpeechDiagnosticStage;
-  elapsedMs: number;
-  pcmChunkCount: number;
-  pcmBytes: number;
-};
-
-export type DevelopmentSpeechDiagnosticRecord = SpeechDiagnosticEvent & { sessionId: string };
-
-export function createDevelopmentSpeechDiagnosticReporter(
-  development: boolean,
-  sessionId: string,
-  reporter: (record: DevelopmentSpeechDiagnosticRecord) => void
-): ((event: SpeechDiagnosticEvent) => void) | undefined {
-  if (!development) return undefined;
-  return (event) => reporter({ sessionId, ...event });
-}
 
 const clientInitializations = new WeakMap<object, Promise<void>>();
 let sharedSpeechClient: SpeechClientPort | null = null;
@@ -99,44 +77,6 @@ export function initializeSpeechClient(client: SpeechClientPort): Promise<void> 
 function getSharedSpeechClient(apiEndpoint: string): SpeechClientPort {
   if (!sharedSpeechClient) sharedSpeechClient = new v2.SpeechClient({ apiEndpoint });
   return sharedSpeechClient;
-}
-
-type GoogleSpeechConfiguration = {
-  projectId: string;
-  location: typeof SUPPORTED_STT_LOCATION;
-  model: typeof SUPPORTED_STT_MODEL;
-  apiEndpoint: string;
-};
-
-export function getGoogleSpeechConfigurationError(): string | null {
-  if (!process.env.GOOGLE_CLOUD_PROJECT) return "GOOGLE_CLOUD_PROJECT가 설정되지 않았습니다.";
-
-  const location = process.env.GOOGLE_STT_LOCATION || SUPPORTED_STT_LOCATION;
-  if (location !== SUPPORTED_STT_LOCATION) {
-    return `GOOGLE_STT_LOCATION은 지원되는 값 '${SUPPORTED_STT_LOCATION}'이어야 합니다.`;
-  }
-
-  const model = process.env.GOOGLE_STT_MODEL || SUPPORTED_STT_MODEL;
-  if (model !== SUPPORTED_STT_MODEL) {
-    return `GOOGLE_STT_MODEL은 지원되는 값 '${SUPPORTED_STT_MODEL}'이어야 합니다.`;
-  }
-
-  return null;
-}
-
-function resolveGoogleSpeechConfiguration(): GoogleSpeechConfiguration {
-  const projectId = process.env.GOOGLE_CLOUD_PROJECT;
-  if (!projectId) throw new Error("GOOGLE_CLOUD_PROJECT가 설정되지 않았습니다.");
-
-  const error = getGoogleSpeechConfigurationError();
-  if (error) throw new Error(error);
-
-  return {
-    projectId,
-    location: SUPPORTED_STT_LOCATION,
-    model: SUPPORTED_STT_MODEL,
-    apiEndpoint: `${SUPPORTED_STT_LOCATION}-speech.googleapis.com`
-  };
 }
 
 export function isSpeechStreamWritable(stream: SpeechWritablePort): boolean {
@@ -172,10 +112,6 @@ export function createGuardedSpeechWriter(stream: SpeechWritablePort, onError: (
       stopped = true;
     }
   };
-}
-
-export function isGoogleSpeechConfigured(): boolean {
-  return getGoogleSpeechConfigurationError() === null;
 }
 
 export function projectStreamingRecognizeResponse(
@@ -257,7 +193,7 @@ export async function createGoogleSpeechSession(
   phraseSet: string[],
   callbacks: SpeechCallbacks,
   dependencies: SpeechSessionDependencies = {}
-): Promise<SpeechSession> {
+): Promise<SttSession> {
   const { projectId, location, model, apiEndpoint } = resolveGoogleSpeechConfiguration();
   const drainTimeoutMs = dependencies.drainTimeoutMs ?? DEFAULT_DRAIN_TIMEOUT_MS;
   const readyTimeoutMs = dependencies.readyTimeoutMs ?? DEFAULT_READY_TIMEOUT_MS;
@@ -283,7 +219,7 @@ export async function createGoogleSpeechSession(
   diagnostic("client-initialized");
 
   const stream = client._streamingRecognize() as SpeechWritableStream;
-  let lifecycle: "active" | "draining" | "ended" | "failed" = "active";
+  let lifecycle: "active" | "draining" | "ended" | "failed" | "aborted" = "active";
   let drainTimer: NodeJS.Timeout | null = null;
   let readyTimer: NodeJS.Timeout | null = null;
   let writer: ReturnType<typeof createGuardedSpeechWriter> | null = null;
@@ -291,7 +227,8 @@ export async function createGoogleSpeechSession(
   let firstInterimSeen = false;
   let firstFinalSeen = false;
 
-  const isTerminal = (): boolean => lifecycle === "ended" || lifecycle === "failed";
+  const isTerminal = (): boolean =>
+    lifecycle === "ended" || lifecycle === "failed" || lifecycle === "aborted";
   const clearDrainTimer = (): void => {
     if (!drainTimer) return;
     clearTimeout(drainTimer);
@@ -322,6 +259,22 @@ export async function createGoogleSpeechSession(
       }
     }
     return true;
+  };
+  const abort = (reason?: Error): void => {
+    if (isTerminal()) return;
+
+    lifecycle = "aborted";
+    clearDrainTimer();
+    clearReadyTimer();
+    writer?.stop();
+    initialWriteReject?.(reason ?? new Error("Google STT 세션이 중단되었습니다."));
+    initialWriteReject = null;
+    diagnostic("session-abort");
+    try {
+      stream.cancel?.();
+    } catch {
+      // The session is already terminal; cancellation is best-effort cleanup.
+    }
   };
   writer = createGuardedSpeechWriter(stream, (error) => finish("error", error));
 
@@ -377,20 +330,22 @@ export async function createGoogleSpeechSession(
   diagnostic("config-written");
 
   return {
-    writeAudio(audio: Buffer) {
-      if (lifecycle !== "active") return false;
+    enqueueAudio(audio: Buffer): AudioEnqueueResult {
+      if (lifecycle !== "active") return "closed";
       if (audio.byteLength > 15_000) {
         writer?.fail(new Error("오디오 청크가 Google STT의 15KB 제한을 초과했습니다."));
-        return false;
+        return "closed";
       }
       pcmChunkCount += 1;
       pcmBytes += audio.byteLength;
       if (pcmChunkCount === 1) diagnostic("first-pcm");
       const accepted = writer?.write({ audio }) === true;
-      if (!accepted && lifecycle === "active") diagnostic("grpc-backpressure");
-      return accepted;
+      if (accepted) return "accepted";
+      if (lifecycle !== "active") return "closed";
+      diagnostic("grpc-backpressure");
+      return "backpressure";
     },
-    close() {
+    finishInput() {
       if (lifecycle !== "active") return;
 
       lifecycle = "draining";
@@ -415,6 +370,7 @@ export async function createGoogleSpeechSession(
       } catch (error) {
         finish("error", error instanceof Error ? error : new Error(String(error)));
       }
-    }
+    },
+    abort
   };
 }

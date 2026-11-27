@@ -12,22 +12,125 @@ import {
   type ComparisonRunLabel,
   type ComparisonRunResult,
   type ComparisonUnexpectedObservation,
+  type ComparisonReportFile,
   type ExternalSttComparisonJob,
+  type SttComparisonHistoryItem,
   type SttComparisonJobStatus
 } from "../lib/api";
 import {
   aggregateComparisonReport,
   comparisonReportToTsv,
+  createLatestRequestRunner,
   defaultRecordingId,
   handleLocalTerminalResultOnce,
   historyBadgeLabels,
   isPaperReadyComparison,
   registerDiscoveredLocalJob,
+  resolveHistorySelection,
+  runComparisonViewLoadPlan,
   startSttComparisonAttempt,
-  SttComparisonJobPanel,
+  SttComparisonJobPanel as SttComparisonJobPanelComponent,
   SttComparisonResults,
-  SttComparisonResultsView
+  SttComparisonResultsView as SttComparisonResultsViewComponent,
+  type SttComparisonResultsViewState
 } from "./SttComparisonResults";
+
+function SttComparisonJobPanel({
+  recordings,
+  selectedRecordingId,
+  onSelectRecording,
+  consent,
+  onConsentChange,
+  active,
+  checkingActive,
+  starting,
+  startError,
+  currentError,
+  pollingError,
+  onStart
+}: {
+  recordings: AudioFixtureRecording[];
+  selectedRecordingId: string;
+  onSelectRecording: (recordingId: string) => void;
+  consent: boolean;
+  onConsentChange: (value: boolean) => void;
+  active: Parameters<typeof SttComparisonJobPanelComponent>[0]["state"]["job"]["active"];
+  checkingActive: boolean;
+  starting: boolean;
+  startError: string;
+  currentError: string;
+  pollingError: string;
+  onStart: () => void;
+}) {
+  return <SttComparisonJobPanelComponent
+    state={{
+      recordings,
+      selection: { recordingId: selectedRecordingId, paidCallConsent: consent },
+      job: {
+        active,
+        checking: checkingActive,
+        starting,
+        errors: { start: startError, current: currentError, polling: pollingError }
+      }
+    }}
+    actions={{ selectRecording: onSelectRecording, changePaidCallConsent: onConsentChange, start: onStart }}
+  />;
+}
+
+function SttComparisonResultsView({
+  latest,
+  reportCount,
+  loading,
+  error,
+  onRefresh,
+  history = [],
+  selectedFileName = null,
+  page,
+  detailLoading = false,
+  detailError = "",
+  onSelectReport = () => undefined,
+  onPreviousPage = () => undefined,
+  onNextPage = () => undefined,
+  mobileDetailOpen = false,
+  detailFocusRequest = 0,
+  onBackToList = () => undefined
+}: {
+  latest: ComparisonReportFile | null;
+  reportCount: number;
+  loading: boolean;
+  error: string;
+  onRefresh: () => void;
+  history?: SttComparisonHistoryItem[];
+  selectedFileName?: string | null;
+  page?: SttComparisonResultsViewState["history"]["page"];
+  detailLoading?: boolean;
+  detailError?: string;
+  onSelectReport?: (fileName: string) => void;
+  onPreviousPage?: () => void;
+  onNextPage?: () => void;
+  mobileDetailOpen?: boolean;
+  detailFocusRequest?: number;
+  onBackToList?: () => void;
+}) {
+  return <SttComparisonResultsViewComponent
+    state={{
+      report: { selected: latest, count: reportCount },
+      history: { items: history, selectedFileName, page },
+      requests: {
+        history: { loading, error },
+        detail: { loading: detailLoading, error: detailError }
+      },
+      mobile: { detailOpen: mobileDetailOpen, detailFocusRequest }
+    }}
+    actions={{
+      refresh: onRefresh,
+      selectReport: onSelectReport,
+      previousPage: onPreviousPage,
+      nextPage: onNextPage,
+      backToList: onBackToList
+    }}
+  />;
+}
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -226,7 +329,7 @@ describe("STT comparison API request safety", () => {
     expect(owners).toEqual(["cli", "ui"]);
   });
 
-  it("sends the exact paid-call consent only to a mocked start endpoint", async () => {
+  it("keeps the legacy runner consent contract while sending it only to a mocked start endpoint", async () => {
     const job = createJob();
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ job }), {
       status: 202,
@@ -349,17 +452,83 @@ describe("STT comparison API request safety", () => {
   });
 });
 
+describe("STT comparison async ownership", () => {
+  it("publishes only the newest response and keeps stale completion from clearing its loading state", async () => {
+    const resolvers = new Map<string, (value: string) => void>();
+    const published: string[] = [];
+    const settled: string[] = [];
+    const runner = createLatestRequestRunner({
+      request: (key: string) => new Promise<string>((resolve) => resolvers.set(key, resolve)),
+      onStart: () => undefined,
+      onSuccess: (value) => published.push(value),
+      onError: () => undefined,
+      onSettled: (key) => settled.push(key)
+    });
+
+    const older = runner.run("older");
+    const newer = runner.run("newer");
+    resolvers.get("newer")!("new result");
+    await expect(newer).resolves.toBe(true);
+    resolvers.get("older")!("old result");
+    await expect(older).resolves.toBe(false);
+
+    expect(published).toEqual(["new result"]);
+    expect(settled).toEqual(["newer"]);
+  });
+
+  it("loads only job state on the run panel and only result resources on the results panel", () => {
+    const current = vi.fn();
+    const history = vi.fn();
+    const aggregates = vi.fn();
+
+    runComparisonViewLoadPlan("run", { current, history, aggregates });
+    expect(current).toHaveBeenCalledOnce();
+    expect(history).not.toHaveBeenCalled();
+    expect(aggregates).not.toHaveBeenCalled();
+
+    current.mockClear();
+    runComparisonViewLoadPlan("results", { current, history, aggregates });
+    expect(current).not.toHaveBeenCalled();
+    expect(history).toHaveBeenCalledOnce();
+    expect(aggregates).toHaveBeenCalledOnce();
+  });
+
+  it("selects a result from the visible page instead of retaining an off-page detail", () => {
+    const visible = [{
+      fileName: "page-two.json",
+      modifiedAt: "2026-08-09T02:00:00.000Z",
+      version: 3 as const,
+      createdAt: "2026-08-09T02:00:00.000Z",
+      recordingId: recordings[1]!.id,
+      scriptTitle: "기준 문장",
+      evaluationMode: "accuracy" as const,
+      runOutcome: "complete" as const
+    }];
+
+    expect(resolveHistorySelection({
+      history: visible,
+      currentFileName: "page-one.json",
+      latestFileName: "page-one.json",
+      offset: 5
+    })).toBe("page-two.json");
+  });
+});
+
 describe("STT comparison view separation", () => {
   it("renders only paid run controls in run view and only result controls in results view", () => {
     const runHtml = renderToStaticMarkup(<SttComparisonResults recordings={recordings} view="run" onResultReady={() => undefined} />);
     const resultsHtml = renderToStaticMarkup(<SttComparisonResults recordings={recordings} view="results" onResultReady={() => undefined} />);
 
     expect(runHtml).toContain("A/B/C STT 비교 실행");
-    expect(runHtml).toContain("정확히 3개의 유료 Google STT 스트림");
+    expect(runHtml).toContain("정확히 3개의 유료 STT 스트림");
+    expect(runHtml).not.toContain("유료 Google STT 스트림");
     expect(runHtml).not.toContain("저장된 STT 비교 결과");
     expect(resultsHtml).toContain("저장된 STT 비교 결과");
     expect(resultsHtml).not.toContain("A/B/C STT 비교 실행");
     expect(resultsHtml).not.toContain("유료 비교 시작");
+    expect(resultsHtml).toContain('name="sttAggregateStudyId"');
+    expect(resultsHtml).toContain('name="sttAggregateCaseId"');
+    expect(resultsHtml).toContain("focus-visible:ring-2");
   });
 });
 
@@ -384,9 +553,13 @@ describe("STT comparison job rendering", () => {
       />
     );
 
-    expect(html).toContain("정확히 3개의 유료 Google STT 스트림");
+    expect(html).toContain("정확히 3개의 유료 STT 스트림");
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>.*유료 비교 시작/s);
     expect(html).not.toContain("취소");
+    expect(html).toContain('for="stt-comparison-recording"');
+    expect(html).toContain('name="sttComparisonRecordingId"');
+    expect(html).toContain('name="sttPaidCallConsent"');
+    expect(html).toContain("focus-visible:ring-2");
   });
 
   it("blocks a paid start when the current-job check failed", () => {
@@ -494,6 +667,13 @@ describe("STT comparison result rendering", () => {
     const html = renderToStaticMarkup(<SttComparisonResultsView latest={null} reportCount={0} loading={false} error="" onRefresh={() => undefined} />);
     expect(html).toContain("저장된 비교 결과가 없습니다");
     expect(html).toContain("새로고침과 결과 선택은 유료 호출을 만들지 않습니다");
+  });
+
+  it("announces result loading through a status region and marks refresh busy", () => {
+    const html = renderToStaticMarkup(<SttComparisonResultsView latest={null} reportCount={0} loading error="" onRefresh={() => undefined} />);
+
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toMatch(/role="status"[^>]*>.*결과 목록을 불러오는 중입니다/s);
   });
 
   it("labels v1/v2 as legacy smoke data without rendering invented metrics", () => {

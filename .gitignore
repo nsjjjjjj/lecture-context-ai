@@ -17,3 +17,8 @@ test-fixtures/stt/.writer.lock
 test-fixtures/stt/.stt-comparison.lock
 test-fixtures/stt/results/*.json
 test-fixtures/stt/results/.*.tmp-*
+
+# Local research and generated inspection artifacts
+/paper/
+/.codex_tmp/
+deliverables/**/*.inspect.ndjson

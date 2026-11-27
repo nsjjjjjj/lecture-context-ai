@@ -2,13 +2,36 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express, { type ErrorRequestHandler, type Request } from "express";
 import { z } from "zod";
-import { analyzeGlossary } from "./services/glossary.js";
+import {
+  analyzeGlossary as defaultAnalyzeGlossary,
+  GlossaryAnalysisCancelledError
+} from "./services/glossary.js";
 import { demoPages, demoTerms } from "./services/demo.js";
 import { MAX_PHRASE_SET_FORMS } from "./services/phrase-set-limits.js";
 import {
   getGoogleSpeechConfigurationError as defaultGetGoogleSpeechConfigurationError,
   isGoogleSpeechConfigured
-} from "./services/speech.js";
+} from "./services/google-speech-config.js";
+import {
+  getAwsTranscribeConfigurationError,
+  isAwsTranscribeConfigured,
+  resolveSttProvider,
+  unverifiedServiceConfiguration
+} from "./services/aws-config.js";
+import {
+  AwsVocabularyManager,
+  AwsVocabularyPreparationCancelledError,
+  AwsVocabularyPreparationError,
+  type AwsVocabularyPreparationOptions,
+  type PreparedAwsVocabulary
+} from "./services/aws-vocabulary.js";
+import { sanitizeGlossaryTerms } from "./services/ws-start.js";
+import {
+  createFixedWindowRateLimiter,
+  positiveEnvironmentInteger,
+  resolveClientAddress,
+  type FixedWindowRateLimiter
+} from "./services/ws-security.js";
 import {
   AudioFixtureError,
   AudioFixtureStore,
@@ -36,7 +59,7 @@ import {
   SttComparisonLockError,
   type SttComparisonLockRecord
 } from "./services/stt-comparison-lock.js";
-import { analyzeRequestSchema } from "./types.js";
+import { analyzeRequestSchema, glossaryTermSchema, type GlossaryTerm } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const defaultClientDist = path.resolve(__dirname, "../client");
@@ -60,6 +83,10 @@ const startComparisonJobRequestSchema = z.object({
   paidCallConsent: z.unknown().optional()
 }).strict();
 
+const prepareVocabularyRequestSchema = z.object({
+  terms: z.array(glossaryTermSchema).min(1).max(50)
+}).strict();
+
 export type SttComparisonJobManagerPort = {
   getCurrentJob: () => SttComparisonJob | undefined;
   getJob: (jobId: string) => SttComparisonJob | undefined;
@@ -75,6 +102,13 @@ export type AppOptions = {
   getGoogleSpeechConfigurationError?: () => string | null;
   readSttComparisonLock?: (lockPath: string) => Promise<SttComparisonLockRecord | null>;
   probeProcess?: (pid: number) => void;
+  prepareAwsVocabulary?: (
+    terms: GlossaryTerm[],
+    options?: AwsVocabularyPreparationOptions
+  ) => Promise<PreparedAwsVocabulary>;
+  analyzeGlossary?: typeof defaultAnalyzeGlossary;
+  analyzeRateLimiter?: FixedWindowRateLimiter;
+  vocabularyRateLimiter?: FixedWindowRateLimiter;
 };
 
 type PublicSttComparisonJob = Pick<SttComparisonJob,
@@ -232,7 +266,7 @@ const jsonErrorHandler: ErrorRequestHandler = (error, request, response, _next) 
     : error instanceof z.ZodError
       ? "요청 데이터 형식이나 용어 구성이 올바르지 않습니다. 입력값을 확인해 주세요."
     : status === 413
-      ? "녹음 본문이 최대 120초 크기를 초과했습니다."
+      ? "요청 본문이 서버의 안전한 크기 제한을 초과했습니다."
       : "요청을 처리하지 못했습니다.";
   if (request.path === "/api/dev/stt-comparison-jobs" && status >= 400 && status < 500) {
     sendApiError(response, status, "INVALID_REQUEST", "STT 비교 작업 요청 형식이 올바르지 않습니다.");
@@ -244,6 +278,38 @@ const jsonErrorHandler: ErrorRequestHandler = (error, request, response, _next) 
 export function createApp(options: AppOptions = {}) {
   const nodeEnv = options.nodeEnv ?? process.env.NODE_ENV;
   const app = express();
+  const vocabularyManager = options.prepareAwsVocabulary ? null : new AwsVocabularyManager();
+  const prepareAwsVocabulary =
+    options.prepareAwsVocabulary ?? (
+      (terms: GlossaryTerm[], prepareOptions?: AwsVocabularyPreparationOptions) =>
+        vocabularyManager!.prepare(terms, prepareOptions)
+    );
+  const analyzeGlossary = options.analyzeGlossary ?? defaultAnalyzeGlossary;
+  const analyzeRateLimiter = options.analyzeRateLimiter ?? createFixedWindowRateLimiter({
+    limit: positiveEnvironmentInteger(process.env.MAX_ANALYZE_REQUESTS_PER_MINUTE, 12),
+    windowMs: 60_000
+  });
+  const vocabularyRateLimiter = options.vocabularyRateLimiter ?? createFixedWindowRateLimiter({
+    limit: positiveEnvironmentInteger(process.env.MAX_VOCABULARY_REQUESTS_PER_MINUTE, 12),
+    windowMs: 60_000
+  });
+  const trustProxy = process.env.TRUST_PROXY === "1";
+
+  const enforceRateLimit = (
+    limiter: FixedWindowRateLimiter,
+    request: Request,
+    response: express.Response
+  ): boolean => {
+    const result = limiter.take(resolveClientAddress({
+      remoteAddress: request.socket.remoteAddress,
+      forwardedFor: request.get("x-forwarded-for"),
+      trustProxy
+    }));
+    if (result.allowed) return true;
+    response.set("Retry-After", String(result.retryAfterSeconds));
+    response.status(429).json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요." });
+    return false;
+  };
 
   app.disable("x-powered-by");
   const jsonParser = express.json({ limit: "2mb" });
@@ -259,13 +325,80 @@ export function createApp(options: AppOptions = {}) {
   });
 
   app.get("/api/health", (_request, response) => {
+    const sttProvider = resolveSttProvider(process.env.STT_PROVIDER, nodeEnv);
     response.json({
       ok: true,
+      sttProvider,
       services: {
-        speech: isGoogleSpeechConfigured(),
+        // Health is intentionally local and free: it reports static configuration,
+        // never credential/IAM/network success. Operators verify those separately.
+        speech: unverifiedServiceConfiguration(
+          sttProvider === "aws" ? isAwsTranscribeConfigured() : isGoogleSpeechConfigured()
+        ),
+        customVocabulary: unverifiedServiceConfiguration(
+          sttProvider === "aws" && Boolean(process.env.AWS_TRANSCRIBE_VOCABULARY_BUCKET?.trim())
+        ),
         gemini: Boolean(process.env.GEMINI_API_KEY)
       }
     });
+  });
+
+  app.post("/api/vocabulary/prepare", async (request, response) => {
+    if (!enforceRateLimit(vocabularyRateLimiter, request, response)) return;
+    const parsed = prepareVocabularyRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      response.status(400).json({ error: "AWS 사용자 지정 용어집 요청 형식이 올바르지 않습니다." });
+      return;
+    }
+    const terms = sanitizeGlossaryTerms(parsed.data.terms);
+    if (terms.length === 0) {
+      response.status(422).json({ error: "AWS 사용자 지정 용어집에 사용할 수 있는 용어가 없습니다." });
+      return;
+    }
+    const configurationError = getAwsTranscribeConfigurationError();
+    if (configurationError) {
+      response.status(503).json({ error: configurationError });
+      return;
+    }
+    const preparationAbort = new AbortController();
+    const abortPreparation = (): void => {
+      if (!preparationAbort.signal.aborted) {
+        preparationAbort.abort(new AwsVocabularyPreparationCancelledError());
+      }
+    };
+    const abortOnResponseClose = (): void => {
+      if (!response.writableEnded) abortPreparation();
+    };
+    request.once("aborted", abortPreparation);
+    response.once("close", abortOnResponseClose);
+    try {
+      const prepared = await prepareAwsVocabulary(terms, { signal: preparationAbort.signal });
+      if (preparationAbort.signal.aborted || response.destroyed || response.writableEnded) return;
+      response.json(prepared);
+    } catch (error) {
+      if (
+        error instanceof AwsVocabularyPreparationCancelledError ||
+        preparationAbort.signal.aborted ||
+        response.destroyed ||
+        response.writableEnded
+      ) {
+        return;
+      }
+      if (error instanceof AwsVocabularyPreparationError) {
+        response.status(error.httpStatus).json({
+          error: error.message,
+          code: error.code,
+          retryable: error.retryable
+        });
+        return;
+      }
+      response.status(502).json({
+        error: "AWS 사용자 지정 용어집을 준비하지 못했습니다. 서버 권한과 리전을 확인해 주세요."
+      });
+    } finally {
+      request.off("aborted", abortPreparation);
+      response.off("close", abortOnResponseClose);
+    }
   });
 
   app.get("/api/demo", (_request, response) => {
@@ -279,15 +412,44 @@ export function createApp(options: AppOptions = {}) {
   });
 
   app.post("/api/analyze", async (request, response) => {
+    if (!enforceRateLimit(analyzeRateLimiter, request, response)) return;
     const parsed = analyzeRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       response.status(400).json({ error: "PDF 분석 요청 형식이 올바르지 않습니다.", issues: parsed.error.issues });
       return;
     }
+    if (parsed.data.pages.reduce((sum, page) => sum + page.text.length, 0) > 600_000) {
+      response.status(413).json({ error: "PDF 텍스트가 너무 큽니다. 60만 자 이하 자료를 사용해 주세요." });
+      return;
+    }
+    const analysisAbort = new AbortController();
+    const abortAnalysis = (): void => {
+      if (!analysisAbort.signal.aborted) analysisAbort.abort(new GlossaryAnalysisCancelledError());
+    };
+    const abortOnResponseClose = (): void => {
+      if (!response.writableEnded) abortAnalysis();
+    };
+    request.once("aborted", abortAnalysis);
+    response.once("close", abortOnResponseClose);
     try {
-      response.json(await analyzeGlossary(parsed.data.title, parsed.data.pages));
+      const result = await analyzeGlossary(parsed.data.title, parsed.data.pages, {
+        signal: analysisAbort.signal
+      });
+      if (analysisAbort.signal.aborted || response.destroyed || response.writableEnded) return;
+      response.json(result);
     } catch (error) {
+      if (
+        error instanceof GlossaryAnalysisCancelledError ||
+        analysisAbort.signal.aborted ||
+        response.destroyed ||
+        response.writableEnded
+      ) {
+        return;
+      }
       response.status(500).json({ error: error instanceof Error ? error.message : "PDF 분석에 실패했습니다." });
+    } finally {
+      request.off("aborted", abortAnalysis);
+      response.off("close", abortOnResponseClose);
     }
   });
 

@@ -325,8 +325,8 @@ describe("Google Speech V2 bidirectional transport", () => {
 
     expect(client.initialize).toHaveBeenCalledTimes(1);
     expect(client._streamingRecognize).toHaveBeenCalledTimes(2);
-    firstSession.close();
-    secondSession.close();
+    firstSession.finishInput();
+    secondSession.finishInput();
   });
 
   it("does not open a stream when shared client initialization fails", async () => {
@@ -418,8 +418,8 @@ describe("Google Speech V2 bidirectional transport", () => {
     );
     const acceptedAudio = Buffer.alloc(15_000, 1);
 
-    session.writeAudio(acceptedAudio);
-    session.writeAudio(Buffer.alloc(15_001, 2));
+    expect(session.enqueueAudio(acceptedAudio)).toBe("accepted");
+    expect(session.enqueueAudio(Buffer.alloc(15_001, 2))).toBe("closed");
 
     expect(stream.writes).toHaveLength(2);
     expect(stream.writes[1]).toEqual({ audio: acceptedAudio });
@@ -432,7 +432,7 @@ describe("Google Speech V2 bidirectional transport", () => {
 
     stream.emit("end");
     stream.emit("close");
-    session.writeAudio(Buffer.from([1, 2]));
+    expect(session.enqueueAudio(Buffer.from([1, 2]))).toBe("closed");
 
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onEnd).not.toHaveBeenCalled();
@@ -489,7 +489,7 @@ describe("Google Speech V2 bidirectional transport", () => {
       return false;
     }) as typeof stream.write);
 
-    expect(session.writeAudio(Buffer.alloc(3_200))).toBe(false);
+    expect(session.enqueueAudio(Buffer.alloc(3_200))).toBe("backpressure");
     expect(stream.writes.at(-1)).toEqual({ audio: Buffer.alloc(3_200) });
 
     stream.emit("drain");
@@ -508,7 +508,7 @@ describe("Google Speech V2 bidirectional transport", () => {
       { client }
     );
 
-    session.writeAudio(Buffer.alloc(3_200));
+    session.enqueueAudio(Buffer.alloc(3_200));
     stream.emit("data", { speechEventType: 2 });
     stream.emit("data", { results: [{ alternatives: [{ transcript: "민감한 원문" }], isFinal: false }] });
     stream.emit("data", { results: [{ alternatives: [{ transcript: "민감한 확정 원문" }], isFinal: true }] });
@@ -550,9 +550,9 @@ describe("Google Speech V2 bidirectional transport", () => {
       { client, drainTimeoutMs: 100 }
     );
 
-    session.close();
-    session.close();
-    session.writeAudio(Buffer.from([1, 2]));
+    session.finishInput();
+    session.finishInput();
+    expect(session.enqueueAudio(Buffer.from([1, 2]))).toBe("closed");
 
     expect(end).toHaveBeenCalledTimes(1);
     expect(events).toEqual([]);
@@ -583,7 +583,7 @@ describe("Google Speech V2 bidirectional transport", () => {
     stream.emit("error", new Error("transport failed"));
     stream.emit("end");
     stream.emit("close");
-    session.writeAudio(Buffer.from([1, 2]));
+    expect(session.enqueueAudio(Buffer.from([1, 2]))).toBe("closed");
 
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onEnd).not.toHaveBeenCalled();
@@ -603,7 +603,7 @@ describe("Google Speech V2 bidirectional transport", () => {
       { client, drainTimeoutMs: 50 }
     );
 
-    session.close();
+    session.finishInput();
     await vi.advanceTimersByTimeAsync(49);
 
     await vi.advanceTimersByTimeAsync(1);
@@ -615,6 +615,28 @@ describe("Google Speech V2 bidirectional transport", () => {
     stream.emit("error", new Error("after timeout"));
     expect(onEnd).toHaveBeenCalledTimes(1);
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("abort는 final drain을 기다리지 않고 provider stream을 즉시 취소한다", async () => {
+    configureSupportedSpeech();
+    const stream = new RecordingSpeechStream();
+    const client = createRecordingClient(stream);
+    const cancel = vi.spyOn(stream, "cancel");
+    const onError = vi.fn();
+    const onEnd = vi.fn();
+    const session = await createGoogleSpeechSession(
+      [],
+      { onTranscript: vi.fn(), onError, onEnd },
+      { client }
+    );
+
+    session.abort(new Error("client disconnected"));
+    session.abort();
+
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(session.enqueueAudio(Buffer.from([1, 2]))).toBe("closed");
+    expect(onError).not.toHaveBeenCalled();
+    expect(onEnd).not.toHaveBeenCalled();
   });
 
 });

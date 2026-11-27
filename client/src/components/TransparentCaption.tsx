@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import { buildHighlightedTextParts } from "../lib/term-highlights";
 import type { GlossaryTerm, TranscriptCorrection, TranscriptLine } from "../types";
 
@@ -39,15 +39,17 @@ export function TransparentCaption({
   line,
   terms,
   className,
-  emphasizeTerms = true
+  emphasizeTerms = true,
+  trailingContent
 }: {
   line: TranscriptLine;
   terms: GlossaryTerm[];
   className: string;
   emphasizeTerms?: boolean;
+  trailingContent?: ReactNode;
 }) {
   if (!emphasizeTerms) {
-    return <p lang="ko" className={`caption-text ${className}`}>{line.text}</p>;
+    return <p lang="ko" className={`caption-text ${className}`}>{line.text}{trailingContent}</p>;
   }
 
   const relevantTerms = terms.filter((term) => line.termIds.includes(term.id));
@@ -71,6 +73,7 @@ export function TransparentCaption({
           </span>
         );
       })}
+      {trailingContent}
     </p>
   );
 }

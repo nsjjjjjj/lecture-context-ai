@@ -21,18 +21,48 @@ export type AnalysisResult = {
   phraseSet: string[];
   mode: "gemini" | "heuristic" | "demo" | "saved";
   warning?: string;
-  pdfUrl?: string;
+  vocabularyName?: string;
 };
 
-export type TranscriptEvent = {
-  type: "ready" | "interim" | "final" | "status" | "error" | "ended";
-  text?: string;
+export type TranscriptSegmentMetadata = {
+  segmentId: string;
+  providerResultId?: string;
+  revision: number;
+  stablePrefixLength?: number;
+  startTimeMs?: number;
+  endTimeMs?: number;
+};
+
+export type TranscriptSegmentEvent = TranscriptSegmentMetadata & {
+  type: "partial" | "final";
+  text: string;
   rawText?: string;
-  message?: string;
   detectedTerms?: string[];
   relatedPage?: number;
   corrections?: TranscriptCorrection[];
 };
+
+export type LegacyInterimTranscriptEvent = {
+  type: "interim";
+  text?: string;
+  segmentId?: string;
+  revision?: number;
+};
+
+export type TranscriptBasicControlEvent = {
+  type: "ready" | "captureRequested" | "readyForAudio" | "providerAccepted" | "status" | "error";
+  message?: string;
+};
+
+export type TranscriptEndedEvent = {
+  type: "ended";
+  outcome: "completed" | "flush-timeout";
+  message?: string;
+};
+
+export type TranscriptControlEvent = TranscriptBasicControlEvent | TranscriptEndedEvent;
+
+export type TranscriptEvent = TranscriptSegmentEvent | LegacyInterimTranscriptEvent | TranscriptControlEvent;
 
 export type TranscriptCorrection = {
   originalText: string;
@@ -52,7 +82,25 @@ export type TranscriptLine = {
   corrections: TranscriptCorrection[];
 };
 
+export type ServiceVerification = "unverified" | "verified" | "failed";
+
+export type ServiceConfigurationStatus = {
+  configured: boolean;
+  verification: ServiceVerification;
+};
+
 export type ServiceStatus = {
   ok: boolean;
-  services: { speech: boolean; gemini: boolean };
+  sttProvider?: "aws" | "google";
+  services: {
+    speech: ServiceConfigurationStatus;
+    gemini: boolean;
+    customVocabulary?: ServiceConfigurationStatus;
+  };
+};
+
+export type PreparedAwsVocabulary = {
+  vocabularyName: string;
+  hash: string;
+  reused: boolean;
 };

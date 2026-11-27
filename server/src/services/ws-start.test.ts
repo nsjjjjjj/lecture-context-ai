@@ -59,7 +59,7 @@ describe("sanitizeGlossaryTerms", () => {
     expect(result).toEqual([
       term({ id: "shared", term: "RAG", english: "Retrieval-Augmented Generation", spokenAliases: ["레그"] })
     ]);
-    expect(createTranscriptEvent("레그는 기술입니다.", true, result)).toMatchObject({
+    expect(createTranscriptEvent("레그는 기술입니다.", true, result, { segmentId: "segment-1", revision: 1 })).toMatchObject({
       text: "RAG는 기술입니다.",
       detectedTerms: ["shared"],
       corrections: [{ originalText: "레그", correctedText: "RAG", termId: "shared" }]

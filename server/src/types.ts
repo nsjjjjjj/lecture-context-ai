@@ -19,6 +19,16 @@ export const glossaryTermSchema = z.object({
 export const analyzeRequestSchema = z.object({
   title: z.string().max(160).optional().default("강연 자료"),
   pages: z.array(pageTextSchema).min(1).max(300)
+}).superRefine(({ pages }, context) => {
+  pages.forEach((page, index) => {
+    const expectedPageNumber = index + 1;
+    if (page.pageNumber === expectedPageNumber) return;
+    context.addIssue({
+      code: "custom",
+      path: ["pages", index, "pageNumber"],
+      message: `페이지 번호는 1부터 순서대로 이어져야 합니다. ${expectedPageNumber}페이지가 필요합니다.`
+    });
+  });
 });
 
 export type PageText = z.infer<typeof pageTextSchema>;
@@ -32,15 +42,38 @@ export type AnalysisResult = {
   warning?: string;
 };
 
-export type TranscriptEvent = {
-  type: "ready" | "interim" | "final" | "status" | "error" | "ended";
-  text?: string;
+export type TranscriptSegmentMetadata = {
+  segmentId: string;
+  providerResultId?: string;
+  revision: number;
+  stablePrefixLength?: number;
+  startTimeMs?: number;
+  endTimeMs?: number;
+};
+
+export type TranscriptSegmentEvent = TranscriptSegmentMetadata & {
+  type: "partial" | "final";
+  text: string;
   rawText?: string;
-  message?: string;
   detectedTerms?: string[];
   relatedPage?: number;
   corrections?: TranscriptCorrection[];
 };
+
+export type TranscriptBasicControlEvent = {
+  type: "ready" | "captureRequested" | "readyForAudio" | "providerAccepted" | "status" | "error";
+  message?: string;
+};
+
+export type TranscriptEndedEvent = {
+  type: "ended";
+  outcome: "completed" | "flush-timeout";
+  message?: string;
+};
+
+export type TranscriptControlEvent = TranscriptBasicControlEvent | TranscriptEndedEvent;
+
+export type TranscriptEvent = TranscriptSegmentEvent | TranscriptControlEvent;
 
 export type TranscriptCorrection = {
   originalText: string;
@@ -56,4 +89,5 @@ export type StartMessage = {
   mode: "live" | "demo";
   terms: GlossaryTerm[];
   phraseSet: string[];
+  vocabularyName?: string;
 };

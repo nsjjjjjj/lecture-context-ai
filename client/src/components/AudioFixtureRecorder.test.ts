@@ -5,6 +5,7 @@ import { saveAudioFixture, type AudioFixtureCatalog, type AudioFixtureRecording 
 import {
   AudioFixtureRecorder,
   createRecordingSavedNotifier,
+  runSingleFlight,
   snapshotFixtureMetadata,
   type FixtureCaptureMetadata
 } from "./AudioFixtureRecorder";
@@ -55,8 +56,28 @@ describe("audio fixture metadata ownership", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect(html).toContain("엘엘엠과 래그를 읽습니다");
     expect(html).toContain("fixture.wav");
+    expect(html).toContain("유료 STT API를 호출하지 않고");
+    expect(html).not.toContain("실제 Google API");
     expect(html).not.toContain("A/B/C STT 비교 실행");
     expect(html).not.toContain("저장된 STT 비교 결과");
+    expect(html).toContain('for="fixture-speaker-label"');
+    expect(html).toContain('name="fixtureSpeakerLabel"');
+    expect(html).toContain('name="fixtureEnvironment"');
+    expect(html).toContain('name="fixtureScriptId"');
+    expect(html).toContain('name="fixtureVerbatimConfirmation"');
+    expect(html).toContain("focus-visible:ring-2");
+  });
+
+  it("announces catalog loading as a status instead of plain decorative text", () => {
+    const html = renderToStaticMarkup(createElement(AudioFixtureRecorder, {
+      catalog: null,
+      catalogLoading: true,
+      catalogError: "",
+      onRecordingSaved: () => undefined
+    }));
+
+    expect(html).toMatch(/role="status"[^>]*>.*개발용 녹음 설정을 불러오는 중입니다/s);
+    expect(html).toContain('aria-hidden="true"');
   });
 
   it("notifies the parent exactly once for the same successful save", () => {
@@ -67,6 +88,21 @@ describe("audio fixture metadata ownership", () => {
     expect(notifyRecordingSaved(recording)).toBe(false);
     expect(onRecordingSaved).toHaveBeenCalledOnce();
     expect(onRecordingSaved).toHaveBeenCalledWith(recording);
+  });
+
+  it("coalesces repeated start requests until microphone setup settles", async () => {
+    let resolveStart!: (value: string) => void;
+    const operation = vi.fn(() => new Promise<string>((resolve) => { resolveStart = resolve; }));
+    const owner = { current: null as Promise<string> | null };
+
+    const first = runSingleFlight(owner, operation);
+    const second = runSingleFlight(owner, operation);
+
+    expect(second).toBe(first);
+    expect(operation).toHaveBeenCalledOnce();
+    resolveStart("ready");
+    await expect(first).resolves.toBe("ready");
+    expect(owner.current).toBeNull();
   });
 
   it("keeps the recording-start snapshot when later form values change", () => {

@@ -8,3 +8,6 @@ allowBuilds:
 onlyBuiltDependencies:
   - esbuild
   - protobufjs
+
+overrides:
+  "nanoid@<3.3.18": "3.3.18"

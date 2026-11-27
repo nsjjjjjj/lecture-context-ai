@@ -1,4 +1,9 @@
-import type { AnalysisResult, GlossaryTerm, PageText, ServiceStatus } from "../types";
+import type { AnalysisResult, GlossaryTerm, PageText, PreparedAwsVocabulary, ServiceStatus } from "../types";
+import {
+  parseAnalysisResponse,
+  parsePreparedVocabularyResponse,
+  parseServiceStatusResponse
+} from "./api-contracts";
 
 export type AudioFixtureTargetTerm = {
   id: string;
@@ -292,29 +297,47 @@ export type SttComparisonDetail = {
 export const PAID_STT_CALL_CONSENT = "I_UNDERSTAND_3_PAID_GOOGLE_STT_CALLS" as const;
 
 async function readJson<T>(response: Response): Promise<T> {
-  const body = (await response.json()) as T & { error?: string };
-  if (!response.ok) throw new Error(body.error || "요청을 처리하지 못했습니다.");
+  const text = await response.text();
+  let body: (T & { error?: string }) | null = null;
+  try {
+    body = text ? JSON.parse(text) as T & { error?: string } : null;
+  } catch {
+    if (!response.ok) throw new Error(`서버 요청에 실패했습니다. (${response.status})`);
+    throw new Error("서버 응답 형식이 올바르지 않습니다.");
+  }
+  if (!response.ok) throw new Error(body?.error || `요청을 처리하지 못했습니다. (${response.status})`);
+  if (!body) throw new Error("서버 응답이 비어 있습니다.");
   return body;
 }
 
-export async function getHealth(): Promise<ServiceStatus> {
-  const response = await fetch("/api/health");
-  return readJson<ServiceStatus>(response);
+export async function getHealth(signal?: AbortSignal): Promise<ServiceStatus> {
+  const response = await fetch("/api/health", { signal });
+  return parseServiceStatusResponse(await readJson<unknown>(response));
 }
 
-export async function getDemo(): Promise<AnalysisResult> {
-  const response = await fetch("/api/demo");
-  return readJson<AnalysisResult>(response);
+export async function getDemo(signal?: AbortSignal): Promise<AnalysisResult> {
+  const response = await fetch("/api/demo", { signal });
+  return parseAnalysisResponse(await readJson<unknown>(response));
 }
 
-export async function analyzePdf(title: string, pages: PageText[]): Promise<AnalysisResult> {
+export async function analyzePdf(title: string, pages: PageText[], signal?: AbortSignal): Promise<AnalysisResult> {
   const response = await fetch("/api/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, pages })
+    body: JSON.stringify({ title, pages }),
+    signal
   });
-  const result = await readJson<Omit<AnalysisResult, "pages">>(response);
-  return { ...result, pages };
+  return parseAnalysisResponse(await readJson<unknown>(response), pages);
+}
+
+export async function prepareAwsVocabulary(terms: GlossaryTerm[], signal?: AbortSignal): Promise<PreparedAwsVocabulary> {
+  const response = await fetch("/api/vocabulary/prepare", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ terms }),
+    signal
+  });
+  return parsePreparedVocabularyResponse(await readJson<unknown>(response));
 }
 
 export async function getAudioFixtures(): Promise<AudioFixtureCatalog> {

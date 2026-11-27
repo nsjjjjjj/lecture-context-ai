@@ -20,14 +20,15 @@ describe("live audio gRPC backpressure", () => {
     const pauseInput = vi.fn();
     const resumeInput = vi.fn();
     const controller = createLiveAudioFlowController({
-      writeAudio: (audio) => {
+      enqueueAudio: (audio) => {
         writes.push(audio[0] ?? -1);
-        return acceptWrites;
+        return acceptWrites ? "accepted" : "backpressure";
       },
       pauseInput,
       resumeInput,
       onTimeout: vi.fn(),
-      onOverflow: vi.fn()
+      onOverflow: vi.fn(),
+      onClosed: vi.fn()
     });
 
     expect(controller.writeOrQueue(Buffer.from([1]))).toBe("written");
@@ -49,15 +50,16 @@ describe("live audio gRPC backpressure", () => {
     const writes: number[] = [];
     let call = 0;
     const controller = createLiveAudioFlowController({
-      writeAudio: (audio) => {
+      enqueueAudio: (audio) => {
         writes.push(audio[0] ?? -1);
         call += 1;
-        return call === 3;
+        return call === 3 ? "accepted" : "backpressure";
       },
       pauseInput: vi.fn(),
       resumeInput: vi.fn(),
       onTimeout: vi.fn(),
-      onOverflow: vi.fn()
+      onOverflow: vi.fn(),
+      onClosed: vi.fn()
     });
 
     controller.writeOrQueue(Buffer.from([1]));
@@ -73,16 +75,77 @@ describe("live audio gRPC backpressure", () => {
     expect(controller.isPaused()).toBe(false);
   });
 
+  it("flushes every controller-queued PCM frame in order before finishInput may run", async () => {
+    vi.useFakeTimers();
+    const events: string[] = [];
+    let acceptWrites = false;
+    const controller = createLiveAudioFlowController({
+      enqueueAudio: (audio) => {
+        events.push(`pcm:${audio[0]}`);
+        return acceptWrites ? "accepted" : "backpressure";
+      },
+      pauseInput: vi.fn(),
+      resumeInput: () => events.push("socket:resume"),
+      onTimeout: vi.fn(),
+      onOverflow: vi.fn(),
+      onClosed: vi.fn()
+    });
+
+    controller.writeOrQueue(Buffer.from([1]));
+    controller.writeOrQueue(Buffer.from([2]));
+    controller.writeOrQueue(Buffer.from([3]));
+    const flushed = controller.flushBeforeFinishInput().then((result) => {
+      events.push(`flush:${result}`);
+    });
+    await Promise.resolve();
+    expect(events).toEqual(["pcm:1"]);
+
+    acceptWrites = true;
+    controller.resumeFromGrpc();
+    await flushed;
+    events.push("session:finishInput");
+
+    expect(events).toEqual([
+      "pcm:1",
+      "pcm:2",
+      "pcm:3",
+      "socket:resume",
+      "flush:flushed",
+      "session:finishInput"
+    ]);
+    expect(controller.isPaused()).toBe(false);
+  });
+
+  it("settles a pending stop flush when socket cleanup disposes the flow", async () => {
+    vi.useFakeTimers();
+    const controller = createLiveAudioFlowController({
+      enqueueAudio: () => "backpressure",
+      pauseInput: vi.fn(),
+      resumeInput: vi.fn(),
+      onTimeout: vi.fn(),
+      onOverflow: vi.fn(),
+      onClosed: vi.fn()
+    });
+
+    controller.writeOrQueue(Buffer.from([1]));
+    controller.writeOrQueue(Buffer.from([2]));
+    const result = controller.flushBeforeFinishInput();
+    controller.dispose();
+
+    await expect(result).resolves.toBe("disposed");
+  });
+
   it("fails explicitly instead of silently dropping when the bounded queue overflows", () => {
     vi.useFakeTimers();
     const resumeInput = vi.fn();
     const onOverflow = vi.fn();
     const controller = createLiveAudioFlowController({
-      writeAudio: () => false,
+      enqueueAudio: () => "backpressure",
       pauseInput: vi.fn(),
       resumeInput,
       onTimeout: vi.fn(),
       onOverflow,
+      onClosed: vi.fn(),
       maxQueuedBytes: 3
     });
 
@@ -98,11 +161,12 @@ describe("live audio gRPC backpressure", () => {
     const resumeInput = vi.fn();
     const onTimeout = vi.fn();
     const controller = createLiveAudioFlowController({
-      writeAudio: () => false,
+      enqueueAudio: () => "backpressure",
       pauseInput: vi.fn(),
       resumeInput,
       onTimeout,
       onOverflow: vi.fn(),
+      onClosed: vi.fn(),
       timeoutMs: 50
     });
 
@@ -121,11 +185,12 @@ describe("live audio gRPC backpressure", () => {
     const resumeInput = vi.fn();
     const onTimeout = vi.fn();
     const controller = createLiveAudioFlowController({
-      writeAudio: () => false,
+      enqueueAudio: () => "backpressure",
       pauseInput: vi.fn(),
       resumeInput,
       onTimeout,
       onOverflow: vi.fn(),
+      onClosed: vi.fn(),
       timeoutMs: 25
     });
 
@@ -135,5 +200,21 @@ describe("live audio gRPC backpressure", () => {
 
     expect(resumeInput).not.toHaveBeenCalled();
     expect(onTimeout).not.toHaveBeenCalled();
+  });
+
+  it("reports a provider-closed session without entering backpressure", () => {
+    const onClosed = vi.fn();
+    const controller = createLiveAudioFlowController({
+      enqueueAudio: () => "closed",
+      pauseInput: vi.fn(),
+      resumeInput: vi.fn(),
+      onTimeout: vi.fn(),
+      onOverflow: vi.fn(),
+      onClosed
+    });
+
+    expect(controller.writeOrQueue(Buffer.from([1]))).toBe("closed");
+    expect(controller.isPaused()).toBe(false);
+    expect(onClosed).toHaveBeenCalledTimes(1);
   });
 });

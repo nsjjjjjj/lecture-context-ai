@@ -24,6 +24,7 @@ import {
 
 const HISTORY_PAGE_SIZE = 5;
 const JOB_POLL_INTERVAL_MS = 1_000;
+const INPUT_FOCUS_RING = "outline-none focus-visible:border-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07111f]";
 
 export type SttComparisonView = "run" | "results";
 export type SttComparisonResultsProps = {
@@ -32,6 +33,88 @@ export type SttComparisonResultsProps = {
   view: SttComparisonView;
   onResultReady: (fileName: string) => void;
 };
+
+type LatestRequestRunner<TInput, TOutput> = {
+  run: (input: TInput) => Promise<boolean>;
+  invalidate: () => void;
+};
+
+/** Keeps request publication monotonic even when responses finish out of order. */
+export function createLatestRequestRunner<TInput, TOutput>({
+  request,
+  onStart,
+  onSuccess,
+  onError,
+  onSettled
+}: {
+  request: (input: TInput) => Promise<TOutput>;
+  onStart: (input: TInput) => void;
+  onSuccess: (output: TOutput, input: TInput) => void;
+  onError: (error: unknown, input: TInput) => void;
+  onSettled: (input: TInput) => void;
+}): LatestRequestRunner<TInput, TOutput> {
+  let generation = 0;
+
+  return {
+    async run(input) {
+      const requestGeneration = ++generation;
+      onStart(input);
+      try {
+        const output = await request(input);
+        if (requestGeneration !== generation) return false;
+        onSuccess(output, input);
+        return true;
+      } catch (error) {
+        if (requestGeneration !== generation) return false;
+        onError(error, input);
+        return false;
+      } finally {
+        if (requestGeneration === generation) onSettled(input);
+      }
+    },
+    invalidate() {
+      generation += 1;
+    }
+  };
+}
+
+export function runComparisonViewLoadPlan(
+  view: SttComparisonView,
+  loaders: {
+    current: () => void;
+    history: () => void;
+    aggregates: () => void;
+  }
+): void {
+  if (view === "run") {
+    loaders.current();
+    return;
+  }
+  loaders.history();
+  loaders.aggregates();
+}
+
+export function resolveHistorySelection({
+  history,
+  currentFileName,
+  preferredFileName,
+  latestFileName,
+  offset
+}: {
+  history: SttComparisonHistoryItem[];
+  currentFileName: string | null;
+  preferredFileName?: string | null;
+  latestFileName: string | null;
+  offset: number;
+}): string | null {
+  const visibleFiles = new Set(history.map((item) => item.fileName));
+  if (preferredFileName && (visibleFiles.has(preferredFileName) || preferredFileName === latestFileName)) {
+    return preferredFileName;
+  }
+  if (currentFileName && visibleFiles.has(currentFileName)) return currentFileName;
+  if (offset === 0 && latestFileName) return latestFileName;
+  return history[0]?.fileName ?? null;
+}
 
 const RUN_DETAILS: Record<ComparisonRunLabel, { shortLabel: "A" | "B" | "C"; title: string }> = {
   "without-phrase-set": { shortLabel: "A", title: "PhraseSet 없음" },
@@ -527,33 +610,45 @@ function CurrentComparisonReportView({ report }: { report: CurrentComparisonRepo
   );
 }
 
-export function SttComparisonJobPanel({
-  recordings,
-  selectedRecordingId,
-  onSelectRecording,
-  consent,
-  onConsentChange,
-  active,
-  checkingActive,
-  starting,
-  startError,
-  currentError,
-  pollingError,
-  onStart
-}: {
+export type SttComparisonJobPanelState = {
   recordings: AudioFixtureRecording[];
-  selectedRecordingId: string;
-  onSelectRecording: (recordingId: string) => void;
-  consent: boolean;
-  onConsentChange: (consent: boolean) => void;
-  active: CurrentSttComparisonJob | null;
-  checkingActive: boolean;
-  starting: boolean;
-  startError: string;
-  currentError: string;
-  pollingError: string;
-  onStart: () => void;
+  selection: {
+    recordingId: string;
+    paidCallConsent: boolean;
+  };
+  job: {
+    active: CurrentSttComparisonJob | null;
+    checking: boolean;
+    starting: boolean;
+    errors: {
+      start: string;
+      current: string;
+      polling: string;
+    };
+  };
+};
+
+export type SttComparisonJobPanelActions = {
+  selectRecording: (recordingId: string) => void;
+  changePaidCallConsent: (consent: boolean) => void;
+  start: () => void;
+};
+
+export function SttComparisonJobPanel({
+  state,
+  actions
+}: {
+  state: SttComparisonJobPanelState;
+  actions: SttComparisonJobPanelActions;
 }) {
+  const { recordings, selection, job } = state;
+  const { recordingId: selectedRecordingId, paidCallConsent: consent } = selection;
+  const {
+    active,
+    checking: checkingActive,
+    starting,
+    errors: { start: startError, current: currentError, polling: pollingError }
+  } = job;
   const localJob = active?.kind === "local" ? active.job : null;
   const localJobIsTerminal = localJob ? isTerminalSttComparisonJob(localJob) : false;
   const blocksStart = checkingActive || starting || Boolean(currentError) || active?.kind === "external" || Boolean(localJob && !localJobIsTerminal);
@@ -572,14 +667,15 @@ export function SttComparisonJobPanel({
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-        <label className="text-[11px] font-bold text-slate-500">
+        <label htmlFor="stt-comparison-recording" className="text-[11px] font-bold text-slate-500">
           비교할 저장 녹음
           <select
-            aria-label="비교할 저장 녹음"
+            id="stt-comparison-recording"
+            name="sttComparisonRecordingId"
             value={selectedRecordingId}
-            onChange={(event) => onSelectRecording(event.target.value)}
+            onChange={(event) => actions.selectRecording(event.target.value)}
             disabled={recordings.length === 0 || blocksStart}
-            className="mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 outline-none focus:border-cyan-300 disabled:opacity-50"
+            className={`mt-1.5 h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-slate-200 disabled:opacity-50 ${INPUT_FOCUS_RING}`}
           >
             {recordings.length === 0 ? <option value="">저장된 녹음 없음</option> : recordings.map((recording) => (
               <option key={recording.id} value={recording.id}>{recording.experimentIdentity ? `[${recording.experimentIdentity.glossaryName}] ` : ""}{recording.fileName} · {recording.speakerLabel}</option>
@@ -588,26 +684,30 @@ export function SttComparisonJobPanel({
         </label>
         <button
           type="button"
-          onClick={onStart}
+          onClick={actions.start}
           disabled={!selectedRecording || !consent || blocksStart}
+          aria-busy={starting}
           className="danger-button !min-h-11 text-xs disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {starting ? <LoaderCircle className="size-4 animate-spin" /> : <Play className="size-4" />}
+          {starting ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Play className="size-4" />}
           {starting ? "비교 시작 요청 중" : "유료 비교 시작"}
         </button>
       </div>
+      {starting ? <p role="status" className="sr-only">유료 STT 비교 시작을 요청하는 중입니다.</p> : null}
 
       {selectedRecording ? <p className="mt-2 truncate text-[10px] text-slate-600">{selectedRecording.fileName} · {selectedRecording.environment} · {(selectedRecording.durationMs / 1_000).toFixed(1)}초{selectedRecording.experimentIdentity ? ` · ${selectedRecording.experimentIdentity.caseSnapshotId}` : ""}</p> : null}
 
-      <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] p-3 text-xs leading-5 text-rose-100">
+      <label htmlFor="stt-paid-call-consent" className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-rose-300/15 bg-rose-300/[0.05] p-3 text-xs leading-5 text-rose-100">
         <input
+          id="stt-paid-call-consent"
+          name="sttPaidCallConsent"
           type="checkbox"
           checked={consent}
-          onChange={(event) => onConsentChange(event.target.checked)}
+          onChange={(event) => actions.changePaidCallConsent(event.target.checked)}
           disabled={blocksStart}
-          className="mt-0.5 size-4 shrink-0 accent-rose-300"
+          className="mt-0.5 size-4 shrink-0 accent-rose-300 focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07111f]"
         />
-        <span><strong className="block">명시적 유료 호출 동의</strong>이 실행은 정확히 3개의 유료 Google STT 스트림을 동시에 호출합니다.</span>
+        <span><strong className="block">명시적 유료 호출 동의</strong>이 개발용 비교 러너는 정확히 3개의 유료 STT 스트림을 동시에 호출합니다.</span>
       </label>
 
       {active?.kind === "external" ? (
@@ -643,7 +743,7 @@ export function SttComparisonJobPanel({
         </div>
       ) : null}
 
-      {checkingActive ? <p role="status" className="mt-3 inline-flex items-center gap-2 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin" /> 실행 중인 작업 확인 중</p> : null}
+      {checkingActive ? <p role="status" className="mt-3 inline-flex items-center gap-2 text-xs text-slate-500"><LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> 실행 중인 작업 확인 중</p> : null}
       {currentError ? <div role="alert" className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/[0.07] p-3 text-xs leading-5 text-amber-100">실행 상태 확인 오류: {currentError}</div> : null}
       {pollingError ? <div role="alert" className="mt-3 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs leading-5 text-rose-100">작업 상태 갱신 오류: {pollingError} 자동으로 다시 확인합니다.</div> : null}
       {startError ? <div role="alert" className="mt-3 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs leading-5 text-rose-100">비교 시작 오류: {startError}</div> : null}
@@ -651,42 +751,54 @@ export function SttComparisonJobPanel({
   );
 }
 
+export type SttComparisonResultsViewState = {
+  report: {
+    selected: ComparisonReportFile | null;
+    count: number;
+  };
+  history: {
+    items: SttComparisonHistoryItem[];
+    selectedFileName: string | null;
+    page?: SttComparisonPage;
+  };
+  requests: {
+    history: { loading: boolean; error: string };
+    detail: { loading: boolean; error: string };
+  };
+  mobile: {
+    detailOpen: boolean;
+    detailFocusRequest: number;
+  };
+};
+
+export type SttComparisonResultsViewActions = {
+  refresh: () => void;
+  selectReport: (fileName: string) => void;
+  previousPage: () => void;
+  nextPage: () => void;
+  backToList: () => void;
+};
+
 export function SttComparisonResultsView({
-  latest,
-  reportCount,
-  loading,
-  error,
-  onRefresh,
-  history = [],
-  selectedFileName = null,
-  page,
-  detailLoading = false,
-  detailError = "",
-  onSelectReport = () => undefined,
-  onPreviousPage = () => undefined,
-  onNextPage = () => undefined,
-  mobileDetailOpen = false,
-  detailFocusRequest = 0,
-  onBackToList = () => undefined
+  state,
+  actions
 }: {
-  latest: ComparisonReportFile | null;
-  reportCount: number;
-  loading: boolean;
-  error: string;
-  onRefresh: () => void;
-  history?: SttComparisonHistoryItem[];
-  selectedFileName?: string | null;
-  page?: SttComparisonPage;
-  detailLoading?: boolean;
-  detailError?: string;
-  onSelectReport?: (fileName: string) => void;
-  onPreviousPage?: () => void;
-  onNextPage?: () => void;
-  mobileDetailOpen?: boolean;
-  detailFocusRequest?: number;
-  onBackToList?: () => void;
+  state: SttComparisonResultsViewState;
+  actions: SttComparisonResultsViewActions;
 }) {
   const detailHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const { report, history: historyState, requests, mobile } = state;
+  const latest = report.selected;
+  const reportCount = report.count;
+  const history = historyState.items;
+  const selectedFileName = historyState.selectedFileName;
+  const page = historyState.page;
+  const loading = requests.history.loading;
+  const error = requests.history.error;
+  const detailLoading = requests.detail.loading;
+  const detailError = requests.detail.error;
+  const mobileDetailOpen = mobile.detailOpen;
+  const detailFocusRequest = mobile.detailFocusRequest;
   const offset = page?.offset ?? 0;
   const limit = page?.limit ?? HISTORY_PAGE_SIZE;
   const hasPrevious = offset > 0;
@@ -705,8 +817,8 @@ export function SttComparisonResultsView({
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-white/[0.05] px-2.5 py-1 text-[10px] font-black text-slate-500">{reportCount}개</span>
-          <button type="button" onClick={onRefresh} disabled={loading} className="secondary-button !min-h-10 text-xs disabled:opacity-40" aria-label="STT 비교 결과 새로고침">
-            {loading ? <LoaderCircle className="size-4 animate-spin" /> : <RefreshCw className="size-4" />} 새로고침
+          <button type="button" onClick={actions.refresh} disabled={loading} aria-busy={loading} className="secondary-button !min-h-10 text-xs disabled:opacity-40" aria-label="STT 비교 결과 새로고침">
+            {loading ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <RefreshCw className="size-4" />} 새로고침
           </button>
         </div>
       </div>
@@ -725,9 +837,9 @@ export function SttComparisonResultsView({
                   <button
                     key={item.fileName}
                     type="button"
-                    onClick={() => onSelectReport(item.fileName)}
+                    onClick={() => actions.selectReport(item.fileName)}
                     aria-current={selectedFileName === item.fileName ? "true" : undefined}
-                    className={`flex min-h-10 w-full flex-col items-start gap-2 rounded-xl px-3 py-2 text-left text-[11px] transition ${selectedFileName === item.fileName ? "bg-cyan-300/10 text-cyan-100" : "bg-white/[0.025] text-slate-400 hover:bg-white/[0.05]"}`}
+                    className={`flex min-h-10 w-full flex-col items-start gap-2 rounded-xl px-3 py-2 text-left text-[11px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07111f] ${selectedFileName === item.fileName ? "bg-cyan-300/10 text-cyan-100" : "bg-white/[0.025] text-slate-400 hover:bg-white/[0.05]"}`}
                   >
                     <span className="w-full truncate font-bold">{item.scriptTitle ?? item.fileName}</span>
                     {item.scriptTitle ? <span className="w-full truncate font-mono text-[9px] text-slate-600">{item.fileName}</span> : null}
@@ -742,13 +854,13 @@ export function SttComparisonResultsView({
                 ))}
               </div>
               <div className="mt-3 flex items-center justify-between gap-3">
-                <button type="button" onClick={onPreviousPage} disabled={!hasPrevious || loading} className="secondary-button !min-h-9 text-[11px] disabled:opacity-35"><ChevronLeft className="size-4" /> 이전</button>
+                <button type="button" onClick={actions.previousPage} disabled={!hasPrevious || loading} className="secondary-button !min-h-9 text-[11px] disabled:opacity-35"><ChevronLeft className="size-4" /> 이전</button>
                 <span className="text-[10px] text-slate-500">{reportCount === 0 ? 0 : offset + 1}–{Math.min(offset + history.length, reportCount)} / {reportCount}</span>
-                <button type="button" onClick={onNextPage} disabled={!hasNext || loading} className="secondary-button !min-h-9 text-[11px] disabled:opacity-35">다음 <ChevronRight className="size-4" /></button>
+                <button type="button" onClick={actions.nextPage} disabled={!hasNext || loading} className="secondary-button !min-h-9 text-[11px] disabled:opacity-35">다음 <ChevronRight className="size-4" /></button>
               </div>
             </div>
           ) : loading ? (
-            <div role="status" className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin" /> 결과 목록을 불러오는 중입니다.</div>
+            <div role="status" className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 text-xs text-slate-500"><LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> 결과 목록을 불러오는 중입니다.</div>
           ) : (
             <div className="rounded-2xl border border-dashed border-white/[0.09] px-4 py-6 text-center text-xs leading-6 text-slate-500">저장된 비교 결과가 없습니다.</div>
           )}
@@ -760,12 +872,12 @@ export function SttComparisonResultsView({
           className={`${mobileDetailOpen ? "block" : "hidden"} min-w-0 lg:block`}
         >
           <div data-testid="stt-results-mobile-back" className="mb-3 lg:hidden">
-            <button type="button" onClick={onBackToList} className="secondary-button !min-h-10 text-xs"><ChevronLeft className="size-4" /> 결과 목록으로</button>
+            <button type="button" onClick={actions.backToList} className="secondary-button !min-h-10 text-xs"><ChevronLeft className="size-4" /> 결과 목록으로</button>
           </div>
           <h4 ref={detailHeadingRef} id="stt-comparison-detail-heading" tabIndex={-1} className="text-xs font-black text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">선택한 STT 비교 결과</h4>
           {detailError ? <div role="alert" className="mt-4 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs leading-5 text-rose-100">선택한 결과를 불러오지 못했습니다: {detailError}</div> : null}
           {(loading || detailLoading) && !latest ? (
-            <div role="status" className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin" /> 비교 결과를 불러오는 중입니다.</div>
+            <div role="status" className="mt-4 flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] p-4 text-xs text-slate-500"><LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> 비교 결과를 불러오는 중입니다.</div>
           ) : !latest ? (
             <div className="mt-4 rounded-2xl border border-dashed border-white/[0.09] px-4 py-6 text-center text-xs leading-6 text-slate-500">
               {history.length > 0 ? "목록에서 확인할 결과를 선택해 주세요." : "저장된 비교 결과가 없습니다. 실행 화면에서 저장 녹음과 유료 호출 동의를 확인한 뒤 비교를 시작할 수 있습니다."}
@@ -817,23 +929,21 @@ function downloadAggregate(cases: SttComparisonCaseAggregate[], format: "json" |
 
 function StudyAggregatePanel({
   studies,
-  studyId,
-  caseId,
-  aggregates,
-  loading,
-  error,
-  onStudyChange,
-  onCaseChange
+  state,
+  actions
 }: {
   studies: ExperimentStudy[];
-  studyId: string;
-  caseId: string;
-  aggregates: SttComparisonCaseAggregate[];
-  loading: boolean;
-  error: string;
-  onStudyChange: (value: string) => void;
-  onCaseChange: (value: string) => void;
+  state: {
+    filters: { studyId: string; caseId: string };
+    resource: { data: SttComparisonCaseAggregate[]; loading: boolean; error: string };
+  };
+  actions: {
+    changeStudy: (value: string) => void;
+    changeCase: (value: string) => void;
+  };
 }) {
+  const { studyId, caseId } = state.filters;
+  const { data: aggregates, loading, error } = state.resource;
   const caseOptions = studies.filter((study) => !studyId || study.id === studyId).flatMap((study) => study.cases);
   const rate = (value: number | null) => value === null ? "–" : percentage(value);
   return <section className="rounded-[1.6rem] border border-cyan-300/15 bg-[#0b1727]/95 p-5 sm:p-6">
@@ -842,26 +952,42 @@ function StudyAggregatePanel({
       <div className="flex gap-2">{(["csv", "tsv", "json"] as const).map((format) => <button key={format} type="button" onClick={() => downloadAggregate(aggregates, format)} disabled={aggregates.length === 0} className="secondary-button !min-h-9 text-[10px] uppercase disabled:opacity-35"><Download className="size-3.5" /> {format}</button>)}</div>
     </div>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
-      <label className="text-[11px] font-bold text-slate-500">실험 세트<select value={studyId} onChange={(event) => onStudyChange(event.target.value)} className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-white"><option value="">전체 세트</option>{studies.map((study) => <option key={study.id} value={study.id}>{study.title}</option>)}</select></label>
-      <label className="text-[11px] font-bold text-slate-500">케이스<select value={caseId} onChange={(event) => onCaseChange(event.target.value)} className="mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-white"><option value="">전체 케이스</option>{caseOptions.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+      <label htmlFor="stt-aggregate-study" className="text-[11px] font-bold text-slate-500">실험 세트<select id="stt-aggregate-study" name="sttAggregateStudyId" value={studyId} onChange={(event) => actions.changeStudy(event.target.value)} className={`mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-white ${INPUT_FOCUS_RING}`}><option value="">전체 세트</option>{studies.map((study) => <option key={study.id} value={study.id}>{study.title}</option>)}</select></label>
+      <label htmlFor="stt-aggregate-case" className="text-[11px] font-bold text-slate-500">케이스<select id="stt-aggregate-case" name="sttAggregateCaseId" value={caseId} onChange={(event) => actions.changeCase(event.target.value)} className={`mt-1.5 h-10 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-xs text-white ${INPUT_FOCUS_RING}`}><option value="">전체 케이스</option>{caseOptions.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
     </div>
-    {error ? <div className="mt-3 rounded-xl bg-rose-400/10 p-3 text-xs text-rose-100">집계를 불러오지 못했습니다: {error}</div> : null}
-    {loading ? <div className="mt-3 flex items-center gap-2 text-xs text-slate-500"><LoaderCircle className="size-4 animate-spin" /> 집계 중</div> : aggregates.length ? <div className="mt-4 overflow-x-auto rounded-xl border border-white/[0.07]"><table className="w-full min-w-[680px] text-left text-xs"><thead className="bg-white/[0.04] text-[10px] text-slate-500"><tr><th className="p-3">케이스</th><th className="p-3">정확도 반복</th><th className="p-3">A</th><th className="p-3">B · PDF</th><th className="p-3">C · PDF+발음</th><th className="p-3">PDF 효과</th></tr></thead><tbody className="divide-y divide-white/[0.06]">{aggregates.map((item) => <tr key={item.caseSnapshotId}><td className="p-3"><strong className="block text-white">{item.caseTitle}</strong><span className="text-[10px] text-slate-500">{item.glossaryName}</span></td><td className="p-3 text-slate-300">{item.accuracyReportCount} / {item.reportCount}</td><td className="p-3 text-slate-300">{rate(item.rates["without-phrase-set"])}</td><td className="p-3 text-cyan-200">{rate(item.rates["canonical-phrase-set"])}</td><td className="p-3 text-violet-200">{rate(item.rates["spoken-alias-phrase-set"])}</td><td className="p-3 text-emerald-200">{item.rates["without-phrase-set"] === null || item.rates["canonical-phrase-set"] === null ? "–" : `${((item.rates["canonical-phrase-set"] - item.rates["without-phrase-set"]) * 100).toFixed(1)}%p`}</td></tr>)}</tbody></table></div> : <div className="mt-3 rounded-xl border border-dashed border-white/[0.08] p-4 text-center text-xs text-slate-500">선택 조건에 저장된 PDF 케이스 결과가 없습니다.</div>}
+    {error ? <div role="alert" className="mt-3 rounded-xl bg-rose-400/10 p-3 text-xs text-rose-100">집계를 불러오지 못했습니다: {error}</div> : null}
+    {loading ? <div role="status" className="mt-3 flex items-center gap-2 text-xs text-slate-500"><LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> 집계 중</div> : aggregates.length ? <div className="mt-4 overflow-x-auto rounded-xl border border-white/[0.07]"><table className="w-full min-w-[680px] text-left text-xs"><thead className="bg-white/[0.04] text-[10px] text-slate-500"><tr><th className="p-3">케이스</th><th className="p-3">정확도 반복</th><th className="p-3">A</th><th className="p-3">B · PDF</th><th className="p-3">C · PDF+발음</th><th className="p-3">PDF 효과</th></tr></thead><tbody className="divide-y divide-white/[0.06]">{aggregates.map((item) => <tr key={item.caseSnapshotId}><td className="p-3"><strong className="block text-white">{item.caseTitle}</strong><span className="text-[10px] text-slate-500">{item.glossaryName}</span></td><td className="p-3 text-slate-300">{item.accuracyReportCount} / {item.reportCount}</td><td className="p-3 text-slate-300">{rate(item.rates["without-phrase-set"])}</td><td className="p-3 text-cyan-200">{rate(item.rates["canonical-phrase-set"])}</td><td className="p-3 text-violet-200">{rate(item.rates["spoken-alias-phrase-set"])}</td><td className="p-3 text-emerald-200">{item.rates["without-phrase-set"] === null || item.rates["canonical-phrase-set"] === null ? "–" : `${((item.rates["canonical-phrase-set"] - item.rates["without-phrase-set"]) * 100).toFixed(1)}%p`}</td></tr>)}</tbody></table></div> : <div className="mt-3 rounded-xl border border-dashed border-white/[0.08] p-4 text-center text-xs text-slate-500">선택 조건에 저장된 PDF 케이스 결과가 없습니다.</div>}
   </section>;
 }
 
+type HistoryRequestInput = {
+  offset: number;
+  preferredFileName?: string | null;
+  studyId?: string;
+  caseId?: string;
+};
+
+type AggregateRequestInput = {
+  studyId?: string;
+  caseId?: string;
+};
+
 export function SttComparisonResults({ recordings, studies = [], view, onResultReady }: SttComparisonResultsProps) {
   const mountedRef = useRef(true);
-  const historyRequestRef = useRef(0);
-  const currentRequestRef = useRef(0);
+  const startingRef = useRef(false);
   const selectedFileNameRef = useRef<string | null>(null);
+  const loadedFileNameRef = useRef<string | null>(null);
   const locallyStartedJobIdsRef = useRef(new Set<string>());
   const handledTerminalJobsRef = useRef(new Set<string>());
+  const historyRunnerRef = useRef<LatestRequestRunner<HistoryRequestInput, Awaited<ReturnType<typeof getSttComparisons>>> | null>(null);
+  const aggregateRunnerRef = useRef<LatestRequestRunner<AggregateRequestInput, Awaited<ReturnType<typeof getSttComparisonAggregates>>> | null>(null);
+  const currentRunnerRef = useRef<LatestRequestRunner<void, Awaited<ReturnType<typeof getCurrentSttComparisonJob>>> | null>(null);
+  const detailRunnerRef = useRef<LatestRequestRunner<string, Awaited<ReturnType<typeof getSttComparison>>> | null>(null);
 
   const [selectedRecordingId, setSelectedRecordingId] = useState(() => defaultRecordingId(recordings));
   const [consent, setConsent] = useState(false);
   const [active, setActive] = useState<CurrentSttComparisonJob | null>(null);
-  const [checkingActive, setCheckingActive] = useState(true);
+  const [checkingActive, setCheckingActive] = useState(false);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState("");
   const [currentError, setCurrentError] = useState("");
@@ -872,7 +998,7 @@ export function SttComparisonResults({ recordings, studies = [], view, onResultR
   const [history, setHistory] = useState<SttComparisonHistoryItem[]>([]);
   const [page, setPage] = useState<SttComparisonPage>({ offset: 0, limit: HISTORY_PAGE_SIZE, hasMore: false });
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
-  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
@@ -884,12 +1010,138 @@ export function SttComparisonResults({ recordings, studies = [], view, onResultR
   const [aggregateLoading, setAggregateLoading] = useState(false);
   const [aggregateError, setAggregateError] = useState("");
 
+  const selectReport = useCallback((fileName: string | null) => {
+    const changed = selectedFileNameRef.current !== fileName;
+    selectedFileNameRef.current = fileName;
+    setSelectedFileName(fileName);
+    if (changed) {
+      detailRunnerRef.current?.invalidate();
+      loadedFileNameRef.current = null;
+      setReport(null);
+      setDetailError("");
+      setDetailLoading(false);
+    }
+  }, []);
+
+  if (!historyRunnerRef.current) {
+    historyRunnerRef.current = createLatestRequestRunner({
+      request: ({ offset, studyId, caseId }) => getSttComparisons({
+        offset,
+        limit: HISTORY_PAGE_SIZE,
+        studyId,
+        caseId
+      }),
+      onStart: () => {
+        setHistoryLoading(true);
+        setHistoryError("");
+      },
+      onSuccess: (next, input) => {
+        const nextHistory = next.history ?? [];
+        const nextPage = next.page ?? {
+          offset: input.offset,
+          limit: HISTORY_PAGE_SIZE,
+          hasMore: input.offset + nextHistory.length < next.reportCount
+        };
+        const targetFileName = resolveHistorySelection({
+          history: nextHistory,
+          currentFileName: selectedFileNameRef.current,
+          preferredFileName: input.preferredFileName,
+          latestFileName: next.latestFileName,
+          offset: input.offset
+        });
+
+        setReportCount(next.reportCount);
+        setHistory(nextHistory);
+        setPage(nextPage);
+        selectReport(targetFileName);
+        if (targetFileName && targetFileName === next.latestFileName && next.latest) {
+          loadedFileNameRef.current = targetFileName;
+          setReport(next.latest);
+        }
+      },
+      onError: (error) => setHistoryError(error instanceof Error ? error.message : "STT 비교 결과 기록을 불러오지 못했습니다."),
+      onSettled: () => setHistoryLoading(false)
+    });
+  }
+
+  if (!aggregateRunnerRef.current) {
+    aggregateRunnerRef.current = createLatestRequestRunner({
+      request: ({ studyId, caseId }) => getSttComparisonAggregates({ studyId, caseId }),
+      onStart: () => {
+        setAggregateLoading(true);
+        setAggregateError("");
+      },
+      onSuccess: (next) => setAggregates(next.cases),
+      onError: (error) => setAggregateError(error instanceof Error ? error.message : "케이스 집계를 불러오지 못했습니다."),
+      onSettled: () => setAggregateLoading(false)
+    });
+  }
+
+  if (!currentRunnerRef.current) {
+    currentRunnerRef.current = createLatestRequestRunner({
+      request: () => getCurrentSttComparisonJob(),
+      onStart: () => {
+        setCheckingActive(true);
+        setCurrentError("");
+      },
+      onSuccess: (next) => {
+        registerDiscoveredLocalJob(next.active, locallyStartedJobIdsRef.current);
+        setActive(next.active);
+      },
+      onError: (error) => setCurrentError(error instanceof Error ? error.message : "실행 중인 비교 작업을 확인하지 못했습니다."),
+      onSettled: () => setCheckingActive(false)
+    });
+  }
+
+  if (!detailRunnerRef.current) {
+    detailRunnerRef.current = createLatestRequestRunner({
+      request: getSttComparison,
+      onStart: () => {
+        setDetailLoading(true);
+        setDetailError("");
+      },
+      onSuccess: (detail, requestedFileName) => {
+        if (detail.fileName !== requestedFileName) {
+          throw new Error("요청한 결과와 다른 결과가 반환되었습니다.");
+        }
+        if (selectedFileNameRef.current !== requestedFileName) return;
+        loadedFileNameRef.current = requestedFileName;
+        setReport(detail.report);
+      },
+      onError: (error, requestedFileName) => {
+        if (selectedFileNameRef.current !== requestedFileName) return;
+        setDetailError(error instanceof Error ? error.message : "선택한 STT 비교 결과를 불러오지 못했습니다.");
+      },
+      onSettled: () => setDetailLoading(false)
+    });
+  }
+
+  const loadHistory = useCallback((offset: number, preferredFileName?: string | null) => (
+    historyRunnerRef.current!.run({
+      offset,
+      preferredFileName,
+      studyId: studyFilter || undefined,
+      caseId: caseFilter || undefined
+    }).then(() => undefined)
+  ), [caseFilter, studyFilter]);
+
+  const loadAggregates = useCallback(() => aggregateRunnerRef.current!.run({
+    studyId: studyFilter || undefined,
+    caseId: caseFilter || undefined
+  }).then(() => undefined), [caseFilter, studyFilter]);
+
+  const loadCurrent = useCallback(() => currentRunnerRef.current!.run(undefined).then(() => undefined), []);
+  const loadDetail = useCallback((fileName: string) => detailRunnerRef.current!.run(fileName).then(() => undefined), []);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
-      historyRequestRef.current += 1;
-      currentRequestRef.current += 1;
+      startingRef.current = false;
+      historyRunnerRef.current?.invalidate();
+      aggregateRunnerRef.current?.invalidate();
+      currentRunnerRef.current?.invalidate();
+      detailRunnerRef.current?.invalidate();
     };
   }, []);
 
@@ -897,107 +1149,46 @@ export function SttComparisonResults({ recordings, studies = [], view, onResultR
     setSelectedRecordingId((current) => recordings.some((recording) => recording.id === current) ? current : defaultRecordingId(recordings));
   }, [recordings]);
 
-  const selectReport = useCallback((fileName: string) => {
-    const changed = selectedFileNameRef.current !== fileName;
-    selectedFileNameRef.current = fileName;
-    setSelectedFileName(fileName);
-    if (changed) setReport(null);
-  }, []);
+  useEffect(() => {
+    if (view === "run") {
+      historyRunnerRef.current?.invalidate();
+      aggregateRunnerRef.current?.invalidate();
+      detailRunnerRef.current?.invalidate();
+      setHistoryLoading(false);
+      setAggregateLoading(false);
+      setDetailLoading(false);
+    } else {
+      currentRunnerRef.current?.invalidate();
+      setCheckingActive(false);
+    }
+
+    runComparisonViewLoadPlan(view, {
+      current: () => { void loadCurrent(); },
+      history: () => { void loadHistory(0); },
+      aggregates: () => { void loadAggregates(); }
+    });
+
+    return () => {
+      if (view === "run") currentRunnerRef.current?.invalidate();
+      else {
+        historyRunnerRef.current?.invalidate();
+        aggregateRunnerRef.current?.invalidate();
+        detailRunnerRef.current?.invalidate();
+      }
+    };
+  }, [loadAggregates, loadCurrent, loadHistory, view]);
+
+  useEffect(() => {
+    if (view !== "results" || !selectedFileName || loadedFileNameRef.current === selectedFileName) return;
+    void loadDetail(selectedFileName);
+    return () => detailRunnerRef.current?.invalidate();
+  }, [loadDetail, selectedFileName, view]);
 
   const openReport = useCallback((fileName: string) => {
     selectReport(fileName);
     setMobileDetailOpen(true);
     setDetailFocusRequest((current) => current + 1);
   }, [selectReport]);
-
-  const loadHistory = useCallback(async (offset: number, preferredFileName?: string | null) => {
-    const requestId = historyRequestRef.current + 1;
-    historyRequestRef.current = requestId;
-    setHistoryLoading(true);
-    setHistoryError("");
-    try {
-      const next = await getSttComparisons({ offset, limit: HISTORY_PAGE_SIZE, studyId: studyFilter || undefined, caseId: caseFilter || undefined });
-      if (!mountedRef.current || requestId !== historyRequestRef.current) return;
-      const nextHistory = next.history ?? [];
-      const nextPage = next.page ?? { offset, limit: HISTORY_PAGE_SIZE, hasMore: offset + nextHistory.length < next.reportCount };
-      setReportCount(next.reportCount);
-      setHistory(nextHistory);
-      setPage(nextPage);
-
-      const targetFileName = preferredFileName ?? selectedFileNameRef.current ?? next.latestFileName ?? nextHistory[0]?.fileName ?? null;
-      if (targetFileName) {
-        selectReport(targetFileName);
-        if (targetFileName === next.latestFileName && next.latest) setReport(next.latest);
-      } else {
-        setReport(next.latest);
-      }
-    } catch (caught) {
-      if (mountedRef.current && requestId === historyRequestRef.current) {
-        setHistoryError(caught instanceof Error ? caught.message : "STT 비교 결과 기록을 불러오지 못했습니다.");
-      }
-    } finally {
-      if (mountedRef.current && requestId === historyRequestRef.current) setHistoryLoading(false);
-    }
-  }, [caseFilter, selectReport, studyFilter]);
-
-  const loadAggregates = useCallback(async () => {
-    setAggregateLoading(true);
-    setAggregateError("");
-    try {
-      const next = await getSttComparisonAggregates({ studyId: studyFilter || undefined, caseId: caseFilter || undefined });
-      if (mountedRef.current) setAggregates(next.cases);
-    } catch (caught) {
-      if (mountedRef.current) setAggregateError(caught instanceof Error ? caught.message : "케이스 집계를 불러오지 못했습니다.");
-    } finally {
-      if (mountedRef.current) setAggregateLoading(false);
-    }
-  }, [caseFilter, studyFilter]);
-
-  const loadCurrent = useCallback(async () => {
-    const requestId = currentRequestRef.current + 1;
-    currentRequestRef.current = requestId;
-    setCheckingActive(true);
-    setCurrentError("");
-    try {
-      const next = await getCurrentSttComparisonJob();
-      if (mountedRef.current && requestId === currentRequestRef.current) {
-        registerDiscoveredLocalJob(next.active, locallyStartedJobIdsRef.current);
-        setActive(next.active);
-      }
-    } catch (caught) {
-      if (mountedRef.current && requestId === currentRequestRef.current) {
-        setCurrentError(caught instanceof Error ? caught.message : "실행 중인 비교 작업을 확인하지 못했습니다.");
-      }
-    } finally {
-      if (mountedRef.current && requestId === currentRequestRef.current) setCheckingActive(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadHistory(0);
-    void loadCurrent();
-    void loadAggregates();
-  }, [loadAggregates, loadCurrent, loadHistory]);
-
-  useEffect(() => {
-    if (!selectedFileName) return;
-    let live = true;
-    setDetailLoading(true);
-    setDetailError("");
-    void getSttComparison(selectedFileName)
-      .then((detail) => {
-        if (live && mountedRef.current && selectedFileNameRef.current === detail.fileName) setReport(detail.report);
-      })
-      .catch((caught) => {
-        if (live && mountedRef.current) setDetailError(caught instanceof Error ? caught.message : "선택한 STT 비교 결과를 불러오지 못했습니다.");
-      })
-      .finally(() => {
-        if (live && mountedRef.current) setDetailLoading(false);
-      });
-    return () => {
-      live = false;
-    };
-  }, [selectedFileName]);
 
   const localJob = active?.kind === "local" ? active.job : null;
   const localJobId = localJob?.id ?? null;
@@ -1015,9 +1206,9 @@ export function SttComparisonResults({ recordings, studies = [], view, onResultR
         setActive({ kind: "local", job: next.job });
         setPollingError("");
         if (!isTerminalSttComparisonJob(next.job)) timer = window.setTimeout(() => void poll(), JOB_POLL_INTERVAL_MS);
-      } catch (caught) {
+      } catch (error) {
         if (stopped || !mountedRef.current) return;
-        setPollingError(caught instanceof Error ? caught.message : "작업 상태를 갱신하지 못했습니다.");
+        setPollingError(error instanceof Error ? error.message : "작업 상태를 갱신하지 못했습니다.");
         timer = window.setTimeout(() => void poll(), JOB_POLL_INTERVAL_MS);
       }
     };
@@ -1035,21 +1226,20 @@ export function SttComparisonResults({ recordings, studies = [], view, onResultR
       locallyStartedJobIds: locallyStartedJobIdsRef.current,
       handledJobIds: handledTerminalJobsRef.current,
       selectResult: (fileName) => {
-        selectedFileNameRef.current = fileName;
-        setSelectedFileName(fileName);
-        setReport(null);
+        selectReport(fileName);
         setMobileDetailOpen(true);
         setDetailFocusRequest((current) => current + 1);
       },
       refreshHistory: (fileName) => {
-        void loadHistory(0, fileName);
+        if (view === "results") void loadHistory(0, fileName);
       },
       onResultReady
     });
-  }, [loadHistory, localJob, onResultReady]);
+  }, [loadHistory, localJob, onResultReady, selectReport, view]);
 
   const startComparison = async () => {
-    if (!selectedRecordingId || !consent || starting) return;
+    if (!selectedRecordingId || !consent || startingRef.current) return;
+    startingRef.current = true;
     setStarting(true);
     setStartError("");
     setPollingError("");
@@ -1065,65 +1255,90 @@ export function SttComparisonResults({ recordings, studies = [], view, onResultR
         locallyStartedJobIdsRef.current.add(job.id);
         setActive({ kind: "local", job });
       }
-    } catch (caught) {
+    } catch (error) {
       if (mountedRef.current) {
-        setStartError(caught instanceof Error ? caught.message : "STT 비교 작업을 시작하지 못했습니다.");
+        setStartError(error instanceof Error ? error.message : "STT 비교 작업을 시작하지 못했습니다.");
       }
     } finally {
+      startingRef.current = false;
       if (mountedRef.current) setStarting(false);
     }
   };
 
-  const refresh = () => {
-    void loadCurrent();
+  const refreshResults = () => {
     void loadHistory(page.offset);
     void loadAggregates();
+    const currentFileName = selectedFileNameRef.current;
+    if (currentFileName) void loadDetail(currentFileName);
+  };
+
+  const clearFilteredResults = () => {
+    historyRunnerRef.current?.invalidate();
+    aggregateRunnerRef.current?.invalidate();
+    detailRunnerRef.current?.invalidate();
+    selectReport(null);
+    setHistory([]);
+    setReportCount(0);
+    setPage({ offset: 0, limit: HISTORY_PAGE_SIZE, hasMore: false });
+    setAggregates([]);
+    setMobileDetailOpen(false);
   };
 
   return view === "run" ? (
     <SttComparisonJobPanel
-      recordings={recordings}
-      selectedRecordingId={selectedRecordingId}
-      onSelectRecording={setSelectedRecordingId}
-      consent={consent}
-      onConsentChange={setConsent}
-      active={active}
-      checkingActive={checkingActive}
-      starting={starting}
-      startError={startError}
-      currentError={currentError}
-      pollingError={pollingError}
-      onStart={() => void startComparison()}
+      state={{
+        recordings,
+        selection: { recordingId: selectedRecordingId, paidCallConsent: consent },
+        job: {
+          active,
+          checking: checkingActive,
+          starting,
+          errors: { start: startError, current: currentError, polling: pollingError }
+        }
+      }}
+      actions={{
+        selectRecording: setSelectedRecordingId,
+        changePaidCallConsent: setConsent,
+        start: () => { void startComparison(); }
+      }}
     />
   ) : (
     <div className="space-y-6">
       <StudyAggregatePanel
         studies={studies}
-        studyId={studyFilter}
-        caseId={caseFilter}
-        aggregates={aggregates}
-        loading={aggregateLoading}
-        error={aggregateError}
-        onStudyChange={(value) => { setStudyFilter(value); setCaseFilter(""); selectedFileNameRef.current = null; setSelectedFileName(null); setReport(null); }}
-        onCaseChange={(value) => { setCaseFilter(value); selectedFileNameRef.current = null; setSelectedFileName(null); setReport(null); }}
+        state={{
+          filters: { studyId: studyFilter, caseId: caseFilter },
+          resource: { data: aggregates, loading: aggregateLoading, error: aggregateError }
+        }}
+        actions={{
+          changeStudy: (value) => {
+            clearFilteredResults();
+            setStudyFilter(value);
+            setCaseFilter("");
+          },
+          changeCase: (value) => {
+            clearFilteredResults();
+            setCaseFilter(value);
+          }
+        }}
       />
       <SttComparisonResultsView
-      latest={report}
-      reportCount={reportCount}
-      loading={historyLoading}
-      error={historyError}
-      onRefresh={refresh}
-      history={history}
-      selectedFileName={selectedFileName}
-      page={page}
-      detailLoading={detailLoading}
-      detailError={detailError}
-      onSelectReport={openReport}
-      onPreviousPage={() => void loadHistory(Math.max(0, page.offset - page.limit))}
-      onNextPage={() => void loadHistory(page.offset + page.limit)}
-      mobileDetailOpen={mobileDetailOpen}
-      detailFocusRequest={detailFocusRequest}
-      onBackToList={() => setMobileDetailOpen(false)}
+        state={{
+          report: { selected: report, count: reportCount },
+          history: { items: history, selectedFileName, page },
+          requests: {
+            history: { loading: historyLoading, error: historyError },
+            detail: { loading: detailLoading, error: detailError }
+          },
+          mobile: { detailOpen: mobileDetailOpen, detailFocusRequest }
+        }}
+        actions={{
+          refresh: refreshResults,
+          selectReport: openReport,
+          previousPage: () => { void loadHistory(Math.max(0, page.offset - page.limit)); },
+          nextPage: () => { void loadHistory(page.offset + page.limit); },
+          backToList: () => setMobileDetailOpen(false)
+        }}
       />
     </div>
   );

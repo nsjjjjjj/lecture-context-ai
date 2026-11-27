@@ -1,5 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
-import { PCM_TARGET_SAMPLE_RATE, PcmRecorder, resolvePcmProcessorBufferSize } from "./pcm-recorder";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  PCM_AUDIO_WORKLET_FLUSH_TIMEOUT_MS,
+  PCM_TARGET_SAMPLE_RATE,
+  PcmRecorder,
+  PcmRecorderStartCancelledError,
+  resolvePcmProcessorBufferSize
+} from "./pcm-recorder";
 
 function createRecorderHarness(initialState: AudioContextState = "running") {
   const trackListeners = new Map<string, () => void>();
@@ -42,7 +48,118 @@ function createRecorderHarness(initialState: AudioContextState = "running") {
   return { recorder, getUserMedia, context, source, processor, track, trackListeners, setState: (next: AudioContextState) => { state = next; } };
 }
 
+function createAudioWorkletHarness() {
+  const harness = createRecorderHarness();
+  const addModule = vi.fn(async () => undefined);
+  Object.assign(harness.context, { audioWorklet: { addModule } });
+  const listeners = new Map<string, () => void>();
+  const port = {
+    onmessage: null as ((event: MessageEvent<unknown>) => void) | null,
+    postMessage: vi.fn()
+  };
+  const workletNode = {
+    port,
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    addEventListener: vi.fn((name: string, callback: () => void) => listeners.set(name, callback)),
+    removeEventListener: vi.fn((name: string) => listeners.delete(name))
+  };
+  const createAudioWorkletNode = vi.fn(() => workletNode as unknown as AudioWorkletNode);
+  const recorder = new PcmRecorder({
+    getUserMedia: harness.getUserMedia,
+    createAudioContext: () => harness.context as unknown as AudioContext,
+    createAudioWorkletNode,
+    workletModuleUrl: "/test/pcm-worklet.js"
+  });
+  return { ...harness, recorder, addModule, port, workletNode, createAudioWorkletNode, listeners };
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("PcmRecorder live capture", () => {
+  it("uses AudioWorklet as the primary path and flushes its final PCM before cleanup", async () => {
+    const harness = createAudioWorkletHarness();
+    const onAudio = vi.fn();
+    const onFirstPcm = vi.fn();
+
+    await harness.recorder.start(onAudio, { onFirstPcm });
+
+    expect(harness.addModule).toHaveBeenCalledWith("/test/pcm-worklet.js");
+    expect(harness.createAudioWorkletNode).toHaveBeenCalledWith(
+      harness.context,
+      "lecture-pcm-processor",
+      expect.objectContaining({
+        processorOptions: { targetSampleRate: 16_000, chunkDurationMs: 100 }
+      })
+    );
+    expect(harness.context.createScriptProcessor).not.toHaveBeenCalled();
+    expect(harness.source.connect).toHaveBeenCalledWith(harness.workletNode);
+
+    const regularPcm = new ArrayBuffer(3_200);
+    harness.port.onmessage?.({ data: { type: "pcm", buffer: regularPcm } } as MessageEvent);
+    expect(onAudio).toHaveBeenCalledWith(regularPcm);
+    expect(onFirstPcm).toHaveBeenCalledOnce();
+
+    const stopping = harness.recorder.stop();
+    expect(harness.port.postMessage).toHaveBeenCalledWith({ type: "flush" });
+    const remainder = new ArrayBuffer(640);
+    harness.port.onmessage?.({ data: { type: "pcm", buffer: remainder } } as MessageEvent);
+    harness.port.onmessage?.({ data: { type: "flushed" } } as MessageEvent);
+    await stopping;
+
+    expect(onAudio).toHaveBeenLastCalledWith(remainder);
+    expect(onFirstPcm).toHaveBeenCalledOnce();
+    expect(harness.workletNode.disconnect).toHaveBeenCalledOnce();
+    expect(harness.port.onmessage).toBeNull();
+  });
+
+  it("falls back to ScriptProcessor when AudioWorklet module setup is unavailable", async () => {
+    const harness = createAudioWorkletHarness();
+    harness.addModule.mockRejectedValueOnce(new Error("blocked by browser policy"));
+
+    await harness.recorder.start(vi.fn());
+
+    expect(harness.createAudioWorkletNode).not.toHaveBeenCalled();
+    expect(harness.context.createScriptProcessor).toHaveBeenCalledWith(4_096, 1, 1);
+    await harness.recorder.stop();
+  });
+
+  it("reports an AudioWorklet flush timeout instead of treating a truncated tail as success", async () => {
+    vi.useFakeTimers();
+    const harness = createAudioWorkletHarness();
+    await harness.recorder.start(vi.fn());
+
+    const stopping = harness.recorder.stop();
+    await vi.advanceTimersByTimeAsync(PCM_AUDIO_WORKLET_FLUSH_TIMEOUT_MS);
+
+    await expect(stopping).rejects.toThrow("마지막 마이크 오디오 처리 시간이 초과되었습니다.");
+    expect(harness.track.stop).toHaveBeenCalledOnce();
+    expect(harness.context.close).toHaveBeenCalledOnce();
+  });
+
+  it("cancels a pending permission request without reviving capture afterward", async () => {
+    let resolveStream!: (stream: MediaStream) => void;
+    const pendingStream = new Promise<MediaStream>((resolve) => {
+      resolveStream = resolve;
+    });
+    const harness = createRecorderHarness();
+    const track = harness.track;
+    const recorder = new PcmRecorder({
+      getUserMedia: () => pendingStream,
+      createAudioContext: () => harness.context as unknown as AudioContext
+    });
+    const starting = recorder.start(vi.fn());
+
+    await recorder.stop();
+    resolveStream({ getTracks: () => [track] } as unknown as MediaStream);
+
+    await expect(starting).rejects.toBeInstanceOf(PcmRecorderStartCancelledError);
+    expect(track.stop).toHaveBeenCalledOnce();
+    expect(harness.context.createMediaStreamSource).not.toHaveBeenCalled();
+  });
+
   it("disables destructive preprocessing, resumes a suspended context, and reports first PCM once", async () => {
     const harness = createRecorderHarness("suspended");
     const onAudio = vi.fn();
